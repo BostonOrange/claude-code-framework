@@ -125,6 +125,13 @@ Create `docs/stories/{TICKET_ID}/` with:
 | `how-to-test.md` | Testing instructions |
 | `manual-steps.md` | Pre/post deployment steps (only if needed) |
 
+### External API Check
+
+Before implementing, check `.claude/skills/mock-endpoint/references/INDEX.md` for any external services this feature touches:
+
+- **Contract exists** → use the wrapper, write tests with mock fixtures. Never call the real API
+- **No contract** → ask user: "This feature calls {service}. Should I create a mock contract first?" If yes, invoke `/mock-endpoint {service}` before continuing
+
 ### Implementation
 
 Create/modify components following CLAUDE.md coding standards. Key guardrails:
@@ -135,6 +142,7 @@ Create/modify components following CLAUDE.md coding standards. Key guardrails:
 - No commented-out code
 - Constants over magic values
 - Verify enum/picklist values from source of truth before using
+- External API calls must go through service wrappers (never direct fetch/axios to external URLs)
 
 ### Format Changed Files
 

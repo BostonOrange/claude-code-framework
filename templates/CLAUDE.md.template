@@ -176,6 +176,7 @@ Write for a **technical audience**. Be direct, no filler. Use identifiers, not d
 | `/update-tracker` | Push story docs to work item tracker |
 | `/deploy` | Orchestrate deployments |
 | `/fetch-docs` | Fetch & persist library documentation to knowledge base |
+| `/mock-endpoint` | Create contracts, mocks, and wrappers for external APIs |
 
 ## Factory Mode
 

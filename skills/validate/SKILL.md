@@ -133,6 +133,23 @@ Ignore: `0`, `1`, `-1`, `""`, `true`, `false`, `null`, `nil`, `undefined`, `None
 
 ---
 
+### Direct External API Calls (ERROR)
+
+Flag any HTTP call in non-test source files that hits an external URL directly instead of going through a service wrapper.
+
+```bash
+# Find fetch/axios calls with hardcoded external URLs in source files
+grep -rEn '(fetch|axios\.(get|post|put|delete|patch))\s*\(\s*[`"'"'"']https?://' <changed_source_files>
+```
+
+Ignore:
+- Test files (`*.test.*`, `*.spec.*`)
+- Files inside `__mocks__/` or `fixtures/`
+- Service wrapper files (`src/lib/services/*`)
+- Calls to `localhost` or relative URLs
+
+If a direct external call is found, check `.claude/skills/mock-endpoint/references/INDEX.md` — if a wrapper exists for that service, flag as ERROR with a fix suggestion to use the wrapper.
+
 ### Test Quality (ERROR)
 
 | Check | How to Detect | Severity |
@@ -140,6 +157,7 @@ Ignore: `0`, `1`, `-1`, `""`, `true`, `false`, `null`, `nil`, `undefined`, `None
 | Adequate assertions | Test functions/methods must contain at least one assertion (`assert`, `expect`, `should`, `Equal`, `Contains`, etc.) | ERROR |
 | No production data in tests | Grep for `SeeAllData`, real email addresses, or production hostnames in test files | ERROR |
 | Test file naming | Test files must follow project conventions (e.g., `*.test.ts`, `*_test.go`, `test_*.py`) | WARN |
+| External API mock coverage | Service wrappers in `src/lib/services/` must have corresponding mock fixtures | WARN |
 
 ### Naming Conventions (WARN)
 

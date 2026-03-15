@@ -190,6 +190,7 @@ The result: Claude starts every conversation knowing your project's stack, conve
 | `/update-tracker` | Push story docs back to work item tracker |
 | `/deploy` | Orchestrate deployments to environments |
 | `/fetch-docs` | Fetch & persist library/API documentation to an indexed knowledge base. Auto-triggered when any docs enter the conversation |
+| `/mock-endpoint` | Create contracts, mock fixtures, service wrappers, and tests for external API integrations. Prevents AI from hitting real services during development |
 
 ## Integration Adapters
 
@@ -287,6 +288,7 @@ claude-code-framework/
 |   +-- ai-update/               # AI process updates
 |   +-- add-reference/           # Knowledge management
 |   +-- fetch-docs/              # Documentation persistence (indexed knowledge base)
+|   +-- mock-endpoint/           # External API contracts, mocks, and service wrappers
 |   +-- update-tracker/          # Work item sync
 |   +-- deploy/                  # Deployment orchestration
 +-- workflows/                   # CI/CD templates
