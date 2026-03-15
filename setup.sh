@@ -147,6 +147,30 @@ echo ""
 echo "Setting up Claude Code framework..."
 echo ""
 
+# ── Ensure base branch exists ───────────────────────────────────
+
+if git rev-parse --git-dir > /dev/null 2>&1; then
+    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    if [ "$CURRENT_BRANCH" != "$BASE_BRANCH" ]; then
+        echo "Renaming branch '$CURRENT_BRANCH' -> '$BASE_BRANCH'..."
+        git branch -m "$CURRENT_BRANCH" "$BASE_BRANCH"
+
+        # Update remote if it exists
+        if git remote get-url origin > /dev/null 2>&1; then
+            echo "Pushing '$BASE_BRANCH' to remote..."
+            git push -u origin "$BASE_BRANCH" 2>/dev/null || true
+
+            # Try to set default branch (requires gh CLI)
+            if command -v gh &> /dev/null; then
+                gh repo edit --default-branch "$BASE_BRANCH" 2>/dev/null || true
+            fi
+
+            # Delete old remote branch
+            git push origin --delete "$CURRENT_BRANCH" 2>/dev/null || true
+        fi
+    fi
+fi
+
 # ── Create .claude directory ─────────────────────────────────────
 
 mkdir -p "$PROJECT_DIR/.claude/skills"

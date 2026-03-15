@@ -59,13 +59,18 @@ SA/PM drafts story -> AI readiness gate -> AI implements -> AI validates -> PR -
 
 There are two setup phases: scaffolding (script) and onboarding (conversational).
 
-### Phase 1: Framework Setup (`setup.sh`)
+### Phase 1: Framework Setup
 
 Run the setup wizard from your project root:
 
 ```bash
+# Linux / macOS / Git Bash
 cd your-project/
 bash ~/Developer/claude-code-framework/setup.sh
+
+# Windows PowerShell
+cd your-project/
+& ~/Developer/claude-code-framework/setup.ps1
 ```
 
 The wizard asks about your project type, work item tracker, CI/CD platform, deployment target, and notification system. It then generates:
@@ -126,6 +131,18 @@ mkdir -p .claude/skills/my-domain/references/
 
 The knowledge base lives in `.claude/skills/{domain}/references/*.md` and is read by skills like `/develop`, `/validate`, and `/merge-resolve` to make context-aware decisions. It grows over time -- run `/add-reference` again after major changes to keep it current.
 
+### Documentation Knowledge Base (automatic)
+
+In addition to the domain knowledge you build manually, the framework automatically persists any documentation that enters a conversation -- context7 lookups, web searches, user-pasted docs, shared URLs, or API specs. These are saved to `.claude/skills/fetch-docs/references/` with an index file (`INDEX.md`) that acts as a lookup table.
+
+This means:
+- **First conversation** fetches Next.js App Router docs → saved to knowledge base
+- **Every future conversation** reads from cache instead of re-fetching
+- **User-provided docs** (internal APIs, unreachable sources) are tagged so future updates ask the user rather than trying to fetch
+- **Staleness** is tracked — docs older than 30 days are re-fetched when the topic comes up
+
+The knowledge base compounds over time. The more conversations happen, the richer the local docs become.
+
 ### 4. Start Using
 
 | You are a... | Start with | Purpose |
@@ -164,6 +181,7 @@ The result: Claude starts every conversation knowing your project's stack, conve
 | `/add-reference` | Add/update domain knowledge references |
 | `/update-tracker` | Push story docs back to work item tracker |
 | `/deploy` | Orchestrate deployments to environments |
+| `/fetch-docs` | Fetch & persist library/API documentation to an indexed knowledge base. Auto-triggered when any docs enter the conversation |
 
 ## Integration Adapters
 
@@ -240,7 +258,8 @@ Edit `.claude/skills/factory/SKILL.md` to add/remove pipeline stages.
 ```
 claude-code-framework/
 +-- README.md                    # This file
-+-- setup.sh                     # Interactive setup wizard (incl. pre-commit hooks)
++-- setup.sh                     # Interactive setup wizard (Linux/macOS/Git Bash)
++-- setup.ps1                    # Interactive setup wizard (Windows PowerShell)
 +-- .gitignore
 +-- templates/
 |   +-- CLAUDE.md.template       # Project instructions template
@@ -259,6 +278,7 @@ claude-code-framework/
 |   +-- error-analyze/           # Error triage (interactive + CI mode)
 |   +-- ai-update/               # AI process updates
 |   +-- add-reference/           # Knowledge management
+|   +-- fetch-docs/              # Documentation persistence (indexed knowledge base)
 |   +-- update-tracker/          # Work item sync
 |   +-- deploy/                  # Deployment orchestration
 +-- workflows/                   # CI/CD templates

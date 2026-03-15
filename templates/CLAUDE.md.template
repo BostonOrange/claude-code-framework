@@ -7,6 +7,42 @@
 **Key Technologies:**
 {{TECH_STACK}}
 
+## Documentation Knowledge Base
+
+**IMPORTANT: This is a standing rule that applies to EVERY conversation.**
+
+Any time documentation, API references, guides, or technical knowledge enters the conversation — regardless of source — it MUST be persisted to the knowledge base at `.claude/skills/fetch-docs/references/`.
+
+### Sources that trigger persistence
+
+| Source | Example | Action |
+|--------|---------|--------|
+| Context7 lookup | Fetching library docs via context7 | Save structured summary |
+| Web search/fetch | Looking up API docs online | Save structured summary |
+| User pastes docs | User shares API spec, README, or guide | Save structured summary |
+| User shares a URL | "Here's the docs: https://..." | Fetch, save structured summary |
+| User shares a file | "Read this PDF/doc for the API" | Extract key info, save |
+| Error investigation | Finding solution in docs/Stack Overflow | Save the pattern + fix |
+
+### How to persist
+
+1. **Read the index FIRST:** Read `.claude/skills/fetch-docs/references/INDEX.md` — this is the lookup table for all cached docs
+2. **Cache hit:** If the library/topic is listed, read the referenced `.md` file — skip fetching
+3. **Cache miss:** Fetch/receive the docs, save to `.claude/skills/fetch-docs/references/{library-or-topic}.md`
+4. **Update the index (MANDATORY):** Add/update the row in the appropriate table in `INDEX.md` with file name, topics, date, and source
+5. **Never store verbatim:** Summarize into structured tables, code examples, and key notes
+6. **File naming:** lowercase, hyphenated: `next-js.md`, `sl-transport-api.md`, `capacitor.md`
+
+### Staleness
+
+- Docs older than 30 days: re-fetch and merge when the topic comes up again
+- Always preserve any `<!-- project-specific -->` and `<!-- user-provided -->` tagged sections during updates
+- The `Last updated` date in each file header tracks freshness
+
+### Why this matters
+
+Context windows are ephemeral. Without persistence, the same documentation gets re-fetched across conversations, wasting time and tokens. The knowledge base compounds over time — the more conversations happen, the richer the local docs get, and the faster future work goes.
+
 ## Onboarding
 
 **On every conversation start**, check whether this project has been fully onboarded by looking for these memory files relative to the project root:
@@ -139,6 +175,7 @@ Write for a **technical audience**. Be direct, no filler. Use identifiers, not d
 | `/add-reference` | Add/update knowledge reference docs |
 | `/update-tracker` | Push story docs to work item tracker |
 | `/deploy` | Orchestrate deployments |
+| `/fetch-docs` | Fetch & persist library documentation to knowledge base |
 
 ## Factory Mode
 
