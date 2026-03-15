@@ -88,7 +88,7 @@ Check memory for team conventions:
 - PR title format
 - PR review process (CODEOWNERS? self-assign?)
 - Commit message style
-- Formatting approach (pre-commit hooks vs manual)
+- Formatting approach (CI vs manual)
 ```
 
 **How it changes behavior:**

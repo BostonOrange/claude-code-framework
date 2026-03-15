@@ -447,81 +447,6 @@ if [ ! -f "$CLAUDE_HOME/hooks/session-stop.sh" ]; then
     echo "  + Session stop sound hook"
 fi
 
-# ── Set up pre-commit hooks (formatting + linting) ──────────────
-
-echo "Setting up pre-commit hooks..."
-
-setup_precommit() {
-    case $PROJECT_TYPE_NAME in
-        nodejs|react)
-            # Use husky + lint-staged for Node.js projects
-            if [ -f "$PROJECT_DIR/package.json" ]; then
-                if ! grep -q '"husky"' "$PROJECT_DIR/package.json" 2>/dev/null; then
-                    echo "  Install pre-commit hooks with:"
-                    echo "    npx husky init"
-                    echo "    npm install --save-dev lint-staged"
-                    echo '    echo "npx lint-staged" > .husky/pre-commit'
-                    echo ""
-                    echo "  Add to package.json:"
-                    echo '    "lint-staged": { "*.{js,jsx,ts,tsx,json,css,md}": "prettier --write" }'
-                else
-                    echo "  husky already configured"
-                fi
-            fi
-            ;;
-        python)
-            # Use pre-commit framework for Python
-            if ! command -v pre-commit &> /dev/null; then
-                echo "  Install pre-commit hooks with:"
-                echo "    pip install pre-commit"
-                echo "    pre-commit install"
-            fi
-            if [ ! -f "$PROJECT_DIR/.pre-commit-config.yaml" ]; then
-                cat > "$PROJECT_DIR/.pre-commit-config.yaml" << 'PRECOMMIT_EOF'
-repos:
-  - repo: https://github.com/psf/black
-    rev: 24.4.2
-    hooks:
-      - id: black
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.7
-    hooks:
-      - id: ruff
-        args: [--fix]
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
-    hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
-      - id: check-yaml
-      - id: check-added-large-files
-PRECOMMIT_EOF
-                echo "  + Created .pre-commit-config.yaml"
-                echo "  Run 'pre-commit install' to activate"
-            fi
-            ;;
-        go)
-            echo "  Go uses gofmt automatically. For pre-commit hooks:"
-            echo "    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"
-            echo "  Add to .git/hooks/pre-commit:"
-            echo '    gofmt -l . | grep -q . && echo "Run gofmt" && exit 1'
-            ;;
-        java)
-            echo "  For Java, configure spotless in build.gradle:"
-            echo '    plugins { id "com.diffplug.spotless" }'
-            echo "  Then: ./gradlew spotlessApply"
-            ;;
-        rails)
-            echo "  For Ruby, use overcommit or lefthook:"
-            echo "    gem install overcommit && overcommit --install"
-            ;;
-        *)
-            echo "  Configure pre-commit hooks for your project manually"
-            ;;
-    esac
-}
-
-setup_precommit
 
 # ── Create .env template ────────────────────────────────────────
 
@@ -604,7 +529,6 @@ echo ""
 echo "Next steps:"
 echo "  1. Fill in CLAUDE.md sections marked with {{...}}"
 echo "  2. Configure .env with your credentials"
-echo "  3. Set up pre-commit hooks (see instructions above)"
-echo "  4. Add domain knowledge: /add-reference my-domain topic"
-echo "  5. Try it: /develop TICKET-123"
+echo "  3. Add domain knowledge: /add-reference my-domain topic"
+echo "  4. Try it: /develop TICKET-123"
 echo ""
