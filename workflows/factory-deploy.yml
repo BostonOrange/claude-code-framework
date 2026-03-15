@@ -1,0 +1,205 @@
+# Factory Deploy — Deploy to staging after PR merge
+# Includes semi-auto classification: detects manual config steps and gates deployment
+#
+# Triggered when a factory-labeled PR is merged to the base branch
+
+name: Factory Deploy
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  # ── Step 1: Classify auto vs semi-auto ────────────────────────
+  classify:
+    name: Classify deployment type
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'factory')
+    outputs:
+      ticket_id: ${{ steps.ticket.outputs.id }}
+      is_semi_auto: ${{ steps.classify.outputs.is_semi_auto }}
+      manual_steps: ${{ steps.classify.outputs.manual_steps }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+
+      - name: Extract ticket ID from PR title
+        id: ticket
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          # Match common patterns: US-123, PROJ-123, TICKET-123, #123
+          TICKET_ID=$(echo "$TITLE" | grep -oP '^\w+-\d+' | head -1)
+          if [ -z "$TICKET_ID" ]; then
+            echo "::warning::Could not extract ticket ID from PR title: $TITLE"
+            TICKET_ID="unknown"
+          fi
+          echo "id=$TICKET_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Check for semi-auto indicators
+        id: classify
+        run: |
+          IS_SEMI_AUTO="false"
+          MANUAL_STEPS=""
+
+          # Check 1: PR has explicit 'factory-semi-auto' label
+          if echo '${{ toJSON(github.event.pull_request.labels.*.name) }}' | grep -q 'factory-semi-auto'; then
+            IS_SEMI_AUTO="true"
+          fi
+
+          # Check 2: Scan manual-steps.md for non-automatable config
+          TICKET_ID="${{ steps.ticket.outputs.id }}"
+          MANUAL_STEPS_FILE="docs/stories/${TICKET_ID}/manual-steps.md"
+
+          if [ -f "$MANUAL_STEPS_FILE" ]; then
+            # Detect manual configuration indicators
+            # Customize these patterns for your project:
+            MANUAL_PATTERNS='(configure in (setup|ui|settings|admin|console|dashboard)|create in ui|manually (set|configure|create|provision)|environment variable|secret.*rotation|manual.*approval|infrastructure.*provision|dns.*config|ssl.*cert|oauth.*setup|api.*key.*rotation|database.*migration.*manual|feature.*flag)'
+
+            if grep -qiE "$MANUAL_PATTERNS" "$MANUAL_STEPS_FILE"; then
+              IS_SEMI_AUTO="true"
+              MANUAL_STEPS=$(grep -iE "$MANUAL_PATTERNS" "$MANUAL_STEPS_FILE" | head -10)
+            fi
+          fi
+
+          echo "is_semi_auto=$IS_SEMI_AUTO" >> "$GITHUB_OUTPUT"
+          echo "manual_steps<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$MANUAL_STEPS" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+  # ── Step 2a: Auto deploy ──────────────────────────────────────
+  deploy-auto:
+    name: Deploy to staging (auto)
+    needs: classify
+    runs-on: ubuntu-latest
+    if: needs.classify.outputs.is_semi_auto == 'false'
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+
+      # ── Setup (uncomment for your project type) ──────────────
+
+      # Node.js
+      # - uses: actions/setup-node@v4
+      #   with:
+      #     node-version: '20'
+      # - run: npm ci
+
+      # Python
+      # - uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.12'
+      # - run: pip install -r requirements.txt
+
+      # Ruby on Rails
+      # - uses: ruby/setup-ruby@v1
+      #   with:
+      #     ruby-version: '3.3'
+      # - run: bundle install
+
+      # ── Deploy ───────────────────────────────────────────────
+
+      - name: Deploy to staging
+        id: deploy
+        run: |
+          echo "Replace with your staging deploy command"
+          # npm run deploy:staging
+          # cdk deploy --require-approval never
+          # kubectl apply -f k8s/staging/
+          echo "success=true" >> "$GITHUB_OUTPUT"
+
+      # ── Notify ───────────────────────────────────────────────
+
+      - name: Notify team
+        if: always()
+        run: |
+          TICKET_ID="${{ needs.classify.outputs.ticket_id }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+
+          if [ "${{ steps.deploy.outputs.success }}" = "true" ]; then
+            MESSAGE="Deployed ${TICKET_ID}: ${PR_TITLE} — ready for smoke testing"
+          else
+            MESSAGE="Deployment FAILED for ${TICKET_ID}: ${PR_TITLE} — manual intervention needed"
+          fi
+
+          echo "$MESSAGE"
+
+          # Uncomment for your notification system:
+          # Slack:
+          # curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+          #   -H "Content-Type: application/json" \
+          #   -d "{\"text\":\"${MESSAGE}\"}"
+
+      # ── Update Tracker ───────────────────────────────────────
+
+      # Uncomment and customize:
+      # - name: Update tracker
+      #   run: |
+      #     TICKET_ID="${{ needs.classify.outputs.ticket_id }}"
+      #     # ADO: curl to update state
+      #     # Jira: curl to transition
+      #     # GitHub: gh issue edit --add-label "deployed"
+
+      # ── Summary ──────────────────────────────────────────────
+
+      - name: Write job summary
+        if: always()
+        run: |
+          TICKET_ID="${{ needs.classify.outputs.ticket_id }}"
+          echo "## Factory Deploy Summary (Auto)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Ticket | ${TICKET_ID} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| PR | #${{ github.event.pull_request.number }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Classification | Auto |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Deploy | ${{ steps.deploy.outputs.success == 'true' && 'Success' || 'Failed' }} |" >> "$GITHUB_STEP_SUMMARY"
+
+  # ── Step 2b: Semi-auto — notify manual steps required ─────────
+  notify-semi-auto:
+    name: Notify manual steps required (semi-auto)
+    needs: classify
+    runs-on: ubuntu-latest
+    if: needs.classify.outputs.is_semi_auto == 'true'
+
+    steps:
+      - name: Notify team — manual config required
+        run: |
+          TICKET_ID="${{ needs.classify.outputs.ticket_id }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          MANUAL_STEPS="${{ needs.classify.outputs.manual_steps }}"
+
+          MESSAGE="${TICKET_ID} merged: ${PR_TITLE}
+
+          Semi-auto — manual config required before staging deploy:
+          ${MANUAL_STEPS}
+
+          Run deployment manually after completing manual steps."
+
+          echo "$MESSAGE"
+
+          # Uncomment for your notification system:
+          # curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+          #   -H "Content-Type: application/json" \
+          #   -d "{\"text\":\"${MESSAGE}\"}"
+
+      - name: Write job summary
+        run: |
+          TICKET_ID="${{ needs.classify.outputs.ticket_id }}"
+          echo "## Factory Deploy Summary (Semi-Auto)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Ticket | ${TICKET_ID} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| PR | #${{ github.event.pull_request.number }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Classification | Semi-Auto |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Deploy | Awaiting manual config |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Manual Steps Required" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ needs.classify.outputs.manual_steps }}" >> "$GITHUB_STEP_SUMMARY"

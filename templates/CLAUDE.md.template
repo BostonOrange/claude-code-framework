@@ -1,0 +1,288 @@
+# CLAUDE.md
+
+## Project Overview
+
+{{PROJECT_DESCRIPTION}}
+
+**Key Technologies:**
+{{TECH_STACK}}
+
+## Onboarding
+
+**On every conversation start**, check whether this project has been fully onboarded by looking for these memory files relative to the project root:
+
+- `.claude/memory/user_role.md`
+- `.claude/memory/project_context.md`
+- `.claude/memory/project_environments.md`
+- `.claude/memory/project_workflow.md`
+- `.claude/memory/project_preferences.md`
+
+### If any memory files are missing
+
+Guide the user through onboarding conversationally. Ask one topic at a time, wait for answers, then move to the next. Do NOT dump all questions at once.
+
+**Round 1 — About you:**
+- What is your role? (e.g., senior developer, junior developer, architect, PM, full-stack, DevOps)
+- Which areas of the codebase are you most familiar with? Least familiar with?
+
+Save answers to `.claude/memory/user_role.md`.
+
+**Round 2 — About the stack:**
+- What are the primary languages and frameworks?
+- What are the key libraries and their versions?
+- What build tools and package manager does this project use?
+
+Save answers to `.claude/memory/project_context.md`.
+
+**Round 3 — About the workflow:**
+- What branching strategy do you follow? (trunk-based, gitflow, feature branches)
+- What does the PR process look like? (required reviewers, approval count, CI gates)
+- How are work items tracked? (Jira, Linear, GitHub Issues, Azure DevOps, etc.)
+
+Save answers to `.claude/memory/project_workflow.md`.
+
+**Round 4 — About environments:**
+- What environments exist and what are their aliases? (dev, staging, prod, etc.)
+- Which environments are CI-only vs. developer-accessible?
+- What is the deployment process per environment? (auto on merge? manual approval?)
+
+Save answers to `.claude/memory/project_environments.md`.
+
+**Round 5 — About preferences:**
+- What is the testing approach? (TDD, test-after, coverage targets)
+- What are the code review expectations?
+- Are there any project-specific patterns or anti-patterns to be aware of?
+
+Save answers to `.claude/memory/project_preferences.md`.
+
+**Round 6 — Knowledge base kickstart:**
+
+After saving the above, offer to build the initial knowledge base by scanning the codebase:
+
+- "I can scan your project now to document your data model, API surface, patterns, and conventions. This gives me deep context for future work. Want me to start?"
+- If yes, run `/add-reference` for the most valuable categories based on what you learned about the stack:
+
+| Stack Type | Recommended First Scans |
+|------------|------------------------|
+| API backend | entities, api-endpoints, error-patterns |
+| Frontend app | components, routes, state-management |
+| Full-stack | entities, api-endpoints, components, patterns |
+| CLI/library | modules, public-api, config |
+
+- Save results to `.claude/skills/{domain}/references/`
+- Tell the user they can run `/add-reference` anytime to expand or update the knowledge base
+
+**After all rounds are complete**, create `.claude/memory/.onboarding_complete` with the current date to prevent re-triggering.
+
+### If onboarding is already complete
+
+Do not re-trigger onboarding. Proceed normally. If the user wants to update their info, they can say "update onboarding" and you should walk through the relevant section again. If the user wants to expand the knowledge base, use `/add-reference`.
+
+## Quick Start
+
+| You are a... | Start with | Purpose |
+|--------------|------------|---------|
+| Architect/PM | `/draft-story` | Requirements -> implementation-ready tickets |
+| Architect/PM | `/refine-story TICKET-xxx` | Improve existing ticket + gap analysis |
+| Developer | `/develop TICKET-xxx` | Full dev cycle: implement, validate, PR |
+| Developer | `/validate TICKET-xxx` | Validate code against project standards |
+| Developer | `/error-analyze` | Triage production errors, create tickets |
+| Any | `/factory TICKET-xxx` | End-to-end: readiness -> develop -> validate -> PR -> deploy |
+| Any | `/check-readiness TICKET-xxx` | Validate ticket is implementation-ready |
+
+## Work Item Tracker
+
+{{TRACKER_CONFIG}}
+<!-- Example:
+- Platform: Jira
+- Project key: MYAPP
+- Board: Sprint Board
+- Statuses: Backlog, In Progress, In Review, Done
+-->
+
+## Story Tickets & Refinement
+
+### Workflow
+
+1. Architect/PM creates or refines tickets
+2. Developer reviews for completeness
+3. `/check-readiness` validates before implementation
+4. `/develop` or `/factory` for implementation
+
+### Story Folder Structure
+
+Create `docs/stories/TICKET-{xxx}/` with:
+
+| File | Purpose |
+|------|---------|
+| `story.md` | Full story with ACs, technical spec |
+| `solutions-components.md` | Components changed/created |
+| `how-to-test.md` | Testing instructions |
+| `manual-steps.md` | Pre/post deployment steps (if needed) |
+
+### Writing Style
+
+Write for a **technical audience**. Be direct, no filler. Use identifiers, not display names. Tables over paragraphs.
+
+## Skills Available
+
+| Skill | Purpose |
+|-------|---------|
+| `/develop` | Full dev cycle: fetch ticket, implement, validate, PR |
+| `/validate` | Validate code against project standards |
+| `/factory` | End-to-end pipeline: readiness -> develop -> validate -> PR -> deploy |
+| `/check-readiness` | Validate ticket is implementation-ready |
+| `/draft-story` | Create tickets from requirements or design docs |
+| `/refine-story` | Improve existing tickets with gap analysis |
+| `/error-analyze` | Triage production errors |
+| `/ai-update` | Branch + PR for AI process changes |
+| `/add-reference` | Add/update knowledge reference docs |
+| `/update-tracker` | Push story docs to work item tracker |
+| `/deploy` | Orchestrate deployments |
+
+## Factory Mode
+
+When invoked with `/factory TICKET-{id}`:
+- All human gates use auto-defaults
+- Ticket readiness checked automatically (`/check-readiness`)
+- Code standards validated locally -- **deployment handled by CI**
+- PR gets `factory` label -> triggers CI workflows
+- On halt: notify team, do not wait for user
+
+### Pipeline
+
+```
+/draft-story (architect resolves questions)
+    -> Ticket "Ready for Sprint"
+    |
+/factory TICKET-xxx
+  |-- /check-readiness
+  |-- Create worktree + branch
+  |-- Scaffold + implement
+  |-- /validate (code standards only)
+  |-- Commit + PR (factory label) -> CI deploys -> reviewer tests -> merge -> deploy
+```
+
+## Common Development Commands
+
+### Code Formatting & Linting
+
+{{FORMAT_COMMANDS}}
+<!-- Example:
+```bash
+npm run lint          # ESLint check
+npm run lint:fix      # ESLint auto-fix
+npm run format        # Prettier format all files
+npm run format:check  # Prettier check only
+```
+-->
+
+### Testing
+
+{{TEST_COMMANDS}}
+<!-- Example:
+```bash
+npm test              # Run full test suite
+npm run test:unit     # Unit tests only
+npm run test:e2e      # End-to-end tests (Playwright)
+npm run test:coverage # Generate coverage report
+```
+-->
+
+### Deployment
+
+{{DEPLOY_COMMANDS}}
+<!-- Example:
+```bash
+npm run build         # Production build
+npm run deploy:dev    # Deploy to dev environment
+npm run deploy:stg    # Deploy to staging (requires approval)
+```
+-->
+
+## Development Guidelines
+
+### Coding Standards
+
+{{CODING_STANDARDS}}
+<!-- Example:
+- Use camelCase for variables, PascalCase for classes and components
+- All public functions must have JSDoc comments
+- Maximum function length: 40 lines
+- Prefer named exports over default exports
+- Use absolute imports with path aliases (e.g., @/components, @/utils)
+- No `any` type in TypeScript -- use `unknown` and narrow
+-->
+
+### Error Handling
+
+{{ERROR_HANDLING_PATTERN}}
+<!-- Example:
+- Use custom error classes that extend a base `AppError`
+- All API endpoints must return structured error responses: { error: string, code: string, details?: object }
+- Log errors with contextual metadata (userId, requestId, operation)
+- Never swallow errors silently -- always log or re-throw
+- Use Result<T, E> pattern for operations that can fail predictably
+-->
+
+### Testing Strategy
+
+{{TESTING_STRATEGY}}
+<!-- Example:
+- Unit tests required for all business logic (minimum 80% coverage)
+- Integration tests for API endpoints and database queries
+- E2E tests for critical user flows (login, checkout, onboarding)
+- Use factories/fixtures for test data -- never hardcode IDs or emails
+- Mock external services at the HTTP boundary, not at the module level
+-->
+
+## Code Organization
+
+```
+{{CODE_STRUCTURE}}
+```
+<!-- Example:
+```
+src/
+  app/              # Next.js App Router pages and layouts
+  components/
+    ui/             # Reusable UI primitives (Button, Modal, etc.)
+    features/       # Feature-specific components
+  lib/
+    api/            # API client and request helpers
+    hooks/          # Custom React hooks
+    utils/          # Pure utility functions
+  types/            # Shared TypeScript types and interfaces
+  styles/           # Global styles and theme tokens
+tests/
+  unit/             # Unit tests mirroring src/ structure
+  e2e/              # Playwright end-to-end tests
+  fixtures/         # Shared test data and factories
+```
+-->
+
+## Version Control
+
+### Branching Strategy
+
+- **`{{BASE_BRANCH}}`** -- primary integration branch
+- **Feature branches** -- `TICKET-xxx` format, branched from `{{BASE_BRANCH}}`
+- **Release branches** -- cut from `{{BASE_BRANCH}}` when ready
+
+### Pull Request Guidelines
+
+- **Base branch**: `{{BASE_BRANCH}}`
+- **PR title format**: `{Ticket-ID}: {Story Title}`
+- **Assignee**: Always assign to yourself (`--assignee @me`)
+
+## Integrations
+
+{{INTEGRATIONS}}
+<!-- Example:
+- **CI/CD**: GitHub Actions (workflows in .github/workflows/)
+- **Hosting**: Vercel (auto-deploy on push to main)
+- **Monitoring**: Datadog APM + Sentry for error tracking
+- **Auth**: Auth0 (tenant: myapp-prod)
+- **Database**: PostgreSQL on AWS RDS
+- **Feature flags**: LaunchDarkly
+-->

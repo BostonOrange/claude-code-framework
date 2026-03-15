@@ -1,0 +1,58 @@
+# Factory Auto-Merge — Merge PR after approval + checks pass
+# Triggered when a factory PR is approved and all checks pass
+
+name: Factory Auto-Merge
+
+on:
+  pull_request_review:
+    types: [submitted]
+  check_suite:
+    types: [completed]
+
+jobs:
+  auto-merge:
+    if: |
+      github.event_name == 'pull_request_review' &&
+      github.event.review.state == 'approved' &&
+      contains(github.event.pull_request.labels.*.name, 'factory')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Wait for checks
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+
+            // Wait up to 5 minutes for checks to complete
+            for (let i = 0; i < 30; i++) {
+              const { data: checks } = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: pr.head.sha
+              });
+
+              const pending = checks.check_runs.filter(c => c.status !== 'completed');
+              if (pending.length === 0) {
+                const failed = checks.check_runs.filter(c => c.conclusion !== 'success' && c.conclusion !== 'skipped');
+                if (failed.length > 0) {
+                  core.setFailed(`Checks failed: ${failed.map(c => c.name).join(', ')}`);
+                  return;
+                }
+                break;
+              }
+
+              await new Promise(r => setTimeout(r, 10000)); // wait 10s
+            }
+
+      - name: Auto-merge PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr merge ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --merge \
+            --auto

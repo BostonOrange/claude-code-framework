@@ -1,0 +1,298 @@
+# CLAUDE.md
+
+## Project Overview
+
+ShopFront is a B2C e-commerce web application for a specialty coffee retailer. Customers can browse products, manage subscriptions, and place orders. The app serves approximately 50k monthly active users and processes payment through Stripe. The admin dashboard (under `/admin`) is used internally by the merchandising and support teams.
+
+**Key Technologies:**
+- Next.js 14 (App Router)
+- TypeScript 5.3
+- React 18
+- Tailwind CSS 3.4
+- Prisma ORM 5.x with PostgreSQL
+- Stripe SDK for payments
+- NextAuth.js for authentication
+- Vercel for hosting
+
+## Onboarding
+
+**On every conversation start**, check whether this project has been fully onboarded by looking for these memory files relative to the project root:
+
+- `.claude/memory/user_role.md`
+- `.claude/memory/project_context.md`
+- `.claude/memory/project_environments.md`
+- `.claude/memory/project_workflow.md`
+- `.claude/memory/project_preferences.md`
+
+### If any memory files are missing
+
+Guide the user through onboarding conversationally. Ask one topic at a time, wait for answers, then move to the next. Do NOT dump all questions at once.
+
+**Round 1 — About you:**
+- What is your role? (e.g., senior developer, junior developer, architect, PM, full-stack, DevOps)
+- Which areas of the codebase are you most familiar with? Least familiar with?
+
+Save answers to `.claude/memory/user_role.md`.
+
+**Round 2 — About the stack:**
+- What are the primary languages and frameworks?
+- What are the key libraries and their versions?
+- What build tools and package manager does this project use?
+
+Save answers to `.claude/memory/project_context.md`.
+
+**Round 3 — About the workflow:**
+- What branching strategy do you follow? (trunk-based, gitflow, feature branches)
+- What does the PR process look like? (required reviewers, approval count, CI gates)
+- How are work items tracked? (Jira, Linear, GitHub Issues, Azure DevOps, etc.)
+
+Save answers to `.claude/memory/project_workflow.md`.
+
+**Round 4 — About environments:**
+- What environments exist and what are their aliases? (dev, staging, prod, etc.)
+- Which environments are CI-only vs. developer-accessible?
+- What is the deployment process per environment? (auto on merge? manual approval?)
+
+Save answers to `.claude/memory/project_environments.md`.
+
+**Round 5 — About preferences:**
+- What is the testing approach? (TDD, test-after, coverage targets)
+- What are the code review expectations?
+- Are there any project-specific patterns or anti-patterns to be aware of?
+
+Save answers to `.claude/memory/project_preferences.md`.
+
+**After all rounds are complete**, create `.claude/memory/.onboarding_complete` with the current date to prevent re-triggering.
+
+### If onboarding is already complete
+
+Do not re-trigger onboarding. Proceed normally. If the user wants to update their info, they can say "update onboarding" and you should walk through the relevant section again.
+
+## Quick Start
+
+| You are a... | Start with | Purpose |
+|--------------|------------|---------|
+| Architect/PM | `/draft-story` | Requirements -> implementation-ready tickets |
+| Architect/PM | `/refine-story TICKET-xxx` | Improve existing ticket + gap analysis |
+| Developer | `/develop TICKET-xxx` | Full dev cycle: implement, validate, PR |
+| Developer | `/validate TICKET-xxx` | Validate code against project standards |
+| Developer | `/error-analyze` | Triage production errors, create tickets |
+| Any | `/factory TICKET-xxx` | End-to-end: readiness -> develop -> validate -> PR -> deploy |
+| Any | `/check-readiness TICKET-xxx` | Validate ticket is implementation-ready |
+
+## Work Item Tracker
+
+- **Platform**: GitHub Issues
+- **Repository**: `shopfront-org/shopfront-web`
+- **Labels**: `bug`, `feature`, `chore`, `urgent`, `design-review`
+- **Milestones**: Used for sprint planning (2-week sprints, starting Mondays)
+- **Statuses via project board columns**: Backlog, Sprint Ready, In Progress, In Review, Done
+
+## Story Tickets & Refinement
+
+### Workflow
+
+1. Architect/PM creates or refines tickets
+2. Developer reviews for completeness
+3. `/check-readiness` validates before implementation
+4. `/develop` or `/factory` for implementation
+
+### Story Folder Structure
+
+Create `docs/stories/TICKET-{xxx}/` with:
+
+| File | Purpose |
+|------|---------|
+| `story.md` | Full story with ACs, technical spec |
+| `solutions-components.md` | Components changed/created |
+| `how-to-test.md` | Testing instructions |
+| `manual-steps.md` | Pre/post deployment steps (if needed) |
+
+### Writing Style
+
+Write for a **technical audience**. Be direct, no filler. Use identifiers, not display names. Tables over paragraphs.
+
+## Skills Available
+
+| Skill | Purpose |
+|-------|---------|
+| `/develop` | Full dev cycle: fetch ticket, implement, validate, PR |
+| `/validate` | Validate code against project standards |
+| `/factory` | End-to-end pipeline: readiness -> develop -> validate -> PR -> deploy |
+| `/check-readiness` | Validate ticket is implementation-ready |
+| `/draft-story` | Create tickets from requirements or design docs |
+| `/refine-story` | Improve existing tickets with gap analysis |
+| `/error-analyze` | Triage production errors |
+| `/ai-update` | Branch + PR for AI process changes |
+| `/add-reference` | Add/update knowledge reference docs |
+| `/update-tracker` | Push story docs to work item tracker |
+| `/deploy` | Orchestrate deployments |
+
+## Factory Mode
+
+When invoked with `/factory TICKET-{id}`:
+- All human gates use auto-defaults
+- Ticket readiness checked automatically (`/check-readiness`)
+- Code standards validated locally -- **deployment handled by CI**
+- PR gets `factory` label -> triggers CI workflows
+- On halt: notify team, do not wait for user
+
+### Pipeline
+
+```
+/draft-story (architect resolves questions)
+    -> Ticket "Ready for Sprint"
+    |
+/factory TICKET-xxx
+  |-- /check-readiness
+  |-- Create worktree + branch
+  |-- Scaffold + implement
+  |-- /validate (code standards only)
+  |-- Commit + PR (factory label) -> CI deploys -> reviewer tests -> merge -> deploy
+```
+
+## Common Development Commands
+
+### Code Formatting & Linting
+
+```bash
+pnpm lint              # ESLint check (Next.js config + custom rules)
+pnpm lint:fix          # ESLint auto-fix
+pnpm format            # Prettier format all files
+pnpm format:check      # Prettier check only (runs in CI)
+pnpm typecheck         # TypeScript compiler check (no emit)
+```
+
+### Testing
+
+```bash
+pnpm test              # Run full test suite (Vitest)
+pnpm test:unit         # Unit tests only
+pnpm test:integration  # Integration tests (requires local DB)
+pnpm test:e2e          # Playwright end-to-end tests
+pnpm test:e2e:ui       # Playwright with UI mode for debugging
+pnpm test:coverage     # Generate coverage report (lcov + text)
+```
+
+### Database
+
+```bash
+pnpm db:migrate        # Run pending Prisma migrations
+pnpm db:seed           # Seed local database with sample data
+pnpm db:reset          # Drop, recreate, migrate, and seed
+pnpm db:studio         # Open Prisma Studio (GUI)
+```
+
+### Deployment
+
+```bash
+pnpm build             # Production build (runs typecheck + next build)
+vercel --env preview   # Deploy preview branch to Vercel
+# Production deploys happen automatically on merge to main via Vercel Git integration
+```
+
+## Development Guidelines
+
+### Coding Standards
+
+- Use camelCase for variables and functions, PascalCase for components and types
+- All exported functions and components must have JSDoc comments
+- Maximum function length: 40 lines; extract helpers for anything longer
+- Prefer named exports over default exports (exception: Next.js page/layout files which require default exports)
+- Use absolute imports with path aliases: `@/components`, `@/lib`, `@/types`
+- No `any` type -- use `unknown` and narrow with type guards
+- Colocate component files: `ComponentName/index.tsx`, `ComponentName.test.tsx`, `ComponentName.stories.tsx`
+- Use `const` by default; `let` only when reassignment is necessary; never `var`
+- Server Components by default; add `"use client"` only when hooks or browser APIs are needed
+- All string literals displayed to users must go through `next-intl` (i18n)
+
+### Error Handling
+
+- API routes return structured errors: `{ error: string, code: string, details?: object }`
+- Use custom error classes extending `AppError` (defined in `src/lib/errors.ts`)
+- All `try/catch` blocks must log with `logger.error()` including `requestId` and `userId` context
+- Client-side errors caught by the global `error.tsx` boundary; per-route boundaries for critical flows (checkout, auth)
+- Stripe webhook handlers must return 200 even on internal failure to prevent retries; log and enqueue for manual review
+- Never expose internal error messages or stack traces to the client
+
+### Testing Strategy
+
+- **Unit tests** (Vitest): Required for all business logic in `src/lib/` -- minimum 80% line coverage
+- **Component tests** (Vitest + Testing Library): Required for interactive UI components
+- **Integration tests** (Vitest): API routes tested with `supertest` against a test database
+- **E2E tests** (Playwright): Cover critical user flows -- sign-up, product browse, add-to-cart, checkout, subscription management
+- Use factories in `tests/factories/` for test data -- never hardcode IDs, emails, or Stripe tokens
+- Mock external services (Stripe, email) at the HTTP boundary using `msw`
+- CI runs the full suite; PRs cannot merge if any test fails or coverage drops below threshold
+
+## Code Organization
+
+```
+src/
+  app/                    # Next.js App Router
+    (store)/              # Public storefront route group
+      page.tsx            # Homepage
+      products/           # Product listing and detail pages
+      cart/               # Shopping cart
+      checkout/           # Checkout flow
+    (auth)/               # Authentication routes (sign-in, sign-up, forgot-password)
+    admin/                # Internal admin dashboard (protected)
+    api/                  # API route handlers
+      webhooks/           # Stripe and third-party webhook handlers
+  components/
+    ui/                   # Reusable UI primitives (Button, Modal, Input, Card, etc.)
+    features/             # Feature-scoped components (ProductCard, CartDrawer, SubscriptionManager)
+    layouts/              # Shared layout components (Header, Footer, Sidebar)
+  lib/
+    api/                  # API client helpers and typed fetch wrappers
+    auth/                 # NextAuth.js configuration and utilities
+    db/                   # Prisma client instance and query helpers
+    errors.ts             # Custom error classes
+    hooks/                # Custom React hooks
+    stripe/               # Stripe SDK wrappers and helpers
+    utils/                # Pure utility functions (formatting, validation, etc.)
+  types/                  # Shared TypeScript types and interfaces
+  styles/                 # Global CSS and Tailwind theme overrides
+prisma/
+  schema.prisma           # Database schema
+  migrations/             # Migration history
+  seed.ts                 # Database seed script
+tests/
+  unit/                   # Unit tests (mirrors src/lib/ structure)
+  integration/            # API route integration tests
+  e2e/                    # Playwright specs
+  factories/              # Test data factories
+  fixtures/               # Static test fixtures (images, JSON payloads)
+```
+
+## Version Control
+
+### Branching Strategy
+
+- **`main`** -- primary integration branch; always deployable
+- **Feature branches** -- `TICKET-xxx` format, branched from `main`
+- **Release branches** -- not used; we deploy continuously from `main`
+- **Hotfix branches** -- `hotfix/TICKET-xxx`, branched from `main`, merged back immediately
+
+### Pull Request Guidelines
+
+- **Base branch**: `main`
+- **PR title format**: `{Ticket-ID}: {Story Title}`
+- **Assignee**: Always assign to yourself (`--assignee @me`)
+- **Reviewers**: Minimum 1 approval required; auto-assigned via CODEOWNERS
+- **CI gates**: Lint, typecheck, full test suite, Vercel preview build must all pass
+- **Merge strategy**: Squash and merge; branch auto-deleted after merge
+- **Draft PRs**: Use for work-in-progress to get early feedback
+
+## Integrations
+
+- **CI/CD**: GitHub Actions (workflows in `.github/workflows/`)
+  - `ci.yml` -- lint, typecheck, test on every push
+  - `e2e.yml` -- Playwright tests on PR against preview deployment
+- **Hosting**: Vercel (auto-deploy preview on PR push, production on merge to `main`)
+- **Database**: PostgreSQL 15 on Vercel Postgres (dev uses local Docker container)
+- **Payments**: Stripe (test mode keys in `.env.local`, production keys in Vercel env vars)
+- **Auth**: NextAuth.js with Google and email/password providers
+- **Monitoring**: Vercel Analytics + Sentry for error tracking (DSN in env vars)
+- **Email**: Resend for transactional emails (order confirmation, password reset)
+- **Image CDN**: Cloudinary for product images (transformations via URL params)

@@ -1,0 +1,58 @@
+# Factory Cleanup — Tear down ephemeral environments on PR close
+# Triggered when any factory-labeled PR is closed (merged or not)
+#
+# Customize: Replace the cleanup step with your project's teardown command
+
+name: Factory Cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  cleanup:
+    name: Clean up ephemeral environment
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'factory')
+
+    steps:
+      # ── Identify environment ──────────────────────────────────
+
+      - name: Determine environment ID
+        id: env
+        run: |
+          PR_NUM="${{ github.event.pull_request.number }}"
+          echo "id=factory-pr-${PR_NUM}" >> "$GITHUB_OUTPUT"
+          echo "Cleaning up environment for PR #${PR_NUM}"
+
+      # ── Cleanup (uncomment your deployment target) ────────────
+
+      # Vercel — delete preview deployment
+      # - name: Delete Vercel preview
+      #   run: |
+      #     npx vercel remove ${{ steps.env.outputs.id }} --token=${{ secrets.VERCEL_TOKEN }} --yes
+
+      # Docker/K8s — delete namespace or deployment
+      # - name: Delete K8s namespace
+      #   run: |
+      #     kubectl delete namespace ${{ steps.env.outputs.id }} --ignore-not-found
+
+      # Heroku — delete review app
+      # - name: Delete Heroku review app
+      #   run: |
+      #     heroku apps:destroy ${{ steps.env.outputs.id }} --confirm ${{ steps.env.outputs.id }} 2>/dev/null && \
+      #       echo "Review app deleted." || \
+      #       echo "Review app not found (may have already been removed)."
+
+      # AWS — delete CloudFormation stack
+      # - name: Delete CF stack
+      #   run: |
+      #     aws cloudformation delete-stack --stack-name ${{ steps.env.outputs.id }}
+
+      # Generic — run custom cleanup script
+      # - name: Run cleanup script
+      #   run: |
+      #     bash scripts/cleanup-env.sh "${{ steps.env.outputs.id }}"
+
+      - name: Log cleanup
+        run: echo "Environment ${{ steps.env.outputs.id }} cleanup complete (or skipped — configure your cleanup step above)"

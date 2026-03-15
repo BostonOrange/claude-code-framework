@@ -1,0 +1,13 @@
+# Memory
+
+## User Profile
+- [user_role.md](user_role.md) — Role, expertise, preferences
+
+## Team & Workflow
+- [team_preferences.md](team_preferences.md) — PR conventions, review process, deployment patterns
+
+## Environment
+- [environments.md](environments.md) — Dev, staging, production setup and aliases
+
+## Recurring Fixes
+- [build_fixes.md](build_fixes.md) — Known build issues and solutions

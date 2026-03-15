@@ -1,0 +1,91 @@
+# Factory Validate — Deploy PR to test environment
+# Triggered when a PR with 'factory' label is opened or updated
+#
+# Customize: Replace the deploy step with your project's deployment command
+
+name: Factory Validate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate:
+    if: contains(github.event.pull_request.labels.*.name, 'factory')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Setup (customize per project type) ────────────────────
+      # Uncomment the setup that matches your project:
+
+      # Node.js
+      # - uses: actions/setup-node@v4
+      #   with:
+      #     node-version: '20'
+      # - run: npm ci
+
+      # Python
+      # - uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.12'
+      # - run: pip install -r requirements.txt
+
+      # Go
+      # - uses: actions/setup-go@v5
+      #   with:
+      #     go-version: '1.22'
+
+      # Ruby on Rails
+      # - uses: ruby/setup-ruby@v1
+      #   with:
+      #     ruby-version: '3.3'
+      # - run: bundle install
+
+      # ── Lint & Test ───────────────────────────────────────────
+
+      - name: Lint
+        run: echo "Replace with your lint command"
+        # run: npm run lint
+
+      - name: Test
+        run: echo "Replace with your test command"
+        # run: npm test
+
+      # ── Deploy to Test Environment ────────────────────────────
+
+      - name: Deploy
+        run: echo "Replace with your deploy command"
+        # Node.js:   npx vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+        # Docker:    docker build -t app . && docker push registry/app:pr-${{ github.event.number }}
+        # AWS CDK:   npx cdk deploy --require-approval never
+
+      # ── Post PR Comment with Environment Link ─────────────────
+
+      - name: Post environment link
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Customize the environment URL for your deployment target
+            const envUrl = `https://your-app-pr-${context.payload.pull_request.number}.example.com`;
+            await github.rest.issues.createComment({
+              issue_number: context.payload.pull_request.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Factory Deploy ✅\n\nDeployed to test environment: ${envUrl}\n\nReady for review.`
+            });
+
+      - name: Post failure comment
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              issue_number: context.payload.pull_request.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Factory Deploy ❌\n\nDeployment failed. Check the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.`
+            });
