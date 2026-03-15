@@ -73,12 +73,16 @@ cd your-project/
 & ~/Developer/claude-code-framework/setup.ps1
 ```
 
-The wizard asks about your project type, work item tracker, CI/CD platform, deployment target, and notification system. It then generates:
+The wizard asks about your project type, work item tracker, CI/CD platform, base branch, and notification system. It then:
 
-- `.claude/skills/` -- workflow skills adapted to your stack
-- `.claude/settings.local.json` -- permissions config
-- `CLAUDE.md` -- project instructions with placeholder sections
-- `.github/workflows/` -- CI/CD templates (if GitHub Actions)
+1. **Renames your default branch** to match your chosen base branch (e.g., `master` → `main`) and updates the GitHub default
+2. **Copies and configures skills** -- replaces adapter placeholders with your specific tools
+3. **Generates project files:**
+   - `.claude/skills/` -- 14 workflow skills adapted to your stack
+   - `.claude/settings.local.json` -- auto-permissions so Claude doesn't prompt for common commands
+   - `CLAUDE.md` -- project instructions with documentation knowledge base rules and placeholder sections
+   - `.github/workflows/` -- CI/CD templates (if GitHub Actions)
+   - `.claude/skills/fetch-docs/references/INDEX.md` -- empty knowledge base index, ready to accumulate docs
 
 This gives you the file structure. The project-specific context comes next.
 
@@ -142,6 +146,10 @@ This means:
 - **Staleness** is tracked — docs older than 30 days are re-fetched when the topic comes up
 
 The knowledge base compounds over time. The more conversations happen, the richer the local docs become.
+
+### Auto-Permissions
+
+The generated `.claude/settings.local.json` pre-allows common commands (`npm`, `git`, `gh`, `python`, `curl`, `kill`, etc.) and all Claude Code tools (`Read`, `Edit`, `Write`, `Agent`, `Skill`, etc.). This means Claude won't prompt you for permission on routine operations — it just runs them. You can tighten or loosen the list per project.
 
 ### 4. Start Using
 
