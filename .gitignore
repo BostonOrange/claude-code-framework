@@ -22,6 +22,7 @@ dist/
 build/
 *.pyc
 __pycache__/
+.sfdx
 
 # Temp files
 /tmp/
