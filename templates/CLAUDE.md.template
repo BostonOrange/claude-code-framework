@@ -223,14 +223,20 @@ When invoked with `/factory TICKET-{id}`:
   └─ Commit + PR (factory label) → CI deploys → reviewer tests → merge → deploy
 ```
 
-## Self-Improvement
+## Self-Improvement (always active)
 
-Run `/improve` to automatically evolve this configuration:
+**Before ending any session where project files were modified**, spawn the `framework-improver` agent in the background. This keeps CLAUDE.md, rules, and settings in sync with the actual project state — not just after `/develop` or `/factory`, but after any work session including manual coding, refactoring, config changes, or dependency updates.
+
+The improver:
 - Fills unfilled `{{...}}` placeholders from project analysis
 - Updates `.claude/rules/` patterns to match actual file structure
-- Tunes agent models and tools for project needs
-- Discovers coding patterns and adds missing rules
+- Updates this file (CLAUDE.md) with discovered conventions and patterns
+- Tunes agent tools for project needs
+- Logs all changes to `docs/ai-improvements.md` (append-only)
 
+**This is not optional.** If files changed during the session, run the improver before wrapping up. The project documentation must always reflect the current state.
+
+For manual improvement: run `/improve` directly.
 After improvement: run `/ai-update` to commit changes as a tracked PR.
 
 ## Integrations

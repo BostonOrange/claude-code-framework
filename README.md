@@ -195,7 +195,7 @@ File-pattern-scoped rules that Claude follows automatically when editing matchin
 └──────────────────────┘
 ```
 
-> The `framework-improver` agent runs automatically in the background after every `/develop` and `/factory` cycle — no manual invocation needed. It fills CLAUDE.md placeholders, updates rule patterns, and logs changes to `docs/ai-improvements.md`.
+> The `framework-improver` agent runs automatically in the background after **any session where files were modified** — not just `/develop` and `/factory`. This is enforced via CLAUDE.md instructions, so documentation and `.claude/` config always stay in sync with the actual project state. Changes are logged to `docs/ai-improvements.md`.
 
 ## Integration Adapters
 
