@@ -49,11 +49,11 @@ Check memory for known environment aliases:
 
 | Memory Says | Skill Does |
 |-------------|------------|
-| "Shared dev environment is dev-01" | Pre-select for deployment |
-| "CI environments: ci-1, ci-2, dryrun-1, dryrun-2" | Skip these when listing user options |
-| "Production environment is prod" | Add confirmation gate before any prod operation |
+| "Shared dev org is nexus_dev" | Pre-select for deployment |
+| "CI sandboxes: CI, CI2, DRYRUN1, DRYRUN2" | Skip these when listing user options |
+| "Production alias is keyto_prod" | Add confirmation gate before any prod operation |
 
-**When to save:** After user confirms which environment to deploy to.
+**When to save:** After user confirms which org to deploy to.
 
 ## Pattern 3: Recurring Build Fixes
 
@@ -62,8 +62,8 @@ Check memory for known environment aliases:
 **Memory reads:**
 ```markdown
 Check memory for known build issues:
-- Required fields in access configuration files (deployment will fail)
-- Pre-deploy schema ordering
+- Required fields in permission sets (deployment will fail)
+- Pre-deploy object ordering
 - Field references that don't exist in all environments
 - Test data factory quirks
 ```
@@ -72,9 +72,9 @@ Check memory for known build issues:
 
 | Memory Says | Skill Does |
 |-------------|------------|
-| "Required fields cause access config deploy failure" | Don't add required fields to access configuration files |
-| "New schema must pre-deploy before workflows" | Create pre-deploy manifest automatically |
-| "LegalEntity.cin field doesn't exist in all environments" | Exclude from package or pre-deploy |
+| "Required fields cause PS deploy failure" | Don't add required fields to permission sets |
+| "New objects must pre-deploy before flows" | Create pre-deploy manifest automatically |
+| "LegalEntity.CIN__c doesn't exist in all sandboxes" | Exclude from package or pre-deploy |
 
 **When to save:** After a build failure that required a non-obvious fix.
 
@@ -88,7 +88,7 @@ Check memory for team conventions:
 - PR title format
 - PR review process (CODEOWNERS? self-assign?)
 - Commit message style
-- Formatting approach (CI vs manual)
+- Formatting approach (pre-commit hooks vs manual)
 ```
 
 **How it changes behavior:**
@@ -172,7 +172,7 @@ Skills should save memory when they learn something new:
 
 ```markdown
 After user selects deployment target:
-**Save to memory:** "User deploys to {alias} for validation. CI environments are {list}."
+**Save to memory:** "User deploys to {alias} for validation. CI sandboxes are {list}."
 
 After a non-obvious build fix:
 **Save to memory:** "Build fix: {description of the issue and the non-obvious solution}"
@@ -190,11 +190,11 @@ Exception: build fixes discovered during factory runs SHOULD be saved — they h
 ```markdown
 ---
 name: user_role
-description: Senior developer, deep backend expertise, new to frontend frameworks
+description: Senior developer, deep Apex/Salesforce expertise, new to LWC and React
 type: user
 ---
 
-Senior backend developer with 5+ years of server-side experience. New to React — explain frontend patterns in terms of backend analogues where possible. Prefers terse communication, no summaries.
+Senior Salesforce developer with 5+ years of Apex experience. New to Lightning Web Components — explain LWC patterns in terms of Apex analogues where possible. Prefers terse communication, no summaries.
 ```
 
 ### feedback_no_mock_db.md
@@ -209,7 +209,7 @@ Integration tests must use real database connections, not mocks.
 
 **Why:** Last quarter, mocked tests passed but the production migration failed because mock/prod diverged on schema changes.
 
-**How to apply:** When writing test classes that involve database operations, always use test data factories with real database writes. Never mock the database layer.
+**How to apply:** When writing test classes that involve database operations, always use test data factories with real DML. Never mock the database layer.
 ```
 
 ### project_merge_freeze.md

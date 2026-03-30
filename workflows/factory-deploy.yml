@@ -57,7 +57,7 @@ jobs:
           if [ -f "$MANUAL_STEPS_FILE" ]; then
             # Detect manual configuration indicators
             # Customize these patterns for your project:
-            MANUAL_PATTERNS='(configure in (setup|ui|settings|admin|console|dashboard)|create in ui|manually (set|configure|create|provision)|environment variable|secret.*rotation|manual.*approval|infrastructure.*provision|dns.*config|ssl.*cert|oauth.*setup|api.*key.*rotation|database.*migration.*manual|feature.*flag)'
+            MANUAL_PATTERNS='(configure in (setup|ui|settings|admin)|create in ui|manually (set|configure|create)|named credential|remote site|oauth.*setup|managed package.*config|environment variable|secret.*rotation)'
 
             if grep -qiE "$MANUAL_PATTERNS" "$MANUAL_STEPS_FILE"; then
               IS_SEMI_AUTO="true"
@@ -97,11 +97,12 @@ jobs:
       #     python-version: '3.12'
       # - run: pip install -r requirements.txt
 
-      # Ruby on Rails
-      # - uses: ruby/setup-ruby@v1
-      #   with:
-      #     ruby-version: '3.3'
-      # - run: bundle install
+      # Salesforce
+      # - run: npm install -g @salesforce/cli
+      # - run: |
+      #     echo "${{ secrets.SFDX_AUTH_URL_UAT }}" > /tmp/auth.txt
+      #     sf org login sfdx-url -f /tmp/auth.txt -a staging
+      #     rm /tmp/auth.txt
 
       # ── Deploy ───────────────────────────────────────────────
 
@@ -110,8 +111,8 @@ jobs:
         run: |
           echo "Replace with your staging deploy command"
           # npm run deploy:staging
+          # sf project deploy start -x manifest/package.xml -o staging
           # cdk deploy --require-approval never
-          # kubectl apply -f k8s/staging/
           echo "success=true" >> "$GITHUB_OUTPUT"
 
       # ── Notify ───────────────────────────────────────────────

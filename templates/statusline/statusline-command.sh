@@ -18,7 +18,7 @@ fi
 
 # Line 3: Environment info (customize per project)
 # Examples:
-#   Node.js:  node --version
-#   Python:   python --version
-#   Go:       go version
+#   Salesforce: sf org display --target-org default 2>/dev/null | grep "Username" | awk '{print $2}'
+#   Node.js: node --version
+#   Python: python --version
 echo "📦 $(git log --oneline -1 2>/dev/null | head -c 50)"

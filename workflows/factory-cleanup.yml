@@ -37,12 +37,16 @@ jobs:
       #   run: |
       #     kubectl delete namespace ${{ steps.env.outputs.id }} --ignore-not-found
 
-      # Heroku — delete review app
-      # - name: Delete Heroku review app
+      # Salesforce — delete scratch org
+      # - name: Delete scratch org
       #   run: |
-      #     heroku apps:destroy ${{ steps.env.outputs.id }} --confirm ${{ steps.env.outputs.id }} 2>/dev/null && \
-      #       echo "Review app deleted." || \
-      #       echo "Review app not found (may have already been removed)."
+      #     npm install -g @salesforce/cli
+      #     echo "${{ secrets.SFDX_AUTH_URL_DEVHUB }}" > /tmp/devhub-auth.txt
+      #     sf org login sfdx-url --sfdx-url-file /tmp/devhub-auth.txt -a devhub
+      #     rm /tmp/devhub-auth.txt
+      #     sf org delete scratch -o "${{ steps.env.outputs.id }}" -p devhub --no-prompt 2>/dev/null && \
+      #       echo "Scratch org deleted." || \
+      #       echo "Scratch org not found (may have already expired)."
 
       # AWS — delete CloudFormation stack
       # - name: Delete CF stack

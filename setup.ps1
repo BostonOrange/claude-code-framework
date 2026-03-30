@@ -174,6 +174,10 @@ if ($isGitRepo) {
 # -- Create directories --
 
 New-Item -ItemType Directory -Force -Path ".claude/skills" | Out-Null
+New-Item -ItemType Directory -Force -Path ".claude/agents" | Out-Null
+New-Item -ItemType Directory -Force -Path ".claude/commands" | Out-Null
+New-Item -ItemType Directory -Force -Path ".claude/rules" | Out-Null
+New-Item -ItemType Directory -Force -Path ".claude/hooks" | Out-Null
 New-Item -ItemType Directory -Force -Path ".claude/statusline" | Out-Null
 New-Item -ItemType Directory -Force -Path "docs/stories" | Out-Null
 
@@ -185,12 +189,57 @@ Get-ChildItem -Directory "$FRAMEWORK_DIR/skills" | ForEach-Object {
     Write-Host "  + /$($_.Name)"
 }
 
+# -- Copy agents --
+
+Write-Host "Copying agents..."
+Get-ChildItem "$FRAMEWORK_DIR/templates/agents" -Filter "*.md" -ErrorAction SilentlyContinue | ForEach-Object {
+    Copy-Item $_.FullName ".claude/agents/$($_.Name)" -Force
+    Write-Host "  + $($_.Name)"
+}
+
+# -- Copy commands --
+
+Write-Host "Copying commands..."
+Get-ChildItem "$FRAMEWORK_DIR/templates/commands" -Filter "*.md" -ErrorAction SilentlyContinue | ForEach-Object {
+    Copy-Item $_.FullName ".claude/commands/$($_.Name)" -Force
+    Write-Host "  + $($_.Name)"
+}
+
+# -- Copy rules --
+
+Write-Host "Copying rules..."
+Get-ChildItem "$FRAMEWORK_DIR/templates/rules" -Filter "*.md" -ErrorAction SilentlyContinue | ForEach-Object {
+    Copy-Item $_.FullName ".claude/rules/$($_.Name)" -Force
+    Write-Host "  + $($_.Name)"
+}
+
+# Skip frontend rules for backend-only projects
+if ($PROJECT_TYPE_NAME -in "python", "go", "java") {
+    if (Test-Path ".claude/rules/components.md") {
+        Remove-Item ".claude/rules/components.md" -Force
+        Write-Host "  Skipped components.md (backend-only project)"
+    }
+}
+
+# -- Copy hooks --
+
+Write-Host "Copying hooks..."
+Get-ChildItem "$FRAMEWORK_DIR/templates/hooks" -Filter "*.sh" -ErrorAction SilentlyContinue | ForEach-Object {
+    Copy-Item $_.FullName ".claude/hooks/$($_.Name)" -Force
+    Write-Host "  + $($_.Name)"
+}
+
 # -- Build project-type-specific commands --
 
 $FORMAT_CMD = ""
 $FORMAT_VERIFY = ""
 $TEST_CMD = ""
 $DEPLOY_VALIDATE = ""
+$TYPE_CHECK_CMD = ""
+$DEP_CHECK_CMD = ""
+$SECURITY_AUDIT_CMD = ""
+$ERROR_TRACKING = ""
+$DEFAULT_MODEL = "sonnet"
 
 switch ($PROJECT_TYPE_NAME) {
     { $_ -in "nodejs", "react" } {
@@ -198,36 +247,120 @@ switch ($PROJECT_TYPE_NAME) {
         $FORMAT_VERIFY = 'npx prettier --check .'
         $TEST_CMD = 'npm test'
         $DEPLOY_VALIDATE = 'npm run build && npm test'
+        $TYPE_CHECK_CMD = 'npx tsc --noEmit'
+        $DEP_CHECK_CMD = 'npm outdated && npm audit'
+        $SECURITY_AUDIT_CMD = 'npm audit'
+        $ERROR_TRACKING = 'console.error(error)'
     }
     "python" {
         $FORMAT_CMD = 'black path/to/file.py'
         $FORMAT_VERIFY = 'black --check . && ruff check .'
         $TEST_CMD = 'pytest'
         $DEPLOY_VALIDATE = 'pytest && mypy .'
+        $TYPE_CHECK_CMD = 'mypy .'
+        $DEP_CHECK_CMD = 'pip list --outdated && pip-audit'
+        $SECURITY_AUDIT_CMD = 'pip-audit && bandit -r .'
+        $ERROR_TRACKING = 'logger.exception("error", exc_info=True)'
     }
     "go" {
         $FORMAT_CMD = 'gofmt -w path/to/file.go'
         $FORMAT_VERIFY = 'gofmt -l .'
         $TEST_CMD = 'go test ./...'
         $DEPLOY_VALIDATE = 'go build ./... && go test ./... && go vet ./...'
+        $TYPE_CHECK_CMD = 'go vet ./...'
+        $DEP_CHECK_CMD = 'go list -m -u all'
+        $SECURITY_AUDIT_CMD = 'govulncheck ./...'
+        $ERROR_TRACKING = 'log.Printf("error: %v", err)'
     }
     "java" {
         $FORMAT_CMD = './gradlew spotlessApply'
         $FORMAT_VERIFY = './gradlew spotlessCheck'
         $TEST_CMD = './gradlew test'
         $DEPLOY_VALIDATE = './gradlew build test'
+        $TYPE_CHECK_CMD = './gradlew compileJava'
+        $DEP_CHECK_CMD = './gradlew dependencyUpdates'
+        $SECURITY_AUDIT_CMD = './gradlew dependencyCheckAnalyze'
+        $ERROR_TRACKING = 'log.error("error", e)'
     }
     "rails" {
         $FORMAT_CMD = 'bundle exec rubocop -a path/to/file.rb'
         $FORMAT_VERIFY = 'bundle exec rubocop'
         $TEST_CMD = 'bundle exec rspec'
         $DEPLOY_VALIDATE = 'bundle exec rspec && bundle exec rubocop'
+        $TYPE_CHECK_CMD = 'bundle exec srb tc'
+        $DEP_CHECK_CMD = 'bundle outdated && bundle audit check'
+        $SECURITY_AUDIT_CMD = 'bundle audit check && brakeman'
+        $ERROR_TRACKING = 'Rails.logger.error(e.message)'
     }
     default {
         $FORMAT_CMD = '# Configure your formatter command'
         $FORMAT_VERIFY = '# Configure your format verification command'
         $TEST_CMD = '# Configure your test command'
         $DEPLOY_VALIDATE = '# Configure your validation command'
+        $TYPE_CHECK_CMD = '# Configure your type check command'
+        $DEP_CHECK_CMD = '# Configure your dependency check command'
+        $SECURITY_AUDIT_CMD = '# Configure your security audit command'
+        $ERROR_TRACKING = '// Log the error with full context'
+    }
+}
+
+# -- Build file pattern placeholders for rules --
+
+$API_ROUTE_PATTERNS = ""
+$COMPONENT_PATTERNS = ""
+$TEST_PATTERNS = ""
+$DATABASE_PATTERNS = ""
+$SOURCE_PATTERNS = ""
+
+switch ($PROJECT_TYPE_NAME) {
+    { $_ -in "nodejs" } {
+        $API_ROUTE_PATTERNS = '"**/routes/**/*.ts", "**/routes/**/*.js", "**/*.route.ts", "**/*.api.ts"'
+        $COMPONENT_PATTERNS = '"**/*.tsx", "**/*.jsx"'
+        $TEST_PATTERNS = '"**/*.test.ts", "**/*.spec.ts", "**/__tests__/**/*"'
+        $DATABASE_PATTERNS = '"**/migrations/**/*", "**/models/**/*", "schema.prisma"'
+        $SOURCE_PATTERNS = '"**/*.ts", "**/*.js"'
+    }
+    "react" {
+        $API_ROUTE_PATTERNS = '"app/api/**/*.ts", "**/routes/**/*.ts", "**/*.api.ts"'
+        $COMPONENT_PATTERNS = '"**/*.tsx", "**/*.jsx", "components/**/*"'
+        $TEST_PATTERNS = '"**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/__tests__/**/*"'
+        $DATABASE_PATTERNS = '"**/migrations/**/*", "**/models/**/*", "schema.prisma"'
+        $SOURCE_PATTERNS = '"**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"'
+    }
+    "python" {
+        $API_ROUTE_PATTERNS = '"**/routes/*.py", "**/views/*.py", "**/endpoints/*.py"'
+        $COMPONENT_PATTERNS = '"**/templates/**/*.html"'
+        $TEST_PATTERNS = '"test_*.py", "*_test.py", "tests/**/*.py"'
+        $DATABASE_PATTERNS = '"**/models.py", "**/models/*.py", "**/migrations/**/*", "alembic/**/*"'
+        $SOURCE_PATTERNS = '"**/*.py"'
+    }
+    "go" {
+        $API_ROUTE_PATTERNS = '"**/handlers/*.go", "**/api/*.go", "**/routes/*.go"'
+        $COMPONENT_PATTERNS = '"**/templates/**/*.html", "**/templates/**/*.templ"'
+        $TEST_PATTERNS = '"*_test.go"'
+        $DATABASE_PATTERNS = '"**/models/*.go", "**/migrations/**/*", "**/repository/*.go"'
+        $SOURCE_PATTERNS = '"**/*.go"'
+    }
+    "java" {
+        $API_ROUTE_PATTERNS = '"**/*Controller.java", "**/*Resource.java", "**/*Endpoint.java"'
+        $COMPONENT_PATTERNS = '"**/templates/**/*.html"'
+        $TEST_PATTERNS = '"**/*Test.java", "**/*Spec.java", "src/test/**/*"'
+        $DATABASE_PATTERNS = '"**/entity/*.java", "**/repository/*.java", "**/migrations/**/*"'
+        $SOURCE_PATTERNS = '"**/*.java"'
+    }
+    "rails" {
+        $API_ROUTE_PATTERNS = '"app/controllers/**/*.rb", "config/routes.rb"'
+        $COMPONENT_PATTERNS = '"app/views/**/*.erb", "app/helpers/**/*.rb", "app/components/**/*.rb"'
+        $TEST_PATTERNS = '"spec/**/*.rb", "test/**/*.rb"'
+        $DATABASE_PATTERNS = '"db/migrate/**/*", "app/models/**/*.rb"'
+        $SOURCE_PATTERNS = '"**/*.rb"'
+    }
+    default {
+        $API_ROUTE_PATTERNS = '"**/routes/**/*", "**/api/**/*"'
+        $COMPONENT_PATTERNS = '"**/components/**/*"'
+        $TEST_PATTERNS = '"**/*test*", "**/*spec*"'
+        $DATABASE_PATTERNS = '"**/models/**/*", "**/migrations/**/*"'
+        $SOURCE_PATTERNS = '"**/*.{ts,js,py,go,java,rb}"'
     }
 }
 
@@ -252,9 +385,9 @@ switch ($TRACKER_NAME) {
     }
 }
 
-# -- Replace placeholders in skill files --
+# -- Replace placeholders in all copied files --
 
-Write-Host "Configuring skills for your project..."
+Write-Host "Configuring files for your project..."
 
 $replacements = @{
     '{{BASE_BRANCH}}'              = $BASE_BRANCH
@@ -263,6 +396,16 @@ $replacements = @{
     '{{FORMAT_VERIFY_COMMAND}}'    = $FORMAT_VERIFY
     '{{TEST_COMMAND}}'             = $TEST_CMD
     '{{DEPLOY_VALIDATE_COMMAND}}'  = $DEPLOY_VALIDATE
+    '{{TYPE_CHECK_COMMAND}}'       = $TYPE_CHECK_CMD
+    '{{DEP_CHECK_COMMAND}}'        = $DEP_CHECK_CMD
+    '{{SECURITY_AUDIT_COMMAND}}'   = $SECURITY_AUDIT_CMD
+    '{{ERROR_TRACKING_PATTERN}}'   = $ERROR_TRACKING
+    '{{DEFAULT_MODEL}}'            = $DEFAULT_MODEL
+    '{{API_ROUTE_PATTERNS}}'       = $API_ROUTE_PATTERNS
+    '{{COMPONENT_PATTERNS}}'       = $COMPONENT_PATTERNS
+    '{{TEST_PATTERNS}}'            = $TEST_PATTERNS
+    '{{DATABASE_PATTERNS}}'        = $DATABASE_PATTERNS
+    '{{SOURCE_PATTERNS}}'          = $SOURCE_PATTERNS
     '{{FACTORY_LOCAL_VALIDATION}}' = $DEPLOY_VALIDATE
     '{{TRACKER_FETCH_TICKET}}'     = $TRACKER_FETCH
     '{{TRACKER_SET_IN_PROGRESS}}'  = $TRACKER_SET_PROGRESS
@@ -282,28 +425,55 @@ $replacements = @{
     '{{DEPLOY_COMMAND}}'           = $DEPLOY_VALIDATE
 }
 
-$skillFiles = Get-ChildItem -Recurse ".claude/skills" -Filter "*.md"
+# Replace in skills, agents, commands, rules, hooks
+$searchDirs = @(".claude/skills", ".claude/agents", ".claude/commands", ".claude/rules", ".claude/hooks")
 $updatedCount = 0
-foreach ($file in $skillFiles) {
-    $content = Get-Content $file.FullName -Raw -Encoding UTF8
-    $changed = $false
-    foreach ($key in $replacements.Keys) {
-        if ($content.Contains($key)) {
-            $content = $content.Replace($key, $replacements[$key])
-            $changed = $true
+
+foreach ($searchDir in $searchDirs) {
+    if (Test-Path $searchDir) {
+        $files = Get-ChildItem -Recurse $searchDir -Include "*.md", "*.sh" -ErrorAction SilentlyContinue
+        foreach ($file in $files) {
+            $content = Get-Content $file.FullName -Raw -Encoding UTF8
+            if (-not $content) { continue }
+            $changed = $false
+            foreach ($key in $replacements.Keys) {
+                if ($content.Contains($key)) {
+                    $content = $content.Replace($key, $replacements[$key])
+                    $changed = $true
+                }
+            }
+            if ($changed) {
+                Set-Content $file.FullName $content -Encoding UTF8 -NoNewline
+                $updatedCount++
+            }
         }
     }
-    if ($changed) {
-        Set-Content $file.FullName $content -Encoding UTF8 -NoNewline
-        $updatedCount++
-    }
 }
-Write-Host "  Updated $updatedCount skill files"
+Write-Host "  Updated $updatedCount files"
 
 # -- Copy settings --
 
 Write-Host "Copying settings..."
 Copy-Item "$FRAMEWORK_DIR/templates/settings.local.json" ".claude/settings.local.json" -Force
+
+# Replace model placeholder in settings
+$settingsContent = Get-Content ".claude/settings.local.json" -Raw -Encoding UTF8
+$settingsContent = $settingsContent.Replace('{{DEFAULT_MODEL}}', $DEFAULT_MODEL)
+Set-Content ".claude/settings.local.json" $settingsContent -Encoding UTF8 -NoNewline
+
+# -- Install user-level settings.json --
+
+$CLAUDE_HOME = Join-Path $env:USERPROFILE ".claude"
+New-Item -ItemType Directory -Force -Path $CLAUDE_HOME | Out-Null
+
+if (-not (Test-Path (Join-Path $CLAUDE_HOME "settings.json"))) {
+    Write-Host "Installing user-level settings.json..."
+    Copy-Item "$FRAMEWORK_DIR/templates/settings.json" (Join-Path $CLAUDE_HOME "settings.json") -Force
+    Write-Host "  + ~/.claude/settings.json (AI factory permissions)"
+} else {
+    Write-Host "  ~/.claude/settings.json already exists - skipping"
+}
+
 Copy-Item "$FRAMEWORK_DIR/templates/statusline/statusline-command.sh" ".claude/statusline/statusline-command.sh" -Force
 
 # -- Create CLAUDE.md if none exists --
@@ -320,6 +490,7 @@ if (-not (Test-Path "CLAUDE.md")) {
     $claudeContent = $claudeContent.Replace('{{FORMAT_VERIFY_COMMAND}}', $FORMAT_VERIFY)
     $claudeContent = $claudeContent.Replace('{{TEST_COMMAND}}', $TEST_CMD)
     $claudeContent = $claudeContent.Replace('{{DEPLOY_VALIDATE_COMMAND}}', $DEPLOY_VALIDATE)
+    $claudeContent = $claudeContent.Replace('{{TYPE_CHECK_COMMAND}}', $TYPE_CHECK_CMD)
     Set-Content "CLAUDE.md" $claudeContent -Encoding UTF8 -NoNewline
 
     Write-Host "  Created CLAUDE.md (fill in project-specific sections marked with {{...}})"
@@ -355,16 +526,23 @@ Write-Host "Base branch: $BASE_BRANCH"
 Write-Host "Notify:      $NOTIFY_NAME"
 Write-Host ""
 Write-Host "Files created:"
-Write-Host "  .claude/skills/         - workflow skills"
-Write-Host "  .claude/settings.local.json"
+Write-Host "  .claude/skills/         - 18 workflow skills (incl. /team, /improve)"
+Write-Host "  .claude/agents/         - 12 AI agents (full team: architect to framework-improver)"
+Write-Host "  .claude/commands/       - 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)"
+Write-Host "  .claude/rules/          - coding guardrails (api-routes, tests, database, config, error-handling)"
+Write-Host "  .claude/hooks/          - quality gates (pre-commit, session-start, session-stop)"
+Write-Host "  .claude/settings.local.json - project permissions (team orchestration enabled)"
+Write-Host "  ~/.claude/settings.json - user-level AI factory permissions"
 Write-Host "  .claude/statusline/"
 if ($CI_NAME -eq "github-actions") {
-    Write-Host "  .github/workflows/      - CI/CD pipelines"
+    Write-Host "  .github/workflows/      - 4 CI/CD pipelines"
 }
 Write-Host "  docs/stories/           - story documentation folder"
 Write-Host ""
 Write-Host "Next steps:"
-Write-Host "  1. Fill in CLAUDE.md sections marked with {{...}}"
+Write-Host "  1. Run /improve to auto-fill CLAUDE.md from project analysis"
 Write-Host "  2. Configure .env with your credentials"
-Write-Host "  3. Try it: /develop TICKET-123"
+Write-Host "  3. Try /team review for a full codebase assessment"
+Write-Host "  4. Add domain knowledge: /add-reference my-domain topic"
+Write-Host "  5. Start developing: /develop TICKET-123"
 Write-Host ""

@@ -100,7 +100,7 @@ Apply resolution rules based on file type and feature intent:
 - Both added methods to same class → keep both
 - requirements.txt → take higher versions
 
-**Java/Kotlin/C#:**
+**Java/Apex/C#:**
 - Both added methods → keep both
 - Both modified same method → merge based on story intent
 - Annotation conflicts → combine

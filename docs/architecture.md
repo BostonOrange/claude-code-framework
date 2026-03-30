@@ -26,11 +26,31 @@
 │  │ /error-analyze│  │  GitLab CI   │  │ /another-domain      │  │
 │  │ /ai-update    │  │              │  │   references/        │  │
 │  │ /add-reference│  │ Deploy:      │  │     ...              │  │
-│  │               │  │  AWS/Vercel/ │  │                      │  │
-│  │               │  │  Docker/K8s  │  │                      │  │
+│  │               │  │  SF/AWS/     │  │                      │  │
+│  │               │  │  Vercel/K8s  │  │                      │  │
 │  │               │  │              │  │                      │  │
 │  │               │  │ Notify:      │  │                      │  │
 │  │               │  │  Slack/Teams │  │                      │  │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │ Agents (12)  │  │ Commands     │  │ Rules & Hooks        │  │
+│  │              │  │              │  │                      │  │
+│  │ architect    │  │ /quick-test  │  │ Rules:               │  │
+│  │ code-reviewer│  │ /lint-fix    │  │  api-routes          │  │
+│  │ security-    │  │ /check-types │  │  components           │  │
+│  │   auditor    │  │ /branch-     │  │  tests               │  │
+│  │ refactor-    │  │   status     │  │  database             │  │
+│  │   advisor    │  │ /changelog   │  │  error-handling       │  │
+│  │ devops-eng   │  │ /dep-check   │  │  config-files         │  │
+│  │ ui-ux-review │  │              │  │                      │  │
+│  │ perf-optim   │  │ Teams:       │  │ Hooks:               │  │
+│  │ api-designer │  │  /team review│  │  pre-commit          │  │
+│  │ db-architect │  │  /team arch  │  │  session-start       │  │
+│  │ test-writer  │  │  /team rel   │  │  session-stop        │  │
+│  │ doc-writer   │  │  /team full  │  │                      │  │
+│  │ fw-improver  │  │  /team custom│  │ Self-Improvement:    │  │
+│  │              │  │              │  │  /improve            │  │
 │  └──────────────┘  └──────────────┘  └──────────────────────┘  │
 │                                                                  │
 │  ┌──────────────────────────────────────────────────────────┐   │
@@ -154,7 +174,7 @@ Claude Code conversations are stateless — each new conversation starts fresh. 
 
 | Without Memory | With Memory |
 |---------------|-------------|
-| "What environment do I deploy to?" every time | Knows your environment aliases |
+| "What org do I deploy to?" every time | Knows your sandbox aliases |
 | Makes same mistake twice | Learns from corrections |
 | Generic responses | Tailored to your role and preferences |
 | No project context | Knows ongoing work, deadlines, decisions |
@@ -248,18 +268,51 @@ Next conversation → MEMORY.md loaded → accumulated knowledge available
 
 ```
 your-project/
-├── CLAUDE.md                          # Project instructions
+├── CLAUDE.md                          # Project instructions (the "brain")
 ├── .claude/
-│   ├── settings.local.json            # Permissions
-│   ├── statusline/                    # Status bar config
-│   └── skills/                        # All skills
-│       ├── develop/SKILL.md
-│       ├── validate/SKILL.md
-│       ├── factory/SKILL.md
-│       ├── your-domain/
-│       │   ├── SKILL.md
-│       │   └── references/
-│       └── ...
+│   ├── settings.local.json            # Permissions & model config
+│   ├── agents/                        # 12 AI teammate definitions
+│   │   ├── architect.md               # System design, patterns
+│   │   ├── code-reviewer.md           # Bugs, security in diffs
+│   │   ├── security-auditor.md        # OWASP audit
+│   │   ├── refactor-advisor.md        # Duplication, complexity
+│   │   ├── devops-engineer.md         # CI/CD, infrastructure
+│   │   ├── ui-ux-reviewer.md          # Accessibility, design
+│   │   ├── performance-optimizer.md   # Bundle, queries, caching
+│   │   ├── api-designer.md            # Endpoint design, schemas
+│   │   ├── database-architect.md      # Schema, indexes, migrations
+│   │   ├── test-writer.md             # Test generation
+│   │   ├── documentation-writer.md    # API docs, guides
+│   │   └── framework-improver.md      # Self-improvement
+│   ├── commands/                      # One-word automations
+│   │   ├── quick-test.md
+│   │   ├── lint-fix.md
+│   │   ├── check-types.md
+│   │   ├── branch-status.md
+│   │   ├── changelog.md
+│   │   └── dep-check.md
+│   ├── rules/                         # File-pattern-scoped guardrails
+│   │   ├── api-routes.md
+│   │   ├── components.md
+│   │   ├── tests.md
+│   │   ├── database.md
+│   │   ├── config-files.md
+│   │   └── error-handling.md
+│   ├── hooks/                         # Lifecycle scripts
+│   │   ├── pre-commit.sh
+│   │   ├── session-start.sh
+│   │   └── session-stop.sh
+│   ├── skills/                        # Multi-phase workflows
+│   │   ├── develop/SKILL.md
+│   │   ├── validate/SKILL.md
+│   │   ├── factory/SKILL.md
+│   │   ├── team/SKILL.md              # Agent team spawning
+│   │   ├── improve/SKILL.md           # Framework self-improvement
+│   │   ├── your-domain/
+│   │   │   ├── SKILL.md
+│   │   │   └── references/
+│   │   └── ...
+│   └── statusline/                    # Status bar config
 ├── .github/workflows/                 # CI/CD
 │   ├── factory-validate.yml
 │   └── ...
@@ -270,6 +323,8 @@ your-project/
         ├── how-to-test.md
         └── manual-steps.md
 ```
+
+See [agents-commands-rules.md](agents-commands-rules.md) for details on when to use each type.
 
 ### User-Level (outside repo)
 

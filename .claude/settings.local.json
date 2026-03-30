@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(xargs -I{} basename {})",
+      "Bash(xargs grep:*)",
+      "Bash(grep -l \"model: sonnet\" templates/agents/*.md)",
+      "Bash(cd:*)"
     ]
   }
 }

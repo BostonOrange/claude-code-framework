@@ -2,6 +2,20 @@
 
 How to create new skills for the Claude Code framework.
 
+## Skills vs Other Claude Code Features
+
+Before creating a skill, consider whether a simpler feature type fits better:
+
+| Need | Use | Why |
+|------|-----|-----|
+| Multi-phase workflow with decisions | **Skill** | Complex orchestration needs phases, flags, edge cases |
+| Single-purpose automation (<30s) | **Command** (`.claude/commands/`) | Simpler format, no phases |
+| Specialized AI persona with tool restrictions | **Agent** (`.claude/agents/`) | Model selection, tool limits |
+| Always-on standard for file types | **Rule** (`.claude/rules/`) | Automatic, no invocation needed |
+| Shell script at lifecycle event | **Hook** (`.claude/hooks/`) | Not AI-driven, just a script |
+
+See [agents-commands-rules.md](agents-commands-rules.md) for format details on non-skill types.
+
 ## Quick Start
 
 ```bash
@@ -69,7 +83,7 @@ Brief purpose description.
 Claude follows instructions literally. Vague instructions produce inconsistent results.
 
 **Bad:** "Check the code for issues"
-**Good:** "Grep for `console.log` in non-test `.ts` files. Each occurrence is an ERROR."
+**Good:** "Grep for `System.debug` in non-test `.cls` files. Each occurrence is an ERROR."
 
 ### Include Commands
 
@@ -134,7 +148,7 @@ Modify the AI system itself.
 Project-specific knowledge and patterns.
 - No process logic — pure reference
 - Rich `references/` directory
-- Examples: payments, inventory, notifications (project-specific domains)
+- Examples: FSL, RCA, FSM (from Nexus)
 
 ## Adding References
 

@@ -22,7 +22,7 @@ When two operations don't depend on each other, run them simultaneously.
 ```
 Phase 5: Validate
 ├─ Sub-agent A (background): Deploy to test environment
-│   → {{DEPLOY_VALIDATE_COMMAND}}
+│   → sf project deploy validate -x manifest/package.xml -l RunLocalTests
 │   → Returns: PASS/FAIL + error summary
 │
 ├─ Sub-agent B (background): Code standards check
@@ -147,7 +147,7 @@ Skills share context through:
 
 1. **File system** — story docs, build logs, execution logs
 2. **Flags** — `--factory` mode changes behavior across all chained skills
-3. **Memory** — persistent preferences (worktree style, environment aliases)
+3. **Memory** — persistent preferences (worktree style, sandbox aliases)
 4. **Git state** — branch name, staged files, commit history
 
 **Example:** `/factory` passes classification to `/develop` via label:
@@ -172,7 +172,7 @@ worktree for the feature branch instead of switching in the main repo.
 
 **What memory provides:**
 - Worktree workflow preferences
-- Default environment aliases
+- Default sandbox/environment aliases
 - Team PR conventions
 - Known build fixes (avoid repeating mistakes)
 - Deploy manager identity

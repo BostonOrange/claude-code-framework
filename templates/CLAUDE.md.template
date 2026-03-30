@@ -1,149 +1,125 @@
-# CLAUDE.md
+# CLAUDE.md — Project Brain
 
 ## Project Overview
 
 {{PROJECT_DESCRIPTION}}
 
-**Key Technologies:**
-{{TECH_STACK}}
+## Tech Stack
 
-## Documentation Knowledge Base
+{{TECH_STACK_TABLE}}
 
-**IMPORTANT: This is a standing rule that applies to EVERY conversation.**
+## System Structure
 
-Any time documentation, API references, guides, or technical knowledge enters the conversation — regardless of source — it MUST be persisted to the knowledge base at `.claude/skills/fetch-docs/references/`.
-
-### Sources that trigger persistence
-
-| Source | Example | Action |
-|--------|---------|--------|
-| Context7 lookup | Fetching library docs via context7 | Save structured summary |
-| Web search/fetch | Looking up API docs online | Save structured summary |
-| User pastes docs | User shares API spec, README, or guide | Save structured summary |
-| User shares a URL | "Here's the docs: https://..." | Fetch, save structured summary |
-| User shares a file | "Read this PDF/doc for the API" | Extract key info, save |
-| Error investigation | Finding solution in docs/Stack Overflow | Save the pattern + fix |
-
-### How to persist
-
-1. **Read the index FIRST:** Read `.claude/skills/fetch-docs/references/INDEX.md` — this is the lookup table for all cached docs
-2. **Cache hit:** If the library/topic is listed, read the referenced `.md` file — skip fetching
-3. **Cache miss:** Fetch/receive the docs, save to `.claude/skills/fetch-docs/references/{library-or-topic}.md`
-4. **Update the index (MANDATORY):** Add/update the row in the appropriate table in `INDEX.md` with file name, topics, date, and source
-5. **Never store verbatim:** Summarize into structured tables, code examples, and key notes
-6. **File naming:** lowercase, hyphenated: `next-js.md`, `sl-transport-api.md`, `capacitor.md`
-
-### Staleness
-
-- Docs older than 30 days: re-fetch and merge when the topic comes up again
-- Always preserve any `<!-- project-specific -->` and `<!-- user-provided -->` tagged sections during updates
-- The `Last updated` date in each file header tracks freshness
-
-### Why this matters
-
-Context windows are ephemeral. Without persistence, the same documentation gets re-fetched across conversations, wasting time and tokens. The knowledge base compounds over time — the more conversations happen, the richer the local docs get, and the faster future work goes.
-
-## Onboarding
-
-**On every conversation start**, check whether this project has been fully onboarded by looking for these memory files relative to the project root:
-
-- `.claude/memory/user_role.md`
-- `.claude/memory/project_context.md`
-- `.claude/memory/project_environments.md`
-- `.claude/memory/project_workflow.md`
-- `.claude/memory/project_preferences.md`
-
-### If any memory files are missing
-
-Guide the user through onboarding conversationally. Ask one topic at a time, wait for answers, then move to the next. Do NOT dump all questions at once.
-
-**Round 1 — About you:**
-- What is your role? (e.g., senior developer, junior developer, architect, PM, full-stack, DevOps)
-- Which areas of the codebase are you most familiar with? Least familiar with?
-
-Save answers to `.claude/memory/user_role.md`.
-
-**Round 2 — About the stack:**
-- What are the primary languages and frameworks?
-- What are the key libraries and their versions?
-- What build tools and package manager does this project use?
-
-Save answers to `.claude/memory/project_context.md`.
-
-**Round 3 — About the workflow:**
-- What branching strategy do you follow? (trunk-based, gitflow, feature branches)
-- What does the PR process look like? (required reviewers, approval count, CI gates)
-- How are work items tracked? (Jira, Linear, GitHub Issues, Azure DevOps, etc.)
-
-Save answers to `.claude/memory/project_workflow.md`.
-
-**Round 4 — About environments:**
-- What environments exist and what are their aliases? (dev, staging, prod, etc.)
-- Which environments are CI-only vs. developer-accessible?
-- What is the deployment process per environment? (auto on merge? manual approval?)
-
-Save answers to `.claude/memory/project_environments.md`.
-
-**Round 5 — About preferences:**
-- What is the testing approach? (TDD, test-after, coverage targets)
-- What are the code review expectations?
-- Are there any project-specific patterns or anti-patterns to be aware of?
-
-Save answers to `.claude/memory/project_preferences.md`.
-
-**Round 6 — Knowledge base kickstart:**
-
-After saving the above, offer to build the initial knowledge base by scanning the codebase:
-
-- "I can scan your project now to document your data model, API surface, patterns, and conventions. This gives me deep context for future work. Want me to start?"
-- If yes, run `/add-reference` for the most valuable categories based on what you learned about the stack:
-
-| Stack Type | Recommended First Scans |
-|------------|------------------------|
-| API backend | entities, api-endpoints, error-patterns |
-| Frontend app | components, routes, state-management |
-| Full-stack | entities, api-endpoints, components, patterns |
-| CLI/library | modules, public-api, config |
-
-- Save results to `.claude/skills/{domain}/references/`
-- Tell the user they can run `/add-reference` anytime to expand or update the knowledge base
-
-**After all rounds are complete**, create `.claude/memory/.onboarding_complete` with the current date to prevent re-triggering.
-
-### If onboarding is already complete
-
-Do not re-trigger onboarding. Proceed normally. If the user wants to update their info, they can say "update onboarding" and you should walk through the relevant section again. If the user wants to expand the knowledge base, use `/add-reference`.
+```
+{{CODE_STRUCTURE}}
+```
 
 ## Quick Start
 
 | You are a... | Start with | Purpose |
 |--------------|------------|---------|
-| Architect/PM | `/draft-story` | Requirements -> implementation-ready tickets |
+| Architect/PM | `/draft-story` | Requirements → implementation-ready tickets |
 | Architect/PM | `/refine-story TICKET-xxx` | Improve existing ticket + gap analysis |
+| Architect/PM | `/team architecture` | Architecture review before implementation |
 | Developer | `/develop TICKET-xxx` | Full dev cycle: implement, validate, PR |
 | Developer | `/validate TICKET-xxx` | Validate code against project standards |
 | Developer | `/error-analyze` | Triage production errors, create tickets |
-| Any | `/factory TICKET-xxx` | End-to-end: readiness -> develop -> validate -> PR -> deploy |
-| Any | `/check-readiness TICKET-xxx` | Validate ticket is implementation-ready |
+| Reviewer | `/team review` | Parallel code + security + UX review |
+| DevOps | `/team release` | Release readiness: security + infra + perf |
+| Any | `/factory TICKET-xxx` | End-to-end: readiness → develop → validate → PR → deploy |
+| Any | `/improve` | Evolve this file and .claude/ config from project state |
+
+## Commands Available
+
+| Command | Purpose |
+|---------|---------|
+| `/quick-test` | Run tests on changed files only |
+| `/lint-fix` | Auto-fix lint issues in changed files |
+| `/check-types` | Run type checker |
+| `/branch-status` | Show branch diff, PR, and CI status |
+| `/changelog` | Generate changelog from commits since last tag |
+| `/dep-check` | Check for outdated or vulnerable dependencies |
+
+## Skills Available
+
+| Skill | Purpose |
+|-------|---------|
+| `/develop` | Full dev cycle: fetch ticket, implement, validate, PR |
+| `/validate` | Validate code against project standards |
+| `/factory` | End-to-end pipeline: readiness → develop → validate → PR → deploy |
+| `/check-readiness` | Validate ticket is implementation-ready |
+| `/draft-story` | Create tickets from requirements or design docs |
+| `/refine-story` | Improve existing tickets with gap analysis |
+| `/error-analyze` | Triage production errors |
+| `/deploy` | Orchestrate deployments |
+| `/merge-resolve` | AI-powered merge conflict resolution |
+| `/team` | Spawn agent teams for parallel analysis |
+| `/improve` | Self-improvement — update CLAUDE.md, rules, settings from project state |
+| `/ai-update` | Branch + PR for AI process changes |
+| `/add-reference` | Add/update knowledge reference docs |
+| `/update-tracker` | Push story docs to work item tracker |
+| `/mock-endpoint` | Mock external API integrations |
+| `/fetch-docs` | Fetch and persist external documentation |
+
+## Agent Teams
+
+Spawn pre-configured teams of specialized agents for parallel analysis:
+
+| Team | Command | Agents | When to Use |
+|------|---------|--------|-------------|
+| **Review** | `/team review` | code-reviewer, security-auditor, ui-ux-reviewer | Before merging PRs |
+| **Architecture** | `/team architecture` | architect, api-designer, database-architect | Design phase, health checks |
+| **Release** | `/team release` | security-auditor, devops-engineer, performance-optimizer | Before releases |
+| **Quality** | `/team quality` | code-reviewer, test-writer, performance-optimizer | After implementation |
+| **Documentation** | `/team documentation` | documentation-writer, api-designer | After API changes |
+| **Full** | `/team full` | All 12 agents | Major milestones |
+| **Custom** | `/team custom a b c` | Any combination | Targeted analysis |
+
+## Agents Available
+
+### Analysis Agents (read-only)
+
+| Agent | Purpose | Model |
+|-------|---------|-------|
+| `architect` | System design review, architecture patterns, scalability | opus |
+| `code-reviewer` | Review diffs for bugs, security, performance, conventions | opus |
+| `security-auditor` | OWASP audit, credentials, dependencies, compliance | opus |
+| `refactor-advisor` | Duplication, complexity, extraction opportunities | opus |
+| `devops-engineer` | CI/CD, containers, infrastructure, monitoring | opus |
+| `ui-ux-reviewer` | Accessibility, design consistency, responsiveness | opus |
+| `performance-optimizer` | Bundle size, queries, rendering, caching, memory | opus |
+| `api-designer` | Endpoint design, schemas, versioning, DX | opus |
+| `database-architect` | Schema, normalization, indexes, migration safety | opus |
+
+### Implementation Agents (can modify code)
+
+| Agent | Purpose | Model |
+|-------|---------|-------|
+| `test-writer` | Generate tests following project conventions and factories | opus |
+| `documentation-writer` | API docs, READMEs, architecture docs, setup guides | opus |
+
+### Meta Agents (modify framework)
+
+| Agent | Purpose | Model |
+|-------|---------|-------|
+| `framework-improver` | Self-improvement — update CLAUDE.md, rules, settings, agents | opus |
 
 ## Work Item Tracker
 
 {{TRACKER_CONFIG}}
-<!-- Example:
-- Platform: Jira
-- Project key: MYAPP
-- Board: Sprint Board
-- Statuses: Backlog, In Progress, In Review, Done
--->
 
 ## Story Tickets & Refinement
 
 ### Workflow
 
-1. Architect/PM creates or refines tickets
-2. Developer reviews for completeness
-3. `/check-readiness` validates before implementation
-4. `/develop` or `/factory` for implementation
+```
+Architect/PM drafts story → /team architecture validates design
+    → /check-readiness gates ticket
+    → Developer runs /factory or /develop
+    → /team review before merge
+    → /team release before deploy
+    → /improve evolves the framework
+```
 
 ### Story Folder Structure
 
@@ -160,152 +136,47 @@ Create `docs/stories/TICKET-{xxx}/` with:
 
 Write for a **technical audience**. Be direct, no filler. Use identifiers, not display names. Tables over paragraphs.
 
-## Skills Available
+## Coding Conventions
 
-| Skill | Purpose |
-|-------|---------|
-| `/develop` | Full dev cycle: fetch ticket, implement, validate, PR |
-| `/validate` | Validate code against project standards |
-| `/factory` | End-to-end pipeline: readiness -> develop -> validate -> PR -> deploy |
-| `/check-readiness` | Validate ticket is implementation-ready |
-| `/draft-story` | Create tickets from requirements or design docs |
-| `/refine-story` | Improve existing tickets with gap analysis |
-| `/error-analyze` | Triage production errors |
-| `/ai-update` | Branch + PR for AI process changes |
-| `/add-reference` | Add/update knowledge reference docs |
-| `/update-tracker` | Push story docs to work item tracker |
-| `/deploy` | Orchestrate deployments |
-| `/fetch-docs` | Fetch & persist library documentation to knowledge base |
-| `/mock-endpoint` | Create contracts, mocks, and wrappers for external APIs |
+### Code Standards
 
-## Factory Mode
+{{CODING_STANDARDS}}
 
-When invoked with `/factory TICKET-{id}`:
-- All human gates use auto-defaults
-- Ticket readiness checked automatically (`/check-readiness`)
-- Code standards validated locally -- **deployment handled by CI**
-- PR gets `factory` label -> triggers CI workflows
-- On halt: notify team, do not wait for user
+### Error Handling
 
-### Pipeline
+{{ERROR_HANDLING_PATTERN}}
 
-```
-/draft-story (architect resolves questions)
-    -> Ticket "Ready for Sprint"
-    |
-/factory TICKET-xxx
-  |-- /check-readiness
-  |-- Create worktree + branch
-  |-- Scaffold + implement
-  |-- /validate (code standards only)
-  |-- Commit + PR (factory label) -> CI deploys -> reviewer tests -> merge -> deploy
-```
+### Testing Strategy
+
+{{TESTING_STRATEGY}}
 
 ## Common Development Commands
 
 ### Code Formatting & Linting
 
 {{FORMAT_COMMANDS}}
-<!-- Example:
+
+### Type Checking
+
 ```bash
-npm run lint          # ESLint check
-npm run lint:fix      # ESLint auto-fix
-npm run format        # Prettier format all files
-npm run format:check  # Prettier check only
+{{TYPE_CHECK_COMMAND}}
 ```
--->
 
 ### Testing
 
 {{TEST_COMMANDS}}
-<!-- Example:
-```bash
-npm test              # Run full test suite
-npm run test:unit     # Unit tests only
-npm run test:e2e      # End-to-end tests (Playwright)
-npm run test:coverage # Generate coverage report
-```
--->
 
 ### Deployment
 
 {{DEPLOY_COMMANDS}}
-<!-- Example:
-```bash
-npm run build         # Production build
-npm run deploy:dev    # Deploy to dev environment
-npm run deploy:stg    # Deploy to staging (requires approval)
-```
--->
-
-## Development Guidelines
-
-### Coding Standards
-
-{{CODING_STANDARDS}}
-<!-- Example:
-- Use camelCase for variables, PascalCase for classes and components
-- All public functions must have JSDoc comments
-- Maximum function length: 40 lines
-- Prefer named exports over default exports
-- Use absolute imports with path aliases (e.g., @/components, @/utils)
-- No `any` type in TypeScript -- use `unknown` and narrow
--->
-
-### Error Handling
-
-{{ERROR_HANDLING_PATTERN}}
-<!-- Example:
-- Use custom error classes that extend a base `AppError`
-- All API endpoints must return structured error responses: { error: string, code: string, details?: object }
-- Log errors with contextual metadata (userId, requestId, operation)
-- Never swallow errors silently -- always log or re-throw
-- Use Result<T, E> pattern for operations that can fail predictably
--->
-
-### Testing Strategy
-
-{{TESTING_STRATEGY}}
-<!-- Example:
-- Unit tests required for all business logic (minimum 80% coverage)
-- Integration tests for API endpoints and database queries
-- E2E tests for critical user flows (login, checkout, onboarding)
-- Use factories/fixtures for test data -- never hardcode IDs or emails
-- Mock external services at the HTTP boundary, not at the module level
--->
-
-## Code Organization
-
-```
-{{CODE_STRUCTURE}}
-```
-<!-- Example:
-```
-src/
-  app/              # Next.js App Router pages and layouts
-  components/
-    ui/             # Reusable UI primitives (Button, Modal, etc.)
-    features/       # Feature-specific components
-  lib/
-    api/            # API client and request helpers
-    hooks/          # Custom React hooks
-    utils/          # Pure utility functions
-  types/            # Shared TypeScript types and interfaces
-  styles/           # Global styles and theme tokens
-tests/
-  unit/             # Unit tests mirroring src/ structure
-  e2e/              # Playwright end-to-end tests
-  fixtures/         # Shared test data and factories
-```
--->
 
 ## Version Control
 
 ### Branching Strategy
 
-- **`{{BASE_BRANCH}}`** -- primary integration branch
-- **Feature branches** -- `TICKET-xxx` format, branched from `{{BASE_BRANCH}}`
-- **Release branches** -- cut from `{{BASE_BRANCH}}` when ready
+- **`{{BASE_BRANCH}}`** — primary integration branch
+- **Feature branches** — `TICKET-xxx` format, branched from `{{BASE_BRANCH}}`
+- **Release branches** — cut from `{{BASE_BRANCH}}` when ready
 
 ### Pull Request Guidelines
 
@@ -313,14 +184,55 @@ tests/
 - **PR title format**: `{Ticket-ID}: {Story Title}`
 - **Assignee**: Always assign to yourself (`--assignee @me`)
 
+### Git Rules
+
+- Never force push to `{{BASE_BRANCH}}`
+- Stage specific files — never `git add -A` or `git add .`
+- No commits with failing tests
+- Only maintainer can approve merges to `{{BASE_BRANCH}}`
+
+## Security
+
+- No secrets in code — use environment variables and `.env`
+- Validate all input at system boundaries
+- Log operations but never log PII or credentials
+- Review dependency updates for security advisories
+- Keep `.env` and credential files in `.gitignore`
+
+## Factory Mode
+
+When invoked with `/factory TICKET-{id}`:
+- All human gates use auto-defaults
+- Ticket readiness checked automatically (`/check-readiness`)
+- Code standards validated locally — **deployment handled by CI**
+- PR gets `factory` label → triggers CI workflows
+- On halt: notify team, do not wait for user
+
+### Pipeline
+
+```
+/draft-story (architect resolves questions)
+    → /team architecture (validate design)
+    → Ticket "Ready for Sprint"
+    ↓
+/factory TICKET-xxx
+  ├─ /check-readiness
+  ├─ Create worktree + branch
+  ├─ Scaffold + implement
+  ├─ /validate (code standards only)
+  └─ Commit + PR (factory label) → CI deploys → reviewer tests → merge → deploy
+```
+
+## Self-Improvement
+
+Run `/improve` to automatically evolve this configuration:
+- Fills unfilled `{{...}}` placeholders from project analysis
+- Updates `.claude/rules/` patterns to match actual file structure
+- Tunes agent models and tools for project needs
+- Discovers coding patterns and adds missing rules
+
+After improvement: run `/ai-update` to commit changes as a tracked PR.
+
 ## Integrations
 
 {{INTEGRATIONS}}
-<!-- Example:
-- **CI/CD**: GitHub Actions (workflows in .github/workflows/)
-- **Hosting**: Vercel (auto-deploy on push to main)
-- **Monitoring**: Datadog APM + Sentry for error tracking
-- **Auth**: Auth0 (tenant: myapp-prod)
-- **Database**: PostgreSQL on AWS RDS
-- **Feature flags**: LaunchDarkly
--->

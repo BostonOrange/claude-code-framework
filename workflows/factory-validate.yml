@@ -38,11 +38,9 @@ jobs:
       #   with:
       #     go-version: '1.22'
 
-      # Ruby on Rails
-      # - uses: ruby/setup-ruby@v1
-      #   with:
-      #     ruby-version: '3.3'
-      # - run: bundle install
+      # Salesforce
+      # - run: npm install -g @salesforce/cli
+      # - run: echo "${{ secrets.SFDX_AUTH_URL }}" | sf org login sfdx-url --sfdx-url-stdin -a ci
 
       # ── Lint & Test ───────────────────────────────────────────
 
@@ -59,8 +57,8 @@ jobs:
       - name: Deploy
         run: echo "Replace with your deploy command"
         # Node.js:   npx vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
-        # Docker:    docker build -t app . && docker push registry/app:pr-${{ github.event.number }}
-        # AWS CDK:   npx cdk deploy --require-approval never
+        # Salesforce: sf project deploy start -x manifest/package.xml -o ci
+        # Docker:     docker build -t app . && docker push registry/app:pr-${{ github.event.number }}
 
       # ── Post PR Comment with Environment Link ─────────────────
 

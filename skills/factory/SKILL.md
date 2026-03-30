@@ -97,9 +97,9 @@ Factory mode defaults (no user prompts):
 Before creating the PR, optionally validate the full deployment locally. This catches deployment errors before human review.
 
 The implementation depends on your deployment target:
+- **Salesforce:** Create scratch org, deploy, run tests
 - **Node.js/Python:** Run full test suite, build, lint
-- **Docker/K8s:** Build image, run container tests
-- **Cloud (AWS/GCP/Azure):** Deploy to ephemeral environment, run integration tests
+- **Docker:** Build image, run container tests
 - **Generic:** Run project's validation script
 
 {{FACTORY_LOCAL_VALIDATION}}

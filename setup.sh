@@ -19,23 +19,25 @@ echo ""
 # ── 1. Project Type ──────────────────────────────────────────────
 
 echo "What type of project is this?"
-echo "  1) Node.js / TypeScript"
-echo "  2) Python"
-echo "  3) Go"
-echo "  4) Java / Spring Boot"
-echo "  5) React / Next.js"
-echo "  6) Ruby on Rails"
-echo "  7) Other"
-read -p "Choice [1-7]: " PROJECT_TYPE
+echo "  1) Salesforce (Apex, LWC, Flows)"
+echo "  2) Node.js / TypeScript"
+echo "  3) Python"
+echo "  4) Go"
+echo "  5) Java / Spring Boot"
+echo "  6) React / Next.js"
+echo "  7) Ruby on Rails"
+echo "  8) Other"
+read -p "Choice [1-8]: " PROJECT_TYPE
 
 case $PROJECT_TYPE in
-    1) PROJECT_TYPE_NAME="nodejs" ;;
-    2) PROJECT_TYPE_NAME="python" ;;
-    3) PROJECT_TYPE_NAME="go" ;;
-    4) PROJECT_TYPE_NAME="java" ;;
-    5) PROJECT_TYPE_NAME="react" ;;
-    6) PROJECT_TYPE_NAME="rails" ;;
-    7) PROJECT_TYPE_NAME="generic" ;;
+    1) PROJECT_TYPE_NAME="salesforce" ;;
+    2) PROJECT_TYPE_NAME="nodejs" ;;
+    3) PROJECT_TYPE_NAME="python" ;;
+    4) PROJECT_TYPE_NAME="go" ;;
+    5) PROJECT_TYPE_NAME="java" ;;
+    6) PROJECT_TYPE_NAME="react" ;;
+    7) PROJECT_TYPE_NAME="rails" ;;
+    8) PROJECT_TYPE_NAME="generic" ;;
     *) PROJECT_TYPE_NAME="generic" ;;
 esac
 
@@ -147,30 +149,6 @@ echo ""
 echo "Setting up Claude Code framework..."
 echo ""
 
-# ── Ensure base branch exists ───────────────────────────────────
-
-if git rev-parse --git-dir > /dev/null 2>&1; then
-    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
-    if [ "$CURRENT_BRANCH" != "$BASE_BRANCH" ]; then
-        echo "Renaming branch '$CURRENT_BRANCH' -> '$BASE_BRANCH'..."
-        git branch -m "$CURRENT_BRANCH" "$BASE_BRANCH"
-
-        # Update remote if it exists
-        if git remote get-url origin > /dev/null 2>&1; then
-            echo "Pushing '$BASE_BRANCH' to remote..."
-            git push -u origin "$BASE_BRANCH" 2>/dev/null || true
-
-            # Try to set default branch (requires gh CLI)
-            if command -v gh &> /dev/null; then
-                gh repo edit --default-branch "$BASE_BRANCH" 2>/dev/null || true
-            fi
-
-            # Delete old remote branch
-            git push origin --delete "$CURRENT_BRANCH" 2>/dev/null || true
-        fi
-    fi
-fi
-
 # ── Create .claude directory ─────────────────────────────────────
 
 mkdir -p "$PROJECT_DIR/.claude/skills"
@@ -262,6 +240,12 @@ TEST_CMD=""
 DEPLOY_VALIDATE=""
 
 case $PROJECT_TYPE_NAME in
+    salesforce)
+        FORMAT_CMD='npx prettier --write "path/to/specific/file"'
+        FORMAT_VERIFY='npm run prettier:verify'
+        TEST_CMD='sf apex run test -l RunLocalTests -w 30'
+        DEPLOY_VALIDATE='sf project deploy validate -x manifest/package.xml -l RunLocalTests -w 30 -o {alias}'
+        ;;
     nodejs|react)
         FORMAT_CMD='npx prettier --write "path/to/file"'
         FORMAT_VERIFY='npx prettier --check .'
@@ -300,6 +284,124 @@ case $PROJECT_TYPE_NAME in
         ;;
 esac
 
+# Build type check, dep check, security audit commands
+TYPE_CHECK_CMD=""
+DEP_CHECK_CMD=""
+SECURITY_AUDIT_CMD=""
+ERROR_TRACKING=""
+DEFAULT_MODEL="sonnet"
+
+case $PROJECT_TYPE_NAME in
+    salesforce)
+        TYPE_CHECK_CMD='sf apex run test --code-coverage -l RunLocalTests'
+        DEP_CHECK_CMD='# N/A for Salesforce'
+        SECURITY_AUDIT_CMD='sf scanner run --target . --format csv'
+        ERROR_TRACKING='ErrorTrackingUtils.trackException(e)'
+        ;;
+    nodejs|react)
+        TYPE_CHECK_CMD='npx tsc --noEmit'
+        DEP_CHECK_CMD='npm outdated && npm audit'
+        SECURITY_AUDIT_CMD='npm audit'
+        ERROR_TRACKING='console.error(error)'
+        ;;
+    python)
+        TYPE_CHECK_CMD='mypy .'
+        DEP_CHECK_CMD='pip list --outdated && pip-audit'
+        SECURITY_AUDIT_CMD='pip-audit && bandit -r .'
+        ERROR_TRACKING='logger.exception("error", exc_info=True)'
+        ;;
+    go)
+        TYPE_CHECK_CMD='go vet ./...'
+        DEP_CHECK_CMD='go list -m -u all'
+        SECURITY_AUDIT_CMD='govulncheck ./...'
+        ERROR_TRACKING='log.Printf("error: %v", err)'
+        ;;
+    java)
+        TYPE_CHECK_CMD='./gradlew compileJava'
+        DEP_CHECK_CMD='./gradlew dependencyUpdates'
+        SECURITY_AUDIT_CMD='./gradlew dependencyCheckAnalyze'
+        ERROR_TRACKING='log.error("error", e)'
+        ;;
+    rails)
+        TYPE_CHECK_CMD='bundle exec srb tc'
+        DEP_CHECK_CMD='bundle outdated && bundle audit check'
+        SECURITY_AUDIT_CMD='bundle audit check && brakeman'
+        ERROR_TRACKING='Rails.logger.error(e.message)'
+        ;;
+    *)
+        TYPE_CHECK_CMD='# Configure your type check command'
+        DEP_CHECK_CMD='# Configure your dependency check command'
+        SECURITY_AUDIT_CMD='# Configure your security audit command'
+        ERROR_TRACKING='// Log the error with full context'
+        ;;
+esac
+
+# Build file pattern placeholders for rules (per project type)
+API_ROUTE_PATTERNS=""
+COMPONENT_PATTERNS=""
+TEST_PATTERNS=""
+DATABASE_PATTERNS=""
+SOURCE_PATTERNS=""
+
+case $PROJECT_TYPE_NAME in
+    salesforce)
+        API_ROUTE_PATTERNS='"**/RestResource*.cls"'
+        COMPONENT_PATTERNS='"**/lwc/**/*.js", "**/lwc/**/*.html"'
+        TEST_PATTERNS='"*Test.cls", "*_Test.cls"'
+        DATABASE_PATTERNS='"**/*.object-meta.xml", "**/*.field-meta.xml"'
+        SOURCE_PATTERNS='"**/*.cls", "**/*.trigger"'
+        ;;
+    nodejs)
+        API_ROUTE_PATTERNS='"**/routes/**/*.ts", "**/routes/**/*.js", "**/*.route.ts", "**/*.api.ts"'
+        COMPONENT_PATTERNS='"**/*.tsx", "**/*.jsx"'
+        TEST_PATTERNS='"**/*.test.ts", "**/*.spec.ts", "**/__tests__/**/*"'
+        DATABASE_PATTERNS='"**/migrations/**/*", "**/models/**/*", "schema.prisma"'
+        SOURCE_PATTERNS='"**/*.ts", "**/*.js"'
+        ;;
+    react)
+        API_ROUTE_PATTERNS='"app/api/**/*.ts", "**/routes/**/*.ts", "**/*.api.ts"'
+        COMPONENT_PATTERNS='"**/*.tsx", "**/*.jsx", "components/**/*"'
+        TEST_PATTERNS='"**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/__tests__/**/*"'
+        DATABASE_PATTERNS='"**/migrations/**/*", "**/models/**/*", "schema.prisma"'
+        SOURCE_PATTERNS='"**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"'
+        ;;
+    python)
+        API_ROUTE_PATTERNS='"**/routes/*.py", "**/views/*.py", "**/endpoints/*.py"'
+        COMPONENT_PATTERNS='"**/templates/**/*.html"'
+        TEST_PATTERNS='"test_*.py", "*_test.py", "tests/**/*.py"'
+        DATABASE_PATTERNS='"**/models.py", "**/models/*.py", "**/migrations/**/*", "alembic/**/*"'
+        SOURCE_PATTERNS='"**/*.py"'
+        ;;
+    go)
+        API_ROUTE_PATTERNS='"**/handlers/*.go", "**/api/*.go", "**/routes/*.go"'
+        COMPONENT_PATTERNS='"**/templates/**/*.html", "**/templates/**/*.templ"'
+        TEST_PATTERNS='"*_test.go"'
+        DATABASE_PATTERNS='"**/models/*.go", "**/migrations/**/*", "**/repository/*.go"'
+        SOURCE_PATTERNS='"**/*.go"'
+        ;;
+    java)
+        API_ROUTE_PATTERNS='"**/*Controller.java", "**/*Resource.java", "**/*Endpoint.java"'
+        COMPONENT_PATTERNS='"**/templates/**/*.html"'
+        TEST_PATTERNS='"**/*Test.java", "**/*Spec.java", "src/test/**/*"'
+        DATABASE_PATTERNS='"**/entity/*.java", "**/repository/*.java", "**/migrations/**/*"'
+        SOURCE_PATTERNS='"**/*.java"'
+        ;;
+    rails)
+        API_ROUTE_PATTERNS='"app/controllers/**/*.rb", "config/routes.rb"'
+        COMPONENT_PATTERNS='"app/views/**/*.erb", "app/helpers/**/*.rb", "app/components/**/*.rb"'
+        TEST_PATTERNS='"spec/**/*.rb", "test/**/*.rb"'
+        DATABASE_PATTERNS='"db/migrate/**/*", "app/models/**/*.rb"'
+        SOURCE_PATTERNS='"**/*.rb"'
+        ;;
+    *)
+        API_ROUTE_PATTERNS='"**/routes/**/*", "**/api/**/*"'
+        COMPONENT_PATTERNS='"**/components/**/*"'
+        TEST_PATTERNS='"**/*test*", "**/*spec*"'
+        DATABASE_PATTERNS='"**/models/**/*", "**/migrations/**/*"'
+        SOURCE_PATTERNS='"**/*.{ts,js,py,go,java,rb}"'
+        ;;
+esac
+
 # Build notification command
 NOTIFY_CMD=""
 case $NOTIFY_NAME in
@@ -329,8 +431,15 @@ source .env && curl -s -X POST "${DISCORD_WEBHOOK_URL}" \
         ;;
 esac
 
+# Detect OS for portable sed -i (used by skill replacement and later sections)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    SED_INPLACE="sed -i ''"
+else
+    SED_INPLACE="sed -i"
+fi
+
 # Replace placeholders in all skill files
-find "$PROJECT_DIR/.claude/skills" -name "*.md" -exec sed -i '' \
+find "$PROJECT_DIR/.claude/skills" -name "*.md" -exec $SED_INPLACE \
     -e "s|{{BASE_BRANCH}}|$BASE_BRANCH|g" \
     -e "s|{{PROJECT_SHORT_NAME}}|$PROJECT_SHORT|g" \
     -e "s|{{FORMAT_COMMAND}}|$FORMAT_CMD|g" \
@@ -338,6 +447,10 @@ find "$PROJECT_DIR/.claude/skills" -name "*.md" -exec sed -i '' \
     -e "s|{{TEST_COMMAND}}|$TEST_CMD|g" \
     -e "s|{{DEPLOY_VALIDATE_COMMAND}}|$DEPLOY_VALIDATE|g" \
     {} +
+
+# Export variables for Python replacement subprocesses
+export PROJECT_DIR TRACKER_FETCH TRACKER_SET_PROGRESS TRACKER_SET_REVIEW
+export TRACKER_URL TRACKER_LINK_PR TRACKER_CREATE NOTIFY_CMD DEPLOY_VALIDATE
 
 # Replace multi-line placeholders (tracker commands, notifications)
 # These are more complex — write them to temp files and use python for replacement
@@ -380,10 +493,143 @@ for filepath in glob.glob(os.path.join(skills_dir, '**', '*.md'), recursive=True
             f.write(content)
 PYEOF
 
+# ── Copy agents ──────────────────────────────────────────────────
+
+echo "Copying agents..."
+mkdir -p "$PROJECT_DIR/.claude/agents"
+for agent_file in "$FRAMEWORK_DIR/templates/agents"/*.md; do
+    if [ -f "$agent_file" ]; then
+        cp "$agent_file" "$PROJECT_DIR/.claude/agents/"
+        echo "  + $(basename "$agent_file")"
+    fi
+done
+
+# ── Copy commands ────────────────────────────────────────────────
+
+echo "Copying commands..."
+mkdir -p "$PROJECT_DIR/.claude/commands"
+for cmd_file in "$FRAMEWORK_DIR/templates/commands"/*.md; do
+    if [ -f "$cmd_file" ]; then
+        cp "$cmd_file" "$PROJECT_DIR/.claude/commands/"
+        echo "  + $(basename "$cmd_file")"
+    fi
+done
+
+# ── Copy rules ───────────────────────────────────────────────────
+
+echo "Copying rules..."
+mkdir -p "$PROJECT_DIR/.claude/rules"
+for rule_file in "$FRAMEWORK_DIR/templates/rules"/*.md; do
+    if [ -f "$rule_file" ]; then
+        cp "$rule_file" "$PROJECT_DIR/.claude/rules/"
+        echo "  + $(basename "$rule_file")"
+    fi
+done
+
+# Skip frontend rules for backend-only projects
+case $PROJECT_TYPE_NAME in
+    python|go|java)
+        if [ -f "$PROJECT_DIR/.claude/rules/components.md" ]; then
+            rm -f "$PROJECT_DIR/.claude/rules/components.md"
+            echo "  Skipped components.md (backend-only project)"
+        fi
+        ;;
+esac
+
+# ── Copy hooks (project-level) ───────────────────────────────────
+
+echo "Copying hooks..."
+mkdir -p "$PROJECT_DIR/.claude/hooks"
+for hook_file in "$FRAMEWORK_DIR/templates/hooks"/*.sh; do
+    if [ -f "$hook_file" ]; then
+        cp "$hook_file" "$PROJECT_DIR/.claude/hooks/"
+        chmod +x "$PROJECT_DIR/.claude/hooks/$(basename "$hook_file")"
+        echo "  + $(basename "$hook_file")"
+    fi
+done
+
+# ── Replace placeholders in agents, commands, rules, hooks ───────
+
+for dir in "$PROJECT_DIR/.claude/agents" "$PROJECT_DIR/.claude/commands" "$PROJECT_DIR/.claude/rules" "$PROJECT_DIR/.claude/hooks"; do
+    if [ -d "$dir" ]; then
+        find "$dir" -type f \( -name "*.md" -o -name "*.sh" \) -exec $SED_INPLACE \
+            -e "s|{{BASE_BRANCH}}|$BASE_BRANCH|g" \
+            -e "s|{{PROJECT_SHORT_NAME}}|$PROJECT_SHORT|g" \
+            -e "s|{{FORMAT_COMMAND}}|$FORMAT_CMD|g" \
+            -e "s|{{FORMAT_VERIFY_COMMAND}}|$FORMAT_VERIFY|g" \
+            -e "s|{{TEST_COMMAND}}|$TEST_CMD|g" \
+            -e "s|{{DEPLOY_VALIDATE_COMMAND}}|$DEPLOY_VALIDATE|g" \
+            -e "s|{{TYPE_CHECK_COMMAND}}|$TYPE_CHECK_CMD|g" \
+            -e "s|{{DEP_CHECK_COMMAND}}|$DEP_CHECK_CMD|g" \
+            -e "s|{{SECURITY_AUDIT_COMMAND}}|$SECURITY_AUDIT_CMD|g" \
+            -e "s|{{DEFAULT_MODEL}}|$DEFAULT_MODEL|g" \
+            {} + 2>/dev/null || true
+    fi
+done
+
+# Export variables for Python replacement
+export ERROR_TRACKING
+export API_ROUTE_PATTERNS
+export COMPONENT_PATTERNS
+export TEST_PATTERNS
+export DATABASE_PATTERNS
+export SOURCE_PATTERNS
+
+# Replace multi-line/complex placeholders in agents, commands, rules
+python3 << 'PYEOF2'
+import os, glob
+
+project_dir = os.environ.get('PROJECT_DIR', '.')
+
+replacements = {
+    '{{ERROR_TRACKING_PATTERN}}': os.environ.get('ERROR_TRACKING', '// Log the error with full context'),
+    '{{API_ROUTE_PATTERNS}}': os.environ.get('API_ROUTE_PATTERNS', '"**/routes/**/*", "**/api/**/*"'),
+    '{{COMPONENT_PATTERNS}}': os.environ.get('COMPONENT_PATTERNS', '"**/components/**/*"'),
+    '{{TEST_PATTERNS}}': os.environ.get('TEST_PATTERNS', '"**/*test*", "**/*spec*"'),
+    '{{DATABASE_PATTERNS}}': os.environ.get('DATABASE_PATTERNS', '"**/models/**/*", "**/migrations/**/*"'),
+    '{{SOURCE_PATTERNS}}': os.environ.get('SOURCE_PATTERNS', '"**/*.{ts,js,py,go,java,rb}"'),
+}
+
+for search_dir in ['agents', 'commands', 'rules', 'hooks']:
+    dir_path = os.path.join(project_dir, '.claude', search_dir)
+    if not os.path.isdir(dir_path):
+        continue
+    for filepath in glob.glob(os.path.join(dir_path, '**', '*'), recursive=True):
+        if not os.path.isfile(filepath):
+            continue
+        if not (filepath.endswith('.md') or filepath.endswith('.sh')):
+            continue
+        with open(filepath, 'r') as f:
+            content = f.read()
+        changed = False
+        for placeholder, value in replacements.items():
+            if placeholder in content:
+                content = content.replace(placeholder, value)
+                changed = True
+        if changed:
+            with open(filepath, 'w') as f:
+                f.write(content)
+PYEOF2
+
 # ── Copy settings ────────────────────────────────────────────────
 
 echo "Copying settings..."
 cp "$FRAMEWORK_DIR/templates/settings.local.json" "$PROJECT_DIR/.claude/settings.local.json"
+# Replace model placeholder in settings
+$SED_INPLACE "s|{{DEFAULT_MODEL}}|$DEFAULT_MODEL|g" "$PROJECT_DIR/.claude/settings.local.json" 2>/dev/null || true
+
+# ── Install user-level settings.json ─────────────────────────────
+
+CLAUDE_HOME="$HOME/.claude"
+mkdir -p "$CLAUDE_HOME"
+
+if [ ! -f "$CLAUDE_HOME/settings.json" ]; then
+    echo "Installing user-level settings.json..."
+    cp "$FRAMEWORK_DIR/templates/settings.json" "$CLAUDE_HOME/settings.json"
+    echo "  + ~/.claude/settings.json (AI factory permissions)"
+else
+    echo "  ~/.claude/settings.json already exists — skipping"
+fi
 
 # ── Copy statusline ──────────────────────────────────────────────
 
@@ -397,12 +643,12 @@ if [ ! -f "$PROJECT_DIR/CLAUDE.md" ]; then
     cp "$FRAMEWORK_DIR/templates/CLAUDE.md.template" "$PROJECT_DIR/CLAUDE.md"
 
     # Replace known placeholders
-    sed -i '' \
+    $SED_INPLACE \
         -e "s|{{BASE_BRANCH}}|$BASE_BRANCH|g" \
         -e "s|{{PROJECT_SHORT_NAME}}|$PROJECT_SHORT|g" \
         "$PROJECT_DIR/CLAUDE.md"
 
-    # Replace tracker config
+    # Replace tracker config and other placeholders
     python3 -c "
 import os
 with open('$PROJECT_DIR/CLAUDE.md', 'r') as f:
@@ -412,6 +658,7 @@ content = content.replace('{{FORMAT_COMMAND}}', '$FORMAT_CMD')
 content = content.replace('{{FORMAT_VERIFY_COMMAND}}', '$FORMAT_VERIFY')
 content = content.replace('{{TEST_COMMAND}}', '$TEST_CMD')
 content = content.replace('{{DEPLOY_VALIDATE_COMMAND}}', '$DEPLOY_VALIDATE')
+content = content.replace('{{TYPE_CHECK_COMMAND}}', '$TYPE_CHECK_CMD')
 with open('$PROJECT_DIR/CLAUDE.md', 'w') as f:
     f.write(content)
 "
@@ -447,6 +694,93 @@ if [ ! -f "$CLAUDE_HOME/hooks/session-stop.sh" ]; then
     echo "  + Session stop sound hook"
 fi
 
+# ── Set up pre-commit hooks (formatting + linting) ──────────────
+
+echo "Setting up pre-commit hooks..."
+
+setup_precommit() {
+    case $PROJECT_TYPE_NAME in
+        nodejs|react)
+            # Use husky + lint-staged for Node.js projects
+            if [ -f "$PROJECT_DIR/package.json" ]; then
+                if ! grep -q '"husky"' "$PROJECT_DIR/package.json" 2>/dev/null; then
+                    echo "  Install pre-commit hooks with:"
+                    echo "    npx husky init"
+                    echo "    npm install --save-dev lint-staged"
+                    echo '    echo "npx lint-staged" > .husky/pre-commit'
+                    echo ""
+                    echo "  Add to package.json:"
+                    echo '    "lint-staged": { "*.{js,jsx,ts,tsx,json,css,md}": "prettier --write" }'
+                else
+                    echo "  husky already configured"
+                fi
+            fi
+            ;;
+        python)
+            # Use pre-commit framework for Python
+            if ! command -v pre-commit &> /dev/null; then
+                echo "  Install pre-commit hooks with:"
+                echo "    pip install pre-commit"
+                echo "    pre-commit install"
+            fi
+            if [ ! -f "$PROJECT_DIR/.pre-commit-config.yaml" ]; then
+                cat > "$PROJECT_DIR/.pre-commit-config.yaml" << 'PRECOMMIT_EOF'
+repos:
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.7
+    hooks:
+      - id: ruff
+        args: [--fix]
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+PRECOMMIT_EOF
+                echo "  + Created .pre-commit-config.yaml"
+                echo "  Run 'pre-commit install' to activate"
+            fi
+            ;;
+        go)
+            echo "  Go uses gofmt automatically. For pre-commit hooks:"
+            echo "    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"
+            echo "  Add to .git/hooks/pre-commit:"
+            echo '    gofmt -l . | grep -q . && echo "Run gofmt" && exit 1'
+            ;;
+        java)
+            echo "  For Java, configure spotless in build.gradle:"
+            echo '    plugins { id "com.diffplug.spotless" }'
+            echo "  Then: ./gradlew spotlessApply"
+            ;;
+        salesforce)
+            if [ -f "$PROJECT_DIR/package.json" ]; then
+                if ! grep -q '"husky"' "$PROJECT_DIR/package.json" 2>/dev/null; then
+                    echo "  Install pre-commit hooks with:"
+                    echo "    npx husky init"
+                    echo "    npm install --save-dev lint-staged"
+                    echo '    echo "npx lint-staged" > .husky/pre-commit'
+                else
+                    echo "  husky already configured"
+                fi
+            fi
+            ;;
+        rails)
+            echo "  For Ruby, use overcommit or lefthook:"
+            echo "    gem install overcommit && overcommit --install"
+            ;;
+        *)
+            echo "  Configure pre-commit hooks for your project manually"
+            ;;
+    esac
+}
+
+setup_precommit
 
 # ── Create .env template ────────────────────────────────────────
 
@@ -515,8 +849,13 @@ echo "Base branch: $BASE_BRANCH"
 echo "Notify:     $NOTIFY_NAME"
 echo ""
 echo "Files created:"
-echo "  .claude/skills/         — 12 workflow skills (incl. merge-resolve)"
-echo "  .claude/settings.local.json"
+echo "  .claude/skills/         — 18 workflow skills (incl. /team, /improve)"
+echo "  .claude/agents/         — 12 AI agents (full team: architect to framework-improver)"
+echo "  .claude/commands/       — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)"
+echo "  .claude/rules/          — coding guardrails (api-routes, tests, database, config, error-handling)"
+echo "  .claude/hooks/          — quality gates (pre-commit, session-start, session-stop)"
+echo "  .claude/settings.local.json — project permissions (team orchestration enabled)"
+echo "  ~/.claude/settings.json — user-level AI factory permissions"
 echo "  .claude/statusline/"
 if [ "$CI_NAME" = "github-actions" ]; then
     echo "  .github/workflows/      — 4 CI/CD pipelines (validate, auto-merge, deploy, cleanup)"
@@ -527,8 +866,9 @@ if [ ! -f "$PROJECT_DIR/CLAUDE.md.bak" ]; then
 fi
 echo ""
 echo "Next steps:"
-echo "  1. Fill in CLAUDE.md sections marked with {{...}}"
+echo "  1. Run /improve to auto-fill CLAUDE.md from project analysis"
 echo "  2. Configure .env with your credentials"
-echo "  3. Add domain knowledge: /add-reference my-domain topic"
-echo "  4. Try it: /develop TICKET-123"
+echo "  3. Try /team review for a full codebase assessment"
+echo "  4. Add domain knowledge: /add-reference my-domain topic"
+echo "  5. Start developing: /develop TICKET-123"
 echo ""
