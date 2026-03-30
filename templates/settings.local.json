@@ -18,5 +18,18 @@
       "SendMessage"
     ]
   },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/post-edit-sync.sh \"$FILE_PATH\""
+          }
+        ]
+      }
+    ]
+  },
   "model": "{{DEFAULT_MODEL}}"
 }

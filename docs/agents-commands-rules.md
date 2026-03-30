@@ -176,11 +176,12 @@ Hooks are bash scripts placed in `.claude/hooks/`. They run at lifecycle events 
 | `config-files` | JSON, YAML, TOML | No secrets, document values |
 | `error-handling` | Source files | No silent catches, context, tracking |
 
-### Hooks (3)
+### Hooks (4)
 
 | Hook | Event | Purpose |
 |------|-------|---------|
 | `pre-commit.sh` | Pre-commit | Type check, lint, secret scan, file size guard |
+| `post-edit-sync.sh` | PostToolUse (Edit/Write) | Flags which docs need updating when files change |
 | `session-start.sh` | Session start | Stale branch warning, env check, dep health |
 | `session-stop.sh` | Session stop | Audio notification |
 
