@@ -1,0 +1,12 @@
+{
+    "lines": [
+        ["model", "folder"],
+        ["git", "repo_link"],
+        ["sf_org", "gh_pr"],
+        ["context_bar", "tokens", "cost", "duration", "lines_changed"]
+    ],
+    "modules": {
+        "sf_org": { "enabled": true },
+        "gh_pr": { "enabled": true }
+    }
+}
