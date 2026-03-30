@@ -37,7 +37,7 @@ The setup wizard asks:
 - Notification system (Slack, Teams, Discord, none)
 
 Then generates:
-- `.claude/skills/` — 18 workflow skills adapted to your stack (incl. `/team`, `/improve`)
+- `.claude/skills/` — 16 workflow skills adapted to your stack (incl. `/team`, `/improve`)
 - `.claude/agents/` — 12 AI agents covering full team roles (all opus)
 - `.claude/commands/` — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)
 - `.claude/rules/` — file-pattern-scoped coding guardrails

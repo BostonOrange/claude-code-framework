@@ -5,7 +5,12 @@
       "Bash(xargs -I{} basename {})",
       "Bash(xargs grep:*)",
       "Bash(grep -l \"model: sonnet\" templates/agents/*.md)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(head:*)",
+      "Bash(xargs -I {} basename {})",
+      "Bash(ORIG=\"C:/Users/Bosto/Downloads/claude-code-framework-main \\(2\\)/claude-code-framework-main\")",
+      "Bash(OURS=\"C:/Developer/claude-code-framework\")",
+      "Read(//c/Developer/claude-code-framework/$ORIG/skills/factory/**)"
     ]
   }
 }
