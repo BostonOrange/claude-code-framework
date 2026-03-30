@@ -39,7 +39,8 @@ Developer Terminal (Claude Code)     │     CI/CD (automatic)
   ├─ /validate (code standards only) │
   ├─ Fix code standards issues       │
   ├─ Commit + push                   │
-  └─ Create PR (factory label)  ─────┼──► CI validate workflow
+  ├─ Create PR (factory label)  ─────┼──► CI validate workflow
+  └─ framework-improver (background) │
                                      │      ├─ Deploy to test environment
                                      │      ├─ Run tests
                                      │      └─ Post PR comment with env link
@@ -166,6 +167,23 @@ After merge:
 > | CI Deploy | Pending (CI/CD) |
 > | Staging Deploy | {Auto on merge / Pending manual steps} |
 
+### Step 9: Framework Improvement (Background)
+
+After every factory run, spawn the `framework-improver` agent as a background sub-agent:
+
+```
+Agent: framework-improver
+Mode: background (fire-and-forget)
+```
+
+The improver analyzes what was built and evolves the `.claude/` config:
+- Fills CLAUDE.md placeholders from discovered project patterns
+- Updates rule file patterns if actual file paths have changed
+- Notes new coding patterns, error handling approaches, or test conventions
+- Logs all changes to `docs/ai-improvements.md` (append, never overwrite)
+
+This never blocks the factory pipeline — it runs after the completion report.
+
 ## Execution Logging
 
 Each factory run produces structured logs in `docs/stories/{TICKET_ID}/`:
@@ -248,5 +266,6 @@ When a factory PR can't merge (another PR merged to base branch first):
 
 - `/check-readiness` — readiness gate (Step 2)
 - `/develop` — implementation pipeline (Step 3)
+- `/improve` — manual framework improvement (Step 9 runs this automatically)
 - `/deploy` — manual deployment alternative
 - `/validate` — code standards validation (called by `/develop`)

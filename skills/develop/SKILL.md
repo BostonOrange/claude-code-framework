@@ -282,6 +282,25 @@ Ask user before transitioning (skip prompt in factory mode).
 
 If yes -> Spawn `/update-tracker {TICKET_ID}` as a background sub-agent.
 
+## Phase 9: Framework Improvement (Background)
+
+After every completed development cycle, spawn the `framework-improver` agent as a background sub-agent to evolve the `.claude/` configuration:
+
+```
+Agent: framework-improver
+Mode: background (fire-and-forget)
+```
+
+The improver runs silently and:
+- Fills any remaining `{{...}}` placeholders in CLAUDE.md from project state
+- Updates `.claude/rules/` patterns if actual file paths have drifted
+- Notes newly discovered coding patterns or conventions
+- Logs changes to `docs/ai-improvements.md` (append, never overwrite)
+
+This runs after Phase 8 completes — it never blocks the developer.
+
+**Factory mode:** Same behavior — runs in background after tracker update.
+
 ## Edge Cases
 
 | Scenario | Behavior |
@@ -297,8 +316,9 @@ If yes -> Spawn `/update-tracker {TICKET_ID}` as a background sub-agent.
 
 ## Related Skills
 
-- `/update-tracker` - Push story docs to tracker (Phase 8)
-- `/refine-story` - Full story refinement
-- `/check-readiness` - Readiness gate (factory prerequisite)
-- `/factory` - End-to-end factory pipeline (invokes `/develop --factory`)
-- `/draft-story` - Create new stories
+- `/update-tracker` — Push story docs to tracker (Phase 8)
+- `/improve` — Manual framework improvement (Phase 9 runs this automatically)
+- `/refine-story` — Full story refinement
+- `/check-readiness` — Readiness gate (factory prerequisite)
+- `/factory` — End-to-end factory pipeline (invokes `/develop --factory`)
+- `/draft-story` — Create new stories
