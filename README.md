@@ -37,13 +37,14 @@ The setup wizard asks:
 - Notification system (Slack, Teams, Discord, none)
 
 Then generates:
-- `.claude/skills/` — 16 workflow skills adapted to your stack
-- `.claude/agents/` — 4 AI agents (code-reviewer, test-writer, security-auditor, refactor-advisor)
+- `.claude/skills/` — 18 workflow skills adapted to your stack (incl. `/team`, `/improve`)
+- `.claude/agents/` — 12 AI agents covering full team roles (all opus)
 - `.claude/commands/` — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)
 - `.claude/rules/` — file-pattern-scoped coding guardrails
 - `.claude/hooks/` — quality gates (pre-commit, session-start, session-stop)
-- `.claude/settings.local.json` — permissions & model config
-- `CLAUDE.md` — project instructions (fill in project-specific sections)
+- `.claude/settings.local.json` — project permissions with team orchestration
+- `~/.claude/settings.json` — user-level AI factory permissions (safe-by-default)
+- `CLAUDE.md` — project instructions (run `/improve` to auto-fill from project state)
 - `.github/workflows/` — CI/CD templates (if GitHub Actions)
 
 ### 2. Add Domain Knowledge
@@ -91,6 +92,8 @@ mkdir -p .claude/skills/my-domain/references/
 | `/add-reference` | Add/update domain knowledge references |
 | `/update-tracker` | Push story docs back to work item tracker |
 | `/deploy` | Orchestrate deployments to environments |
+| `/fetch-docs` | Fetch and persist external documentation |
+| `/mock-endpoint` | Mock external API integrations |
 
 ### AI Agents (12 specialized teammates)
 
@@ -185,8 +188,14 @@ File-pattern-scoped rules that Claude follows automatically when editing matchin
            ↓
 ┌──────────────────────┐
 │  MERGE & DEPLOY      │ Auto-merge → deploy to staging/prod
+└──────────┬───────────┘
+           ↓ (background)
+┌──────────────────────┐
+│  FRAMEWORK IMPROVE   │ framework-improver auto-evolves .claude/ config
 └──────────────────────┘
 ```
+
+> The `framework-improver` agent runs automatically in the background after every `/develop` and `/factory` cycle — no manual invocation needed. It fills CLAUDE.md placeholders, updates rule patterns, and logs changes to `docs/ai-improvements.md`.
 
 ## Integration Adapters
 
@@ -217,6 +226,18 @@ The framework uses adapter placeholders (`{{TRACKER_*}}`, `{{CI_*}}`, `{{DEPLOY_
 | AWS (CDK/SAM) | `adapters/aws.env` | `cdk deploy`, `sam deploy` |
 | Docker/K8s | `adapters/docker.env` | `docker build`, `kubectl apply` |
 | Generic | `adapters/generic.env` | Custom deploy script path |
+
+## Permissions (Safe-by-Default)
+
+Setup installs `~/.claude/settings.json` with granular Bash permissions:
+
+| Category | Behavior | Examples |
+|----------|----------|---------|
+| **Auto-allowed** | Runs without asking | `git commit`, `npm test`, `cat`, `find`, `curl`, `sf apex run test`, `pytest` |
+| **Must ask** | Prompts for confirmation | `git push`, `rm`, `sf project deploy`, `kubectl apply`, DB migrations |
+| **Blocked** | Denied entirely | `rm -rf /`, `rm -rf ~`, `mkfs`, `dd if=` |
+
+All non-Bash tools are auto-allowed: file editing, agents, tasks, teams, web access, worktrees, cron, plan mode. The framework-improver can freely update `.claude/` and `CLAUDE.md` without prompting.
 
 ## Memory System
 
