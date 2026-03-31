@@ -89,6 +89,36 @@ Both `setup.sh` and `setup.ps1` follow the same flow:
 
 When modifying `setup.sh`, always mirror changes to `setup.ps1`.
 
+## Agent Teams
+
+Spawn pre-configured teams for parallel analysis of the framework:
+
+| Team | Command | Agents |
+|------|---------|--------|
+| **Review** | `/team review` | code-reviewer, security-auditor, ui-ux-reviewer |
+| **Architecture** | `/team architecture` | architect, api-designer, database-architect |
+| **Quality** | `/team quality` | code-reviewer, test-writer, performance-optimizer |
+| **Documentation** | `/team documentation` | documentation-writer, api-designer |
+| **Full** | `/team full` | All 13 agents |
+
+## Agents Available
+
+| Agent | Purpose | Model |
+|-------|---------|-------|
+| `architect` | System design, patterns, scalability | opus |
+| `code-reviewer` | Bugs, security, performance in diffs | opus |
+| `security-auditor` | OWASP audit, credentials, dependencies | opus |
+| `refactor-advisor` | Duplication, complexity, extraction | opus |
+| `devops-engineer` | CI/CD, containers, infrastructure | opus |
+| `ui-ux-reviewer` | Accessibility, design, responsiveness | opus |
+| `performance-optimizer` | Bundle, queries, caching, memory | opus |
+| `api-designer` | Endpoint design, schemas, versioning | opus |
+| `database-architect` | Schema, indexes, migrations | opus |
+| `test-writer` | Test generation following conventions | opus |
+| `documentation-writer` | API docs, READMEs, guides | opus |
+| `framework-improver` | Self-improvement of .claude/ config | opus |
+| `framework-qa` | Validates doc consistency across all files | opus |
+
 ## Testing Changes
 
 After modifying the framework, test by running setup in a temp directory:
@@ -106,11 +136,20 @@ grep -r "{{" .claude/ CLAUDE.md | grep -v ".git"
 - Commit messages follow conventional format: `Add`, `Fix`, `Update`, `Remove`
 - Co-author attribution for AI-assisted commits
 
-## Self-Improvement
+## Self-Improvement (always active)
 
-This framework has a self-improvement system. When installed in a project:
-- `framework-improver` agent auto-runs after every dev cycle
-- `post-edit-sync.sh` hook flags docs needing updates after file edits
-- `guardrails.sh` hook blocks dangerous operations before execution
-- `/improve` skill scans the project and evolves `.claude/` configuration
-- CLAUDE.md instructs Claude to run the improver before ending any session with changes
+**Before ending any session where framework files were modified**, spawn the `framework-improver` agent in the background. This keeps CLAUDE.md, README.md, docs, and setup scripts in sync with the actual framework state.
+
+Additionally, run the `framework-qa` agent to validate that all counts and tables are consistent across README, CLAUDE.md template, setup scripts, and docs.
+
+**This is not optional.** If files changed during the session, run the improver and QA agent before wrapping up.
+
+### How the self-improvement system works
+
+| Layer | Mechanism | When | What |
+|-------|-----------|------|------|
+| **Hook** | `guardrails.sh` (PreToolUse) | Before every Bash command | Blocks dangerous ops (deploys, migrations, force push) |
+| **Hook** | `post-edit-sync.sh` (PostToolUse) | After every Edit/Write | Flags which docs need updating based on what changed |
+| **Agent** | `framework-improver` | End of every session with changes | Updates CLAUDE.md, rules, settings from project state |
+| **Agent** | `framework-qa` | End of every session with changes | Validates all doc counts and tables match actual files |
+| **CLAUDE.md** | This instruction | Always | Enforces the above as non-optional behavior |
