@@ -250,7 +250,21 @@ The framework generates a `.mcp.json` at project root with pre-configured MCP se
 |--------|---------|---------|
 | **Context7** | `@upstash/context7-mcp` | Fetches up-to-date, version-specific documentation for 9,000+ libraries. Works across all project types (Node.js, Python, Go, Java, Rails, etc.) |
 
-Context7 tools (`resolve-library-id`, `get-library-docs`) are auto-allowed in the project permissions. To use in prompts, add "use context7" when asking about specific libraries.
+Context7 tools (`resolve-library-id`, `get-library-docs`) are auto-allowed in the project permissions. Several skills and agents use Context7 proactively — they fetch current library docs before making implementation decisions, without requiring you to ask:
+
+| Component | When It Uses Context7 |
+|-----------|----------------------|
+| `/develop` | Before implementing — fetches docs for project dependencies |
+| `/draft-story` | When solution involves external dependencies — verifies API capabilities |
+| `/refine-story` | During gap analysis — checks library APIs match ticket assumptions |
+| `/mock-endpoint` | When mocking SDK endpoints — fetches real signatures and response shapes |
+| `architect` | When reviewing integrations — verifies patterns match library recommendations |
+| `api-designer` | When reviewing API frameworks/validators — checks current best practices |
+| `documentation-writer` | When documenting library wrappers — ensures docs match actual API |
+| `performance-optimizer` | When analyzing framework performance — fetches current optimization APIs |
+| `test-writer` | When generating tests — fetches current test framework API patterns |
+
+You can also trigger Context7 manually by adding "use context7" to any prompt when asking about specific libraries.
 
 ## Memory System
 

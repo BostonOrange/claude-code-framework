@@ -236,6 +236,16 @@ Wait for both. If either fails → Phase 6.
 After 3 failures → halt and notify.
 ```
 
+### Context7 Documentation Lookup
+When a skill's work involves external libraries or frameworks, fetch current docs before acting:
+```markdown
+Fetch current docs via Context7 (`resolve-library-id` → `get-library-docs`) for
+{library/framework} to verify that {what you're about to do} matches the
+current API surface — patterns and APIs change across versions.
+```
+
+Multiple skills already use this pattern: `/develop` (before implementing), `/draft-story` (before committing to a technical approach), `/refine-story` (during gap analysis), `/mock-endpoint` (for real API signatures). When writing a new skill that generates or recommends code involving third-party libraries, add a Context7 lookup step early in the process.
+
 ### Tracker Placeholders
 Use `{{TRACKER_*}}` placeholders for operations that vary by tracker:
 - `{{TRACKER_FETCH_TICKET}}` — fetch ticket details

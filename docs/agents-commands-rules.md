@@ -127,6 +127,8 @@ Hooks are bash scripts placed in `.claude/hooks/`. They run at lifecycle events 
 
 ### Agents (12)
 
+> **MCP tools:** In addition to the tools listed below, all agents have access to project-level MCP servers configured in `.mcp.json`. The `architect`, `api-designer`, `documentation-writer`, `performance-optimizer`, and `test-writer` agents actively use Context7 (`resolve-library-id` / `get-library-docs`) to fetch current library documentation before making recommendations.
+
 **Analysis Agents (read-only)**
 
 | Agent | Tools | Model | Purpose |
