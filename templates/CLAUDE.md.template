@@ -239,6 +239,12 @@ The improver:
 For manual improvement: run `/improve` directly.
 After improvement: run `/ai-update` to commit changes as a tracked PR.
 
+## MCP Servers
+
+Context7 (`.mcp.json`) provides live, version-specific library documentation. Several skills and agents use it proactively — they call `resolve-library-id` then `get-library-docs` before making implementation decisions, so recommendations stay current with the latest API surfaces. No action needed from you; it works automatically during `/develop`, `/draft-story`, `/refine-story`, `/mock-endpoint`, and when agents like `architect`, `api-designer`, `test-writer`, `documentation-writer`, or `performance-optimizer` are active.
+
+To trigger it manually, add "use context7" to any prompt about a specific library.
+
 ## Integrations
 
 {{INTEGRATIONS}}

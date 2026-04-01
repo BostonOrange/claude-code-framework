@@ -42,6 +42,7 @@ For changed files, identify:
 For each documentation gap:
 - Read the source code thoroughly
 - Understand the intent (not just the implementation)
+- When documenting code that wraps external libraries/frameworks, fetch current docs via Context7 (`resolve-library-id` → `query-docs`) to ensure documented behavior matches the actual API — not stale assumptions
 - Write clear, concise documentation
 - Include usage examples where helpful
 - Cross-reference related components

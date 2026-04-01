@@ -15,9 +15,12 @@
       "TaskList",
       "TaskGet",
       "TeamCreate",
-      "SendMessage"
+      "SendMessage",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs"
     ]
   },
+  "enabledMcpjsonServers": ["context7"],
   "hooks": {
     "PreToolUse": [
       {

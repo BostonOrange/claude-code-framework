@@ -618,6 +618,12 @@ cp "$FRAMEWORK_DIR/templates/settings.local.json" "$PROJECT_DIR/.claude/settings
 # Replace model placeholder in settings
 $SED_INPLACE "s|{{DEFAULT_MODEL}}|$DEFAULT_MODEL|g" "$PROJECT_DIR/.claude/settings.local.json" 2>/dev/null || true
 
+# ── Copy MCP server config ───────────────────────────────────────
+
+echo "Copying MCP server config..."
+cp "$FRAMEWORK_DIR/templates/mcp.json" "$PROJECT_DIR/.mcp.json"
+echo "  + .mcp.json (Context7 documentation server)"
+
 # ── Install user-level settings.json ─────────────────────────────
 
 CLAUDE_HOME="$HOME/.claude"
@@ -853,9 +859,10 @@ echo "  .claude/skills/         — 16 workflow skills (incl. /team, /improve)"
 echo "  .claude/agents/         — 12 AI agents (full team: architect to framework-improver)"
 echo "  .claude/commands/       — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)"
 echo "  .claude/rules/          — coding guardrails (api-routes, tests, database, config, error-handling)"
-echo "  .claude/hooks/          — quality gates (pre-commit, session-start, session-stop)"
-echo "  .claude/settings.local.json — project permissions (team orchestration enabled)"
-echo "  ~/.claude/settings.json — user-level AI factory permissions"
+echo "  .claude/hooks/          — 5 lifecycle hooks (guardrails, pre-commit, post-edit-sync, session-start, session-stop)"
+echo "  .claude/settings.local.json — project permissions, hooks"
+echo "  .mcp.json               — MCP servers (Context7 documentation)"
+echo "  ~/.claude/settings.json — user-level AI factory permissions (team orchestration enabled)"
 echo "  .claude/statusline/"
 if [ "$CI_NAME" = "github-actions" ]; then
     echo "  .github/workflows/      — 4 CI/CD pipelines (validate, auto-merge, deploy, cleanup)"

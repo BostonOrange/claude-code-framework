@@ -50,6 +50,13 @@ A thin abstraction layer around the external API call. In production it hits the
 
 If user provides docs or a URL, extract the API surface. If the API is already called in the codebase, scan for it.
 
+#### Via Context7 (for known libraries/SDKs)
+
+If the external service has an official SDK or client library, fetch its docs before writing the contract:
+1. Call `resolve-library-id` with the library/SDK name
+2. Call `query-docs` for endpoint signatures, auth patterns, and response shapes
+3. Use fetched docs to populate the contract accurately instead of guessing
+
 #### Scanning existing code
 
 ```bash

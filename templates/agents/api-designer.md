@@ -29,6 +29,8 @@ Check for:
 
 ### Step 3: Schema & Validation
 
+When the API uses validation libraries (Zod, Pydantic, Joi, etc.) or API frameworks (Express, FastAPI, Spring, etc.), fetch current docs via Context7 (`resolve-library-id` → `query-docs`) to verify recommendations match the framework's current best practices.
+
 Check for:
 - Request body validation on POST/PUT/PATCH endpoints
 - Query parameter validation

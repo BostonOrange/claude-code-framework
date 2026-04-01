@@ -18,22 +18,24 @@ Write-Host ""
 # -- 1. Project Type --
 
 Write-Host "What type of project is this?"
-Write-Host "  1) Node.js / TypeScript"
-Write-Host "  2) Python"
-Write-Host "  3) Go"
-Write-Host "  4) Java / Spring Boot"
-Write-Host "  5) React / Next.js"
-Write-Host "  6) Ruby on Rails"
-Write-Host "  7) Other"
-$PROJECT_TYPE = Read-Host "Choice [1-7]"
+Write-Host "  1) Salesforce (Apex, LWC, Flows)"
+Write-Host "  2) Node.js / TypeScript"
+Write-Host "  3) Python"
+Write-Host "  4) Go"
+Write-Host "  5) Java / Spring Boot"
+Write-Host "  6) React / Next.js"
+Write-Host "  7) Ruby on Rails"
+Write-Host "  8) Other"
+$PROJECT_TYPE = Read-Host "Choice [1-8]"
 
 $PROJECT_TYPE_NAME = switch ($PROJECT_TYPE) {
-    "1" { "nodejs" }
-    "2" { "python" }
-    "3" { "go" }
-    "4" { "java" }
-    "5" { "react" }
-    "6" { "rails" }
+    "1" { "salesforce" }
+    "2" { "nodejs" }
+    "3" { "python" }
+    "4" { "go" }
+    "5" { "java" }
+    "6" { "react" }
+    "7" { "rails" }
     default { "generic" }
 }
 
@@ -242,6 +244,16 @@ $ERROR_TRACKING = ""
 $DEFAULT_MODEL = "sonnet"
 
 switch ($PROJECT_TYPE_NAME) {
+    "salesforce" {
+        $FORMAT_CMD = 'npx prettier --write "path/to/specific/file"'
+        $FORMAT_VERIFY = 'npm run prettier:verify'
+        $TEST_CMD = 'sf apex run test -l RunLocalTests -w 30'
+        $DEPLOY_VALIDATE = 'sf project deploy validate -x manifest/package.xml -l RunLocalTests -w 30 -o {alias}'
+        $TYPE_CHECK_CMD = 'sf apex run test --code-coverage -l RunLocalTests'
+        $DEP_CHECK_CMD = '# N/A for Salesforce'
+        $SECURITY_AUDIT_CMD = 'sf scanner run --target . --format csv'
+        $ERROR_TRACKING = 'ErrorTrackingUtils.trackException(e)'
+    }
     { $_ -in "nodejs", "react" } {
         $FORMAT_CMD = 'npx prettier --write "path/to/file"'
         $FORMAT_VERIFY = 'npx prettier --check .'
@@ -313,6 +325,13 @@ $DATABASE_PATTERNS = ""
 $SOURCE_PATTERNS = ""
 
 switch ($PROJECT_TYPE_NAME) {
+    "salesforce" {
+        $API_ROUTE_PATTERNS = '"**/RestResource*.cls"'
+        $COMPONENT_PATTERNS = '"**/lwc/**/*.js", "**/lwc/**/*.html"'
+        $TEST_PATTERNS = '"*Test.cls", "*_Test.cls"'
+        $DATABASE_PATTERNS = '"**/*.object-meta.xml", "**/*.field-meta.xml"'
+        $SOURCE_PATTERNS = '"**/*.cls", "**/*.trigger"'
+    }
     { $_ -in "nodejs" } {
         $API_ROUTE_PATTERNS = '"**/routes/**/*.ts", "**/routes/**/*.js", "**/*.route.ts", "**/*.api.ts"'
         $COMPONENT_PATTERNS = '"**/*.tsx", "**/*.jsx"'
@@ -461,6 +480,12 @@ $settingsContent = Get-Content ".claude/settings.local.json" -Raw -Encoding UTF8
 $settingsContent = $settingsContent.Replace('{{DEFAULT_MODEL}}', $DEFAULT_MODEL)
 Set-Content ".claude/settings.local.json" $settingsContent -Encoding UTF8 -NoNewline
 
+# -- Copy MCP server config --
+
+Write-Host "Copying MCP server config..."
+Copy-Item "$FRAMEWORK_DIR/templates/mcp.json" ".mcp.json" -Force
+Write-Host "  + .mcp.json (Context7 documentation server)"
+
 # -- Install user-level settings.json --
 
 $CLAUDE_HOME = Join-Path $env:USERPROFILE ".claude"
@@ -530,9 +555,10 @@ Write-Host "  .claude/skills/         - 16 workflow skills (incl. /team, /improv
 Write-Host "  .claude/agents/         - 12 AI agents (full team: architect to framework-improver)"
 Write-Host "  .claude/commands/       - 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)"
 Write-Host "  .claude/rules/          - coding guardrails (api-routes, tests, database, config, error-handling)"
-Write-Host "  .claude/hooks/          - quality gates (pre-commit, session-start, session-stop)"
-Write-Host "  .claude/settings.local.json - project permissions (team orchestration enabled)"
-Write-Host "  ~/.claude/settings.json - user-level AI factory permissions"
+Write-Host "  .claude/hooks/          - 5 lifecycle hooks (guardrails, pre-commit, post-edit-sync, session-start, session-stop)"
+Write-Host "  .claude/settings.local.json - project permissions, hooks"
+Write-Host "  .mcp.json               - MCP servers (Context7 documentation)"
+Write-Host "  ~/.claude/settings.json - user-level AI factory permissions (team orchestration enabled)"
 Write-Host "  .claude/statusline/"
 if ($CI_NAME -eq "github-actions") {
     Write-Host "  .github/workflows/      - 4 CI/CD pipelines"
