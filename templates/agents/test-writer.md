@@ -34,6 +34,8 @@ Read 2-3 existing test files to learn:
 - Setup/teardown patterns
 - Mocking approach
 
+Fetch current testing library docs via Context7 (`resolve-library-id` → `query-docs`) for the project's test framework (Jest, Vitest, pytest, etc.) to ensure generated tests use current API patterns — assertion methods, mocking utilities, and lifecycle hooks change across versions.
+
 ### Step 3: Read Project Test Conventions
 
 Check for test conventions in:

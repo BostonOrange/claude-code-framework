@@ -76,6 +76,8 @@ Refine existing tickets for the development team. Write for a technical audience
 
 Search for affected components in the codebase to ground the analysis.
 
+If the ticket involves libraries or frameworks, fetch current docs via Context7 (`resolve-library-id` → `query-docs`) to verify API capabilities and catch any assumptions based on outdated behavior. This is especially important for integration gaps — knowing the real API surface prevents specifying features that don't exist.
+
 ## Step 3: Collaborate & Fill Gaps
 
 Present gap report. Work through priority questions before drafting.

@@ -44,6 +44,8 @@ Check external system integrations:
 - Retry/circuit-breaker patterns for unreliable services
 - Data format validation at boundaries
 
+When the system uses external libraries or frameworks, fetch current docs via Context7 (`resolve-library-id` → `query-docs`) to verify that integration patterns match the library's recommended approach and current API surface.
+
 ### Step 5: Scalability Assessment
 
 Identify potential bottlenecks:
