@@ -41,9 +41,10 @@ Then generates:
 - `.claude/agents/` — 12 AI agents covering full team roles (all opus)
 - `.claude/commands/` — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)
 - `.claude/rules/` — file-pattern-scoped coding guardrails
-- `.claude/hooks/` — quality gates (pre-commit, session-start, session-stop)
-- `.claude/settings.local.json` — project permissions with team orchestration
-- `~/.claude/settings.json` — user-level AI factory permissions (safe-by-default)
+- `.claude/hooks/` — 5 lifecycle hooks (guardrails, pre-commit, post-edit-sync, session-start, session-stop)
+- `.claude/settings.local.json` — project permissions, hooks
+- `.mcp.json` — MCP servers (Context7 documentation)
+- `~/.claude/settings.json` — user-level AI factory permissions, team orchestration (safe-by-default)
 - `CLAUDE.md` — project instructions (run `/improve` to auto-fill from project state)
 - `.github/workflows/` — CI/CD templates (if GitHub Actions)
 
@@ -152,7 +153,9 @@ File-pattern-scoped rules that Claude follows automatically when editing matchin
 
 | Hook | When | What |
 |------|------|------|
+| `guardrails.sh` | PreToolUse (Bash) | Blocks dangerous ops: deploys, migrations, force push, destructive deletes |
 | `pre-commit.sh` | Before commits | Type check, lint, secret scan, large file guard |
+| `post-edit-sync.sh` | PostToolUse (Edit/Write) | Flags which docs need updating when files change |
 | `session-start.sh` | Session start | Stale branch warning, env check, dependency health |
 | `session-stop.sh` | Session stop | Audio notification (macOS, Linux, Windows) |
 
@@ -239,6 +242,16 @@ Setup installs `~/.claude/settings.json` with granular Bash permissions:
 
 All non-Bash tools are auto-allowed: file editing, agents, tasks, teams, web access, worktrees, cron, plan mode. The framework-improver can freely update `.claude/` and `CLAUDE.md` without prompting.
 
+## MCP Servers
+
+The framework generates a `.mcp.json` at project root with pre-configured MCP servers:
+
+| Server | Package | Purpose |
+|--------|---------|---------|
+| **Context7** | `@upstash/context7-mcp` | Fetches up-to-date, version-specific documentation for 9,000+ libraries. Works across all project types (Node.js, Python, Go, Java, Rails, etc.) |
+
+Context7 tools (`resolve-library-id`, `get-library-docs`) are auto-allowed in the project permissions. To use in prompts, add "use context7" when asking about specific libraries.
+
 ## Memory System
 
 The framework sets up Claude Code's persistent memory:
@@ -294,6 +307,7 @@ claude-code-framework/
 │   ├── CLAUDE.md.template       # Project instructions template
 │   ├── settings.json            # User-level AI factory permissions
 │   ├── settings.local.json      # Project-level permissions & model config
+│   ├── mcp.json                 # MCP server config (copied to .mcp.json)
 │   ├── agents/                  # 12 AI agent definitions
 │   │   ├── architect.md         # System design, patterns, scalability
 │   │   ├── code-reviewer.md     # Bugs, security, performance in diffs
@@ -322,7 +336,9 @@ claude-code-framework/
 │   │   ├── config-files.md
 │   │   └── error-handling.md
 │   ├── hooks/                   # Lifecycle scripts
+│   │   ├── guardrails.sh        # PreToolUse: block dangerous ops
 │   │   ├── pre-commit.sh
+│   │   ├── post-edit-sync.sh    # PostToolUse: flag docs needing sync
 │   │   ├── session-start.sh
 │   │   └── session-stop.sh
 │   └── statusline/              # Custom status bar

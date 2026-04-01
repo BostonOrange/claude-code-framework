@@ -31,6 +31,7 @@ claude-code-framework/
 │   ├── CLAUDE.md.template       # Target project's CLAUDE.md
 │   ├── settings.json            # User-level permissions (~/.claude/)
 │   ├── settings.local.json      # Project-level permissions
+│   ├── mcp.json                 # MCP server config (→ .mcp.json)
 │   ├── agents/                  # 12 AI agent definitions
 │   ├── commands/                # 6 quick command definitions
 │   ├── rules/                   # 6 file-pattern guardrails
@@ -97,9 +98,11 @@ Spawn pre-configured teams for parallel analysis of the framework:
 |------|---------|--------|
 | **Review** | `/team review` | code-reviewer, security-auditor, ui-ux-reviewer |
 | **Architecture** | `/team architecture` | architect, api-designer, database-architect |
+| **Release** | `/team release` | security-auditor, devops-engineer, performance-optimizer |
 | **Quality** | `/team quality` | code-reviewer, test-writer, performance-optimizer |
 | **Documentation** | `/team documentation` | documentation-writer, api-designer |
 | **Full** | `/team full` | All 13 agents |
+| **Custom** | `/team custom a b c` | Any combination |
 
 ## Agents Available
 

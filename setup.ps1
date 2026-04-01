@@ -461,6 +461,12 @@ $settingsContent = Get-Content ".claude/settings.local.json" -Raw -Encoding UTF8
 $settingsContent = $settingsContent.Replace('{{DEFAULT_MODEL}}', $DEFAULT_MODEL)
 Set-Content ".claude/settings.local.json" $settingsContent -Encoding UTF8 -NoNewline
 
+# -- Copy MCP server config --
+
+Write-Host "Copying MCP server config..."
+Copy-Item "$FRAMEWORK_DIR/templates/mcp.json" ".mcp.json" -Force
+Write-Host "  + .mcp.json (Context7 documentation server)"
+
 # -- Install user-level settings.json --
 
 $CLAUDE_HOME = Join-Path $env:USERPROFILE ".claude"
@@ -530,9 +536,10 @@ Write-Host "  .claude/skills/         - 16 workflow skills (incl. /team, /improv
 Write-Host "  .claude/agents/         - 12 AI agents (full team: architect to framework-improver)"
 Write-Host "  .claude/commands/       - 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)"
 Write-Host "  .claude/rules/          - coding guardrails (api-routes, tests, database, config, error-handling)"
-Write-Host "  .claude/hooks/          - quality gates (pre-commit, session-start, session-stop)"
-Write-Host "  .claude/settings.local.json - project permissions (team orchestration enabled)"
-Write-Host "  ~/.claude/settings.json - user-level AI factory permissions"
+Write-Host "  .claude/hooks/          - 5 lifecycle hooks (guardrails, pre-commit, post-edit-sync, session-start, session-stop)"
+Write-Host "  .claude/settings.local.json - project permissions, hooks"
+Write-Host "  .mcp.json               - MCP servers (Context7 documentation)"
+Write-Host "  ~/.claude/settings.json - user-level AI factory permissions (team orchestration enabled)"
 Write-Host "  .claude/statusline/"
 if ($CI_NAME -eq "github-actions") {
     Write-Host "  .github/workflows/      - 4 CI/CD pipelines"

@@ -128,8 +128,9 @@ Each skill is self-contained but aware of the pipeline context via flags:
 |----------|--------|----------------|
 | **Lifecycle** | develop, validate, factory | Multi-phase, long-running, chain other skills |
 | **Planning** | draft-story, refine-story, check-readiness | Analyze content, produce structured reports |
-| **Integration** | update-tracker, deploy, error-analyze | Call external APIs, modify external state |
-| **Meta** | ai-update, add-reference | Modify the AI system itself |
+| **Integration** | update-tracker, deploy, error-analyze, fetch-docs, mock-endpoint | Call external APIs, modify external state |
+| **Collaboration** | team, merge-resolve | Orchestrate agents or resolve conflicts |
+| **Meta** | ai-update, add-reference, improve | Modify the AI system itself |
 
 ## Integration Adapter Pattern
 
@@ -269,6 +270,7 @@ Next conversation → MEMORY.md loaded → accumulated knowledge available
 ```
 your-project/
 ├── CLAUDE.md                          # Project instructions (the "brain")
+├── .mcp.json                          # MCP servers (Context7 docs)
 ├── .claude/
 │   ├── settings.local.json            # Permissions & model config
 │   ├── agents/                        # 12 AI teammate definitions
@@ -299,7 +301,9 @@ your-project/
 │   │   ├── config-files.md
 │   │   └── error-handling.md
 │   ├── hooks/                         # Lifecycle scripts
+│   │   ├── guardrails.sh              # PreToolUse: block dangerous ops
 │   │   ├── pre-commit.sh
+│   │   ├── post-edit-sync.sh          # PostToolUse: flag docs needing sync
 │   │   ├── session-start.sh
 │   │   └── session-stop.sh
 │   ├── skills/                        # Multi-phase workflows
