@@ -18,22 +18,24 @@ Write-Host ""
 # -- 1. Project Type --
 
 Write-Host "What type of project is this?"
-Write-Host "  1) Node.js / TypeScript"
-Write-Host "  2) Python"
-Write-Host "  3) Go"
-Write-Host "  4) Java / Spring Boot"
-Write-Host "  5) React / Next.js"
-Write-Host "  6) Ruby on Rails"
-Write-Host "  7) Other"
-$PROJECT_TYPE = Read-Host "Choice [1-7]"
+Write-Host "  1) Salesforce (Apex, LWC, Flows)"
+Write-Host "  2) Node.js / TypeScript"
+Write-Host "  3) Python"
+Write-Host "  4) Go"
+Write-Host "  5) Java / Spring Boot"
+Write-Host "  6) React / Next.js"
+Write-Host "  7) Ruby on Rails"
+Write-Host "  8) Other"
+$PROJECT_TYPE = Read-Host "Choice [1-8]"
 
 $PROJECT_TYPE_NAME = switch ($PROJECT_TYPE) {
-    "1" { "nodejs" }
-    "2" { "python" }
-    "3" { "go" }
-    "4" { "java" }
-    "5" { "react" }
-    "6" { "rails" }
+    "1" { "salesforce" }
+    "2" { "nodejs" }
+    "3" { "python" }
+    "4" { "go" }
+    "5" { "java" }
+    "6" { "react" }
+    "7" { "rails" }
     default { "generic" }
 }
 
@@ -242,6 +244,16 @@ $ERROR_TRACKING = ""
 $DEFAULT_MODEL = "sonnet"
 
 switch ($PROJECT_TYPE_NAME) {
+    "salesforce" {
+        $FORMAT_CMD = 'npx prettier --write "path/to/specific/file"'
+        $FORMAT_VERIFY = 'npm run prettier:verify'
+        $TEST_CMD = 'sf apex run test -l RunLocalTests -w 30'
+        $DEPLOY_VALIDATE = 'sf project deploy validate -x manifest/package.xml -l RunLocalTests -w 30 -o {alias}'
+        $TYPE_CHECK_CMD = 'sf apex run test --code-coverage -l RunLocalTests'
+        $DEP_CHECK_CMD = '# N/A for Salesforce'
+        $SECURITY_AUDIT_CMD = 'sf scanner run --target . --format csv'
+        $ERROR_TRACKING = 'ErrorTrackingUtils.trackException(e)'
+    }
     { $_ -in "nodejs", "react" } {
         $FORMAT_CMD = 'npx prettier --write "path/to/file"'
         $FORMAT_VERIFY = 'npx prettier --check .'
@@ -313,6 +325,13 @@ $DATABASE_PATTERNS = ""
 $SOURCE_PATTERNS = ""
 
 switch ($PROJECT_TYPE_NAME) {
+    "salesforce" {
+        $API_ROUTE_PATTERNS = '"**/RestResource*.cls"'
+        $COMPONENT_PATTERNS = '"**/lwc/**/*.js", "**/lwc/**/*.html"'
+        $TEST_PATTERNS = '"*Test.cls", "*_Test.cls"'
+        $DATABASE_PATTERNS = '"**/*.object-meta.xml", "**/*.field-meta.xml"'
+        $SOURCE_PATTERNS = '"**/*.cls", "**/*.trigger"'
+    }
     { $_ -in "nodejs" } {
         $API_ROUTE_PATTERNS = '"**/routes/**/*.ts", "**/routes/**/*.js", "**/*.route.ts", "**/*.api.ts"'
         $COMPONENT_PATTERNS = '"**/*.tsx", "**/*.jsx"'

@@ -101,7 +101,7 @@ Spawn pre-configured teams for parallel analysis of the framework:
 | **Release** | `/team release` | security-auditor, devops-engineer, performance-optimizer |
 | **Quality** | `/team quality` | code-reviewer, test-writer, performance-optimizer |
 | **Documentation** | `/team documentation` | documentation-writer, api-designer |
-| **Full** | `/team full` | All 13 agents |
+| **Full** | `/team full` | All 12 agents |
 | **Custom** | `/team custom a b c` | Any combination |
 
 ## Agents Available
@@ -120,7 +120,8 @@ Spawn pre-configured teams for parallel analysis of the framework:
 | `test-writer` | Test generation following conventions | opus |
 | `documentation-writer` | API docs, READMEs, guides | opus |
 | `framework-improver` | Self-improvement of .claude/ config | opus |
-| `framework-qa` | Validates doc consistency across all files | opus |
+
+> `framework-qa` is available in this repo's own `.claude/agents/` but is not a distributable template agent.
 
 ## Testing Changes
 

@@ -23,14 +23,15 @@
 │  │ /check-ready  │  │              │  │     api-specs.md     │  │
 │  │ /draft-story  │  │ CI/CD:       │  │     patterns.md      │  │
 │  │ /refine-story │  │  GH Actions/ │  │                      │  │
-│  │ /error-analyze│  │  GitLab CI   │  │ /another-domain      │  │
-│  │ /ai-update    │  │              │  │   references/        │  │
-│  │ /add-reference│  │ Deploy:      │  │     ...              │  │
-│  │               │  │  SF/AWS/     │  │                      │  │
-│  │               │  │  Vercel/K8s  │  │                      │  │
-│  │               │  │              │  │                      │  │
-│  │               │  │ Notify:      │  │                      │  │
-│  │               │  │  Slack/Teams │  │                      │  │
+│  │ /mock-endpoint│  │  GitLab CI   │  │ /another-domain      │  │
+│  │ /merge-resolve│  │              │  │   references/        │  │
+│  │ /fetch-docs   │  │ Deploy:      │  │     ...              │  │
+│  │ /update-track │  │  SF/AWS/     │  │                      │  │
+│  │ /error-analyze│  │  Vercel/K8s  │  │                      │  │
+│  │ /add-reference│  │              │  │                      │  │
+│  │ /deploy       │  │ Notify:      │  │                      │  │
+│  │ /team         │  │  Slack/Teams │  │                      │  │
+│  │ /improve      │  │              │  │                      │  │
 │  └──────────────┘  └──────────────┘  └──────────────────────┘  │
 │                                                                  │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
@@ -48,8 +49,10 @@
 │  │ api-designer │  │  /team review│  │  pre-commit          │  │
 │  │ db-architect │  │  /team arch  │  │  session-start       │  │
 │  │ test-writer  │  │  /team rel   │  │  session-stop        │  │
-│  │ doc-writer   │  │  /team full  │  │                      │  │
-│  │ fw-improver  │  │  /team custom│  │ Self-Improvement:    │  │
+│  │ doc-writer   │  │  /team full  │  │  guardrails          │  │
+│  │ fw-improver  │  │  /team custom│  │  post-edit-sync      │  │
+│  │              │  │              │  │                      │  │
+│  │              │  │              │  │ Self-Improvement:    │  │
 │  │              │  │              │  │  /improve            │  │
 │  └──────────────┘  └──────────────┘  └──────────────────────┘  │
 │                                                                  │
