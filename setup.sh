@@ -141,6 +141,103 @@ echo ""
 read -p "Short project name (for worktrees, e.g., 'myapp'): " PROJECT_SHORT
 PROJECT_SHORT="${PROJECT_SHORT:-$PROJECT_NAME}"
 
+# ── 7. Design System ──────────────────────────────────────────────
+
+DESIGN_SYSTEM_NAME="none"
+DESIGN_COLOR_RULES=""
+DESIGN_COMPONENT_IMPORTS=""
+DESIGN_ICON_USAGE=""
+DESIGN_CARD_PATTERNS=""
+DESIGN_DARK_MODE=""
+
+case $PROJECT_TYPE_NAME in
+    react|nodejs)
+        echo ""
+        echo "What design system foundation does this project use?"
+        echo "  1) Untitled UI (premium, React Aria based)"
+        echo "  2) shadcn/ui (open source, Radix based)"
+        echo "  3) Custom / existing (I'll configure it later)"
+        echo "  4) None — no design system"
+        read -p "Choice [1-4]: " DESIGN_TYPE
+
+        case $DESIGN_TYPE in
+            1)
+                DESIGN_SYSTEM_NAME="untitled-ui"
+                DESIGN_COLOR_RULES="**MUST use semantic color classes — never raw colors like \`text-gray-900\` or \`bg-blue-700\`.**
+
+Use \`text-primary\`, \`text-secondary\`, \`text-tertiary\` for text. Use \`border-primary\`, \`border-secondary\` for borders. Use \`bg-primary\`, \`bg-secondary\`, \`bg-brand-solid\` for backgrounds. Use \`fg-primary\`, \`fg-secondary\`, \`fg-quaternary\` for icons/foreground elements.
+
+Semantic variants exist for: \`brand\`, \`error\`, \`warning\`, \`success\`, plus \`_hover\`, \`_on-brand\`, \`_alt\`, \`_subtle\` modifiers. See \`src/styles/theme.css\` for the full color token reference."
+                DESIGN_COMPONENT_IMPORTS='```typescript
+import { Button } from "@/components/base/buttons/button";
+import { Input } from "@/components/base/input/input";
+import { Select } from "@/components/base/select/select";
+import { Checkbox } from "@/components/base/checkbox/checkbox";
+import { Badge } from "@/components/base/badges/badges";
+import { Avatar } from "@/components/base/avatar/avatar";
+```
+
+Never use raw `<button>`, `<input>`, or `<select>` elements in feature code. Always use the base component library.'
+                DESIGN_ICON_USAGE='```typescript
+import { Home01, Settings01, ChevronDown } from "@untitledui/icons";
+```
+
+Sizing: `size-4` (16px), `size-5` (20px), `size-6` (24px). Color: use semantic text colors (`text-fg-secondary`). Never use inline `<svg>` elements.'
+                DESIGN_CARD_PATTERNS='**Glass cards**: `bg-primary/80 backdrop-blur-xl border border-secondary shadow-xs`
+**Separator lines**: `border-black/15 dark:border-white/15`
+**Default transitions**: `transition duration-100 ease-linear`'
+                DESIGN_DARK_MODE="Dark mode is handled at the design token level via CSS custom properties. Components should NOT need per-element \`dark:\` classes when using semantic tokens. If a component needs a dark mode override, the design token system has a gap — fix the token, don't patch the component."
+                ;;
+            2)
+                DESIGN_SYSTEM_NAME="shadcn"
+                DESIGN_COLOR_RULES="**Use CSS variable-based colors from the shadcn/ui theme.**
+
+Use \`text-foreground\`, \`text-muted-foreground\`, \`text-primary\`, \`text-destructive\` etc. Never use raw Tailwind colors like \`text-gray-900\`. See \`globals.css\` or \`tailwind.config\` for the full token reference."
+                DESIGN_COMPONENT_IMPORTS='```typescript
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+```
+
+Never use raw HTML elements for interactive controls in feature code. Always use the shadcn/ui component library.'
+                DESIGN_ICON_USAGE='```typescript
+import { Home, Settings, ChevronDown } from "lucide-react";
+```
+
+Sizing: `size={16}`, `size={20}`, `size={24}` or `className="h-4 w-4"`. Color: inherits from parent text color. Never use inline `<svg>` elements.'
+                DESIGN_CARD_PATTERNS='Use `<Card>` component for all card-like containers. Do not hand-roll `rounded-xl border border-gray-200 bg-white` — use the Card abstraction.'
+                DESIGN_DARK_MODE="Dark mode is handled via the \`.dark\` class and CSS variables. Components using semantic color tokens adapt automatically. Do not add manual \`dark:bg-gray-*\` overrides."
+                ;;
+            3)
+                DESIGN_SYSTEM_NAME="custom"
+                DESIGN_COLOR_RULES="{{DESIGN_COLOR_RULES}} — Run \`/improve\` to auto-detect from project files, or fill in manually."
+                DESIGN_COMPONENT_IMPORTS="{{DESIGN_COMPONENT_IMPORTS}} — Run \`/improve\` to auto-detect, or fill in manually."
+                DESIGN_ICON_USAGE="{{DESIGN_ICON_USAGE}} — Run \`/improve\` to auto-detect, or fill in manually."
+                DESIGN_CARD_PATTERNS="{{DESIGN_CARD_PATTERNS}} — Run \`/improve\` to auto-detect, or fill in manually."
+                DESIGN_DARK_MODE="{{DESIGN_DARK_MODE}} — Run \`/improve\` to auto-detect, or fill in manually."
+                ;;
+            4|*)
+                DESIGN_SYSTEM_NAME="none"
+                DESIGN_COLOR_RULES="No design system configured. Consider running \`/scaffold-design-system\` to bootstrap one."
+                DESIGN_COMPONENT_IMPORTS="No component library configured."
+                DESIGN_ICON_USAGE="No icon library configured."
+                DESIGN_CARD_PATTERNS="No card patterns documented."
+                DESIGN_DARK_MODE="No dark mode conventions documented."
+                ;;
+        esac
+        ;;
+    *)
+        # Non-frontend projects don't need a design system
+        DESIGN_COLOR_RULES="N/A — backend project."
+        DESIGN_COMPONENT_IMPORTS="N/A — backend project."
+        DESIGN_ICON_USAGE="N/A — backend project."
+        DESIGN_CARD_PATTERNS="N/A — backend project."
+        DESIGN_DARK_MODE="N/A — backend project."
+        ;;
+esac
+
 # ═══════════════════════════════════════════════════════════════
 # Generate project files
 # ═══════════════════════════════════════════════════════════════
@@ -533,8 +630,18 @@ case $PROJECT_TYPE_NAME in
             rm -f "$PROJECT_DIR/.claude/rules/components.md"
             echo "  Skipped components.md (backend-only project)"
         fi
+        if [ -f "$PROJECT_DIR/.claude/rules/design-system.md" ]; then
+            rm -f "$PROJECT_DIR/.claude/rules/design-system.md"
+            echo "  Skipped design-system.md (backend-only project)"
+        fi
         ;;
 esac
+
+# Skip design-system rule if no design system configured
+if [ "$DESIGN_SYSTEM_NAME" = "none" ] && [ -f "$PROJECT_DIR/.claude/rules/design-system.md" ]; then
+    rm -f "$PROJECT_DIR/.claude/rules/design-system.md"
+    echo "  Skipped design-system.md (no design system configured)"
+fi
 
 # ── Copy hooks (project-level) ───────────────────────────────────
 
@@ -654,20 +761,35 @@ if [ ! -f "$PROJECT_DIR/CLAUDE.md" ]; then
         -e "s|{{PROJECT_SHORT_NAME}}|$PROJECT_SHORT|g" \
         "$PROJECT_DIR/CLAUDE.md"
 
-    # Replace tracker config and other placeholders
-    python3 -c "
+    # Replace tracker config, design system, and other placeholders
+    export DESIGN_COLOR_RULES DESIGN_COMPONENT_IMPORTS DESIGN_ICON_USAGE DESIGN_CARD_PATTERNS DESIGN_DARK_MODE
+    python3 << 'CLAUDE_MD_EOF'
 import os
-with open('$PROJECT_DIR/CLAUDE.md', 'r') as f:
+
+project_dir = os.environ.get('PROJECT_DIR', '.')
+with open(os.path.join(project_dir, 'CLAUDE.md'), 'r') as f:
     content = f.read()
-content = content.replace('{{TRACKER_CONFIG}}', '''$TRACKER_CONFIG''')
-content = content.replace('{{FORMAT_COMMAND}}', '$FORMAT_CMD')
-content = content.replace('{{FORMAT_VERIFY_COMMAND}}', '$FORMAT_VERIFY')
-content = content.replace('{{TEST_COMMAND}}', '$TEST_CMD')
-content = content.replace('{{DEPLOY_VALIDATE_COMMAND}}', '$DEPLOY_VALIDATE')
-content = content.replace('{{TYPE_CHECK_COMMAND}}', '$TYPE_CHECK_CMD')
-with open('$PROJECT_DIR/CLAUDE.md', 'w') as f:
+
+replacements = {
+    '{{TRACKER_CONFIG}}': os.environ.get('TRACKER_CONFIG', ''),
+    '{{FORMAT_COMMAND}}': os.environ.get('FORMAT_CMD', ''),
+    '{{FORMAT_VERIFY_COMMAND}}': os.environ.get('FORMAT_VERIFY', ''),
+    '{{TEST_COMMAND}}': os.environ.get('TEST_CMD', ''),
+    '{{DEPLOY_VALIDATE_COMMAND}}': os.environ.get('DEPLOY_VALIDATE', ''),
+    '{{TYPE_CHECK_COMMAND}}': os.environ.get('TYPE_CHECK_CMD', ''),
+    '{{DESIGN_COLOR_RULES}}': os.environ.get('DESIGN_COLOR_RULES', 'Not configured. Run `/improve` to auto-detect or `/scaffold-design-system` to bootstrap.'),
+    '{{DESIGN_COMPONENT_IMPORTS}}': os.environ.get('DESIGN_COMPONENT_IMPORTS', 'Not configured.'),
+    '{{DESIGN_ICON_USAGE}}': os.environ.get('DESIGN_ICON_USAGE', 'Not configured.'),
+    '{{DESIGN_CARD_PATTERNS}}': os.environ.get('DESIGN_CARD_PATTERNS', 'Not configured.'),
+    '{{DESIGN_DARK_MODE}}': os.environ.get('DESIGN_DARK_MODE', 'Not configured.'),
+}
+
+for placeholder, value in replacements.items():
+    content = content.replace(placeholder, value)
+
+with open(os.path.join(project_dir, 'CLAUDE.md'), 'w') as f:
     f.write(content)
-"
+CLAUDE_MD_EOF
     echo "  Created CLAUDE.md (fill in project-specific sections marked with {{...}})"
 else
     echo "  CLAUDE.md already exists — skipping"
@@ -853,6 +975,7 @@ echo "Tracker:    $TRACKER_NAME"
 echo "CI/CD:      $CI_NAME"
 echo "Base branch: $BASE_BRANCH"
 echo "Notify:     $NOTIFY_NAME"
+echo "Design:     $DESIGN_SYSTEM_NAME"
 echo ""
 echo "Files created:"
 echo "  .claude/skills/         — 16 workflow skills (incl. /team, /improve)"

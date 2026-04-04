@@ -53,6 +53,11 @@ Read current CLAUDE.md and check:
    - `{{ERROR_HANDLING_PATTERN}}` — find common error patterns in code
    - `{{TESTING_STRATEGY}}` — infer from test config and existing tests
    - `{{INTEGRATIONS}}` — list discovered external services
+   - `{{DESIGN_COLOR_RULES}}` — scan theme.css / globals.css for semantic color tokens, document which to use
+   - `{{DESIGN_COMPONENT_IMPORTS}}` — find base component directory, list imports with paths and key props
+   - `{{DESIGN_ICON_USAGE}}` — detect icon library from package.json, document import pattern and sizing
+   - `{{DESIGN_CARD_PATTERNS}}` — find the most common card pattern in components, document it
+   - `{{DESIGN_DARK_MODE}}` — detect dark mode strategy (tokens, class-based, media query), document it
 
 2. **Missing information:** Add sections for:
    - Discovered environment variables and their purposes

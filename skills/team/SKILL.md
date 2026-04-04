@@ -14,6 +14,7 @@ Spawn a team of specialized agents to work in parallel on the current codebase.
 /team architecture    — Architect + API designer + Database architect
 /team release         — Security auditor + DevOps engineer + Performance optimizer
 /team quality         — Code reviewer + Test writer + Performance optimizer
+/team design          — UI/UX reviewer + Performance optimizer + Refactor advisor
 /team documentation   — Documentation writer + API designer
 /team full            — All agents (12)
 /team custom agent1 agent2 agent3   — Pick specific agents
@@ -48,6 +49,7 @@ Parse the team name from the command argument. Map to agent list:
 | `architecture` | architect, api-designer, database-architect |
 | `release` | security-auditor, devops-engineer, performance-optimizer |
 | `quality` | code-reviewer, test-writer, performance-optimizer |
+| `design` | ui-ux-reviewer, performance-optimizer, refactor-advisor |
 | `documentation` | documentation-writer, api-designer |
 | `full` | all 12 agents |
 | `custom` | agents listed after "custom" keyword |

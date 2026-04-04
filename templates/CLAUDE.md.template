@@ -60,6 +60,7 @@
 | `/update-tracker` | Push story docs to work item tracker |
 | `/mock-endpoint` | Mock external API integrations |
 | `/fetch-docs` | Fetch and persist external documentation |
+| `/scaffold-design-system` | Bootstrap design tokens, base components, and CLAUDE.md design conventions |
 
 ## Agent Teams
 
@@ -71,6 +72,7 @@ Spawn pre-configured teams of specialized agents for parallel analysis:
 | **Architecture** | `/team architecture` | architect, api-designer, database-architect | Design phase, health checks |
 | **Release** | `/team release` | security-auditor, devops-engineer, performance-optimizer | Before releases |
 | **Quality** | `/team quality` | code-reviewer, test-writer, performance-optimizer | After implementation |
+| **Design** | `/team design` | ui-ux-reviewer, performance-optimizer, refactor-advisor | UI/UX consistency, design system compliance |
 | **Documentation** | `/team documentation` | documentation-writer, api-designer | After API changes |
 | **Full** | `/team full` | All 12 agents | Major milestones |
 | **Custom** | `/team custom a b c` | Any combination | Targeted analysis |
@@ -135,6 +137,30 @@ Create `docs/stories/TICKET-{xxx}/` with:
 ### Writing Style
 
 Write for a **technical audience**. Be direct, no filler. Use identifiers, not display names. Tables over paragraphs.
+
+## Design System
+
+> If no design system is configured, this section may be empty. Run `/scaffold-design-system` to bootstrap one, or `/improve` to auto-detect and document an existing one.
+
+### Color Usage
+
+{{DESIGN_COLOR_RULES}}
+
+### Component Imports
+
+{{DESIGN_COMPONENT_IMPORTS}}
+
+### Icon Usage
+
+{{DESIGN_ICON_USAGE}}
+
+### Card & Layout Patterns
+
+{{DESIGN_CARD_PATTERNS}}
+
+### Dark Mode
+
+{{DESIGN_DARK_MODE}}
 
 ## Coding Conventions
 

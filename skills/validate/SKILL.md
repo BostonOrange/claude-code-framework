@@ -84,6 +84,20 @@ If this fails, list which files need formatting. Do NOT auto-fix — report only
 | Main manifest updated | Verify new components in main config | ERROR |
 | Version/API consistency | Check version numbers match project standard | ERROR |
 
+### Design Consistency (WARN)
+
+> Only applies to projects with a design system (theme tokens, component library). Skip this section if the project has no design system configured.
+
+| Check | How to Detect | Severity |
+|-------|---------------|----------|
+| No raw Tailwind colors in components | Grep changed `.tsx`/`.jsx` files for `text-gray-`, `bg-blue-`, `border-red-` etc. (exclude theme/token definition files) | WARN |
+| No inline SVG icons | Grep changed component files for `<svg ` (exclude icon library, logo, and shared-asset files) | WARN |
+| No raw HTML interactive elements | Grep for `<button className=`, `<input className=`, `<select ` in feature code (exclude base component definitions) | WARN |
+| No manual dark mode on raw colors | Grep for `dark:text-gray-`, `dark:bg-gray-`, `dark:border-gray-` in component files | WARN |
+| Loading states on async sections | Check that new `<Suspense>` boundaries have meaningful fallback UI, not empty or bare "Loading..." text | WARN |
+| Empty states are complete | New list/table components should have icon + title + description empty states, not just text strings | WARN |
+| Typography uses design scale | Page titles use design system's display text tokens, not raw `text-4xl` / `text-3xl` | WARN |
+
 ## Domain Reference Loading
 
 Based on changed files, load relevant domain skill references:
@@ -118,6 +132,11 @@ Cross-check built components against reference inventories.
 
 ### Formatting
 - [x] PASSED — formatter check clean
+
+### Design Consistency
+- [x] PASSED — All colors use semantic tokens
+- [ ] WARN — Raw `text-gray-500` found in ComponentName:42 — use `text-tertiary`
+- [x] PASSED — No inline SVG icons
 
 ### Configuration
 - [x] PASSED — Manifests correct
