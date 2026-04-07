@@ -219,11 +219,28 @@ Write for a **technical audience**. Be direct, no filler. Use identifiers, not d
 
 ## Security
 
+### Data Protection
+- **No real PII in git** — never commit database files, uploaded documents, or CSVs with real personal data. Use synthetic test data only.
+- **No credentials on disk** — `.env` should have placeholders only. Real secrets belong in a vault or CI secrets. Rotate immediately if exposed.
+- **No PII in logs** — use opaque IDs, not names/emails/personal numbers. Configure structured logger redaction.
+- **Flag third-party PII sharing** — any code sending personal data to external APIs (AI providers, analytics) must be reviewed for DPA compliance.
+
+### Authentication & Authorization
+- **Auth must fail closed** — if auth configuration is missing, DENY access. Never default to open. Add a production startup guard.
+- **No insecure secret defaults** — session secrets must not have hardcoded fallback values. Crash if not configured.
+- **CSRF protection** on all state-changing form endpoints (POST/PUT/DELETE). API-only apps with Bearer tokens are exempt.
+- **Enforce roles in routes** — if roles exist in the data model, route handlers must check them. Roles in the DB but not in code = no access control.
+- **Identity from session only** — never accept reviewer/approver/user identity from request body or query params.
+- **Validate redirects** — redirect targets must be relative paths. Never redirect to user-supplied absolute URLs.
+- **Session cookies**: `Secure=true`, `HttpOnly=true`, `SameSite=Strict` (or `Lax`) in production.
+
+### General
 - No secrets in code — use environment variables and `.env`
-- Validate all input at system boundaries
-- Log operations but never log PII or credentials
+- Validate all input at system boundaries with a schema library (Zod, Pydantic, etc.)
 - Review dependency updates for security advisories
 - Keep `.env` and credential files in `.gitignore`
+- Never set `ignoreBuildErrors: true` or equivalent — type errors can hide security bugs
+- Rate limit authentication, AI, and file upload endpoints
 
 ## Factory Mode
 

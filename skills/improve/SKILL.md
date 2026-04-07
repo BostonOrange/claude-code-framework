@@ -41,6 +41,14 @@ find . -type f -not -path "*/.git/*" -not -path "*/node_modules/*" -not -path "*
 
 5. **Existing tooling:** Find linter configs, test configs, CI configs
 
+6. **Security quick-scan** (flag issues for the report, don't fix):
+   - `git ls-files | grep -E "\.(db|sqlite|sqlite3)" | head -5` — database files in git?
+   - `git ls-files | grep -E "^data/|/uploads/" | head -10` — real data files tracked?
+   - Check auth middleware for fail-open patterns (defaults to allow when config missing)
+   - Check for `ignoreBuildErrors: true` in build config
+   - Check for insecure default session secrets
+   - Check for CSRF protection on form-based POST endpoints
+
 ### Phase 2: CLAUDE.md Improvement
 
 Read current CLAUDE.md and check:

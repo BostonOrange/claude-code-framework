@@ -84,6 +84,21 @@ If this fails, list which files need formatting. Do NOT auto-fix — report only
 | Main manifest updated | Verify new components in main config | ERROR |
 | Version/API consistency | Check version numbers match project standard | ERROR |
 
+### Security (ERROR)
+
+| Check | How to Detect | Severity |
+|-------|---------------|----------|
+| No real PII in tracked files | `git ls-files \| grep -E "\.(db\|sqlite\|csv\|xlsx)" \| head -5` — flag any data files in git | ERROR |
+| No hardcoded secrets | Grep changed files for `sk-proj-`, `sk-org-`, `AKIA`, `-----BEGIN.*KEY`, password/secret assignments with literal values | ERROR |
+| Auth fails closed | Check auth middleware — if config is missing, does it deny (correct) or allow (broken)? Look for `if (!auth) next()` or `if (!pool) return true` patterns | ERROR |
+| No insecure secret defaults | Grep for session/API key defaults like `"dev-only-"`, `"change-in-production"`, `"insecure"` | ERROR |
+| CSRF on form POSTs | If the app uses cookie-based auth with HTML forms, check for CSRF token middleware and tokens in forms | ERROR |
+| Roles enforced in routes | If roles exist in the data model, verify route handlers check them before state-changing operations | ERROR |
+| Redirect URLs validated | Grep for redirect calls — verify target URLs are validated as relative paths, not user-controlled absolute URLs | WARN |
+| `ignoreBuildErrors` not set | Grep for `ignoreBuildErrors: true` or equivalent in build config | WARN |
+| Rate limiting on sensitive endpoints | Check if auth, AI, and upload endpoints have rate limiting | WARN |
+| Identity from session only | Check that reviewer/approver/user identity in write operations comes from the auth session, not from request body or query params | ERROR |
+
 ### Design Consistency (WARN)
 
 > Only applies to projects with a design system (theme tokens, component library). Skip this section if the project has no design system configured.
@@ -132,6 +147,13 @@ Cross-check built components against reference inventories.
 
 ### Formatting
 - [x] PASSED — formatter check clean
+
+### Security
+- [x] PASSED — No real PII in tracked files
+- [x] PASSED — No hardcoded secrets
+- [ ] ERROR — Auth defaults to open when env vars missing (middleware.py:20)
+- [ ] ERROR — No CSRF tokens in POST forms
+- [x] PASSED — Redirect URLs validated
 
 ### Design Consistency
 - [x] PASSED — All colors use semantic tokens
