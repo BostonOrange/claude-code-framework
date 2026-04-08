@@ -389,7 +389,3 @@ claude-code-framework/
     ├── memory-patterns.md       # Memory-aware skill patterns
     └── examples/                # Example configs per project type
 ```
-
-## Origin
-
-Extracted from [Salesforce-Nexus](../Salesforce/Salesforce-Nexus-US-1965/), a production FSL implementation with 21 skills, 4 GitHub Actions workflows, and a factory pipeline that takes stories from draft to deployed with only 2 human touchpoints (story approval + code review).
