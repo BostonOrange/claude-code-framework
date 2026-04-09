@@ -398,4 +398,3 @@ claude-code-framework/
     ├── memory-patterns.md       # Memory-aware skill patterns
     └── examples/                # Example configs per project type
 ```
-
