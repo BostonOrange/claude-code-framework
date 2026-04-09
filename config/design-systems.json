@@ -1,0 +1,37 @@
+{
+  "untitled-ui": {
+    "color_rules": "**MUST use semantic color classes — never raw colors like `text-gray-900` or `bg-blue-700`.**\n\nUse `text-primary`, `text-secondary`, `text-tertiary` for text. Use `border-primary`, `border-secondary` for borders. Use `bg-primary`, `bg-secondary`, `bg-brand-solid` for backgrounds. Use `fg-primary`, `fg-secondary`, `fg-quaternary` for icons/foreground elements.\n\nSemantic variants exist for: `brand`, `error`, `warning`, `success`, plus `_hover`, `_on-brand`, `_alt`, `_subtle` modifiers. See `src/styles/theme.css` for the full color token reference.",
+    "component_imports": "```typescript\nimport { Button } from \"@/components/base/buttons/button\";\nimport { Input } from \"@/components/base/input/input\";\nimport { Select } from \"@/components/base/select/select\";\nimport { Checkbox } from \"@/components/base/checkbox/checkbox\";\nimport { Badge } from \"@/components/base/badges/badges\";\nimport { Avatar } from \"@/components/base/avatar/avatar\";\n```\n\nNever use raw `<button>`, `<input>`, or `<select>` elements in feature code. Always use the base component library.",
+    "icon_usage": "```typescript\nimport { Home01, Settings01, ChevronDown } from \"@untitledui/icons\";\n```\n\nSizing: `size-4` (16px), `size-5` (20px), `size-6` (24px). Color: use semantic text colors (`text-fg-secondary`). Never use inline `<svg>` elements.",
+    "card_patterns": "**Glass cards**: `bg-primary/80 backdrop-blur-xl border border-secondary shadow-xs`\n**Separator lines**: `border-black/15 dark:border-white/15`\n**Default transitions**: `transition duration-100 ease-linear`",
+    "dark_mode": "Dark mode is handled at the design token level via CSS custom properties. Components should NOT need per-element `dark:` classes when using semantic tokens. If a component needs a dark mode override, the design token system has a gap — fix the token, don't patch the component."
+  },
+  "shadcn": {
+    "color_rules": "**Use CSS variable-based colors from the shadcn/ui theme.**\n\nUse `text-foreground`, `text-muted-foreground`, `text-primary`, `text-destructive` etc. Never use raw Tailwind colors like `text-gray-900`. See `globals.css` or `tailwind.config` for the full token reference.",
+    "component_imports": "```typescript\nimport { Button } from \"@/components/ui/button\";\nimport { Input } from \"@/components/ui/input\";\nimport { Select } from \"@/components/ui/select\";\nimport { Card, CardHeader, CardContent } from \"@/components/ui/card\";\nimport { Badge } from \"@/components/ui/badge\";\n```\n\nNever use raw HTML elements for interactive controls in feature code. Always use the shadcn/ui component library.",
+    "icon_usage": "```typescript\nimport { Home, Settings, ChevronDown } from \"lucide-react\";\n```\n\nSizing: `size={16}`, `size={20}`, `size={24}` or `className=\"h-4 w-4\"`. Color: inherits from parent text color. Never use inline `<svg>` elements.",
+    "card_patterns": "Use `<Card>` component for all card-like containers. Do not hand-roll `rounded-xl border border-gray-200 bg-white` — use the Card abstraction.",
+    "dark_mode": "Dark mode is handled via the `.dark` class and CSS variables. Components using semantic color tokens adapt automatically. Do not add manual `dark:bg-gray-*` overrides."
+  },
+  "custom": {
+    "color_rules": "{{DESIGN_COLOR_RULES}} — Run `/improve` to auto-detect from project files, or fill in manually.",
+    "component_imports": "{{DESIGN_COMPONENT_IMPORTS}} — Run `/improve` to auto-detect, or fill in manually.",
+    "icon_usage": "{{DESIGN_ICON_USAGE}} — Run `/improve` to auto-detect, or fill in manually.",
+    "card_patterns": "{{DESIGN_CARD_PATTERNS}} — Run `/improve` to auto-detect, or fill in manually.",
+    "dark_mode": "{{DESIGN_DARK_MODE}} — Run `/improve` to auto-detect, or fill in manually."
+  },
+  "none": {
+    "color_rules": "No design system configured. Consider running `/scaffold-design-system` to bootstrap one.",
+    "component_imports": "No component library configured.",
+    "icon_usage": "No icon library configured.",
+    "card_patterns": "No card patterns documented.",
+    "dark_mode": "No dark mode conventions documented."
+  },
+  "_backend": {
+    "color_rules": "N/A — backend project.",
+    "component_imports": "N/A — backend project.",
+    "icon_usage": "N/A — backend project.",
+    "card_patterns": "N/A — backend project.",
+    "dark_mode": "N/A — backend project."
+  }
+}

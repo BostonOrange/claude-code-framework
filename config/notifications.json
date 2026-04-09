@@ -1,0 +1,42 @@
+{
+  "slack": {
+    "env_var": "SLACK_WEBHOOK_URL",
+    "env_placeholder": "https://hooks.slack.com/services/...",
+    "webhook_var": "${SLACK_WEBHOOK_URL}",
+    "message_field": "text",
+    "halt": "```bash\nexport $(grep -v '^#' .env | grep -v '^$' | xargs) && curl -s -X POST \"${SLACK_WEBHOOK_URL}\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"text\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}'\n```",
+    "halt_factory": "```bash\nexport $(grep -v '^#' .env | grep -v '^$' | xargs) && curl -s -X POST \"${SLACK_WEBHOOK_URL}\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"text\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}'\n```",
+    "deploy_success": "```bash\nexport $(grep -v '^#' .env | grep -v '^$' | xargs) && curl -s -X POST \"${SLACK_WEBHOOK_URL}\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"text\":\"Factory deployed for {TICKET_ID}: {reason}. Deployment complete.\"}'\n```",
+    "merge_resolve": "```bash\nexport $(grep -v '^#' .env | grep -v '^$' | xargs) && curl -s -X POST \"${SLACK_WEBHOOK_URL}\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"text\":\"Factory merge-resolved for {TICKET_ID}: {reason}. Merged result needs human verification.\"}'\n```"
+  },
+  "teams": {
+    "env_var": "TEAMS_WEBHOOK_URL",
+    "env_placeholder": "https://outlook.office.com/webhook/...",
+    "webhook_var": "${TEAMS_WEBHOOK_URL}",
+    "message_field": "text",
+    "halt": "```bash\nexport $(grep -v '^#' .env | grep -v '^$' | xargs) && curl -s -X POST \"${TEAMS_WEBHOOK_URL}\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"text\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}'\n```",
+    "halt_factory": "```bash\nexport $(grep -v '^#' .env | grep -v '^$' | xargs) && curl -s -X POST \"${TEAMS_WEBHOOK_URL}\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"text\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}'\n```",
+    "deploy_success": "```bash\nexport $(grep -v '^#' .env | grep -v '^$' | xargs) && curl -s -X POST \"${TEAMS_WEBHOOK_URL}\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"text\":\"Factory deployed for {TICKET_ID}: {reason}. Deployment complete.\"}'\n```",
+    "merge_resolve": "```bash\nexport $(grep -v '^#' .env | grep -v '^$' | xargs) && curl -s -X POST \"${TEAMS_WEBHOOK_URL}\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"text\":\"Factory merge-resolved for {TICKET_ID}: {reason}. Merged result needs human verification.\"}'\n```"
+  },
+  "discord": {
+    "env_var": "DISCORD_WEBHOOK_URL",
+    "env_placeholder": "https://discord.com/api/webhooks/...",
+    "webhook_var": "${DISCORD_WEBHOOK_URL}",
+    "message_field": "content",
+    "halt": "```bash\nexport $(grep -v '^#' .env | grep -v '^$' | xargs) && curl -s -X POST \"${DISCORD_WEBHOOK_URL}\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"content\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}'\n```",
+    "halt_factory": "```bash\nexport $(grep -v '^#' .env | grep -v '^$' | xargs) && curl -s -X POST \"${DISCORD_WEBHOOK_URL}\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"content\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}'\n```",
+    "deploy_success": "```bash\nexport $(grep -v '^#' .env | grep -v '^$' | xargs) && curl -s -X POST \"${DISCORD_WEBHOOK_URL}\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"content\":\"Factory deployed for {TICKET_ID}: {reason}. Deployment complete.\"}'\n```",
+    "merge_resolve": "```bash\nexport $(grep -v '^#' .env | grep -v '^$' | xargs) && curl -s -X POST \"${DISCORD_WEBHOOK_URL}\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"content\":\"Factory merge-resolved for {TICKET_ID}: {reason}. Merged result needs human verification.\"}'\n```"
+  },
+  "none": {
+    "env_var": "",
+    "env_placeholder": "",
+    "webhook_var": "",
+    "message_field": "",
+    "halt": "No notification system configured. Log the halt message.",
+    "halt_factory": "No notification system configured. Log the halt message.",
+    "deploy_success": "No notification system configured. Log deploy success.",
+    "merge_resolve": "No notification system configured. Log merge resolution message."
+  }
+}

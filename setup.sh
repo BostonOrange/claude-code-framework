@@ -106,35 +106,18 @@ case $TRACKER_TYPE in
     5) TRACKER_NAME="none" ;;
 esac
 
-# Tracker-specific config
-TRACKER_CONFIG=""
+# Collect tracker-specific user inputs (config values loaded later from JSON)
 case $TRACKER_NAME in
     ado)
         read -p "ADO Organization: " ADO_ORG
         read -p "ADO Project: " ADO_PROJECT
-        TRACKER_CONFIG="- **Organization:** \`$ADO_ORG\`
-- **Project:** \`$ADO_PROJECT\`
-- **URL:** https://dev.azure.com/$ADO_ORG/$ADO_PROJECT
-- **Auth:** PAT stored in \`.env\` as \`AZURE_DEVOPS_EXT_PAT\`"
         ;;
     jira)
         read -p "Jira Domain (e.g., mycompany.atlassian.net): " JIRA_DOMAIN
         read -p "Jira Project Key (e.g., PROJ): " JIRA_PROJECT
-        TRACKER_CONFIG="- **Domain:** \`$JIRA_DOMAIN\`
-- **Project:** \`$JIRA_PROJECT\`
-- **Auth:** API token in \`.env\` as \`JIRA_API_TOKEN\` and email as \`JIRA_EMAIL\`"
         ;;
     linear)
         read -p "Linear Team ID: " LINEAR_TEAM
-        TRACKER_CONFIG="- **Team:** \`$LINEAR_TEAM\`
-- **Auth:** API key in \`.env\` as \`LINEAR_API_KEY\`"
-        ;;
-    github)
-        TRACKER_CONFIG="- **Tracker:** GitHub Issues (uses \`gh\` CLI)
-- **Auth:** \`gh auth login\`"
-        ;;
-    none)
-        TRACKER_CONFIG="- No work item tracker configured. Tickets managed manually."
         ;;
 esac
 
@@ -240,82 +223,44 @@ case $PROJECT_TYPE_NAME in
         done
 
         case $DESIGN_TYPE in
-            1)
-                DESIGN_SYSTEM_NAME="untitled-ui"
-                DESIGN_COLOR_RULES="**MUST use semantic color classes — never raw colors like \`text-gray-900\` or \`bg-blue-700\`.**
-
-Use \`text-primary\`, \`text-secondary\`, \`text-tertiary\` for text. Use \`border-primary\`, \`border-secondary\` for borders. Use \`bg-primary\`, \`bg-secondary\`, \`bg-brand-solid\` for backgrounds. Use \`fg-primary\`, \`fg-secondary\`, \`fg-quaternary\` for icons/foreground elements.
-
-Semantic variants exist for: \`brand\`, \`error\`, \`warning\`, \`success\`, plus \`_hover\`, \`_on-brand\`, \`_alt\`, \`_subtle\` modifiers. See \`src/styles/theme.css\` for the full color token reference."
-                DESIGN_COMPONENT_IMPORTS='```typescript
-import { Button } from "@/components/base/buttons/button";
-import { Input } from "@/components/base/input/input";
-import { Select } from "@/components/base/select/select";
-import { Checkbox } from "@/components/base/checkbox/checkbox";
-import { Badge } from "@/components/base/badges/badges";
-import { Avatar } from "@/components/base/avatar/avatar";
-```
-
-Never use raw `<button>`, `<input>`, or `<select>` elements in feature code. Always use the base component library.'
-                DESIGN_ICON_USAGE='```typescript
-import { Home01, Settings01, ChevronDown } from "@untitledui/icons";
-```
-
-Sizing: `size-4` (16px), `size-5` (20px), `size-6` (24px). Color: use semantic text colors (`text-fg-secondary`). Never use inline `<svg>` elements.'
-                DESIGN_CARD_PATTERNS='**Glass cards**: `bg-primary/80 backdrop-blur-xl border border-secondary shadow-xs`
-**Separator lines**: `border-black/15 dark:border-white/15`
-**Default transitions**: `transition duration-100 ease-linear`'
-                DESIGN_DARK_MODE="Dark mode is handled at the design token level via CSS custom properties. Components should NOT need per-element \`dark:\` classes when using semantic tokens. If a component needs a dark mode override, the design token system has a gap — fix the token, don't patch the component."
-                ;;
-            2)
-                DESIGN_SYSTEM_NAME="shadcn"
-                DESIGN_COLOR_RULES="**Use CSS variable-based colors from the shadcn/ui theme.**
-
-Use \`text-foreground\`, \`text-muted-foreground\`, \`text-primary\`, \`text-destructive\` etc. Never use raw Tailwind colors like \`text-gray-900\`. See \`globals.css\` or \`tailwind.config\` for the full token reference."
-                DESIGN_COMPONENT_IMPORTS='```typescript
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-```
-
-Never use raw HTML elements for interactive controls in feature code. Always use the shadcn/ui component library.'
-                DESIGN_ICON_USAGE='```typescript
-import { Home, Settings, ChevronDown } from "lucide-react";
-```
-
-Sizing: `size={16}`, `size={20}`, `size={24}` or `className="h-4 w-4"`. Color: inherits from parent text color. Never use inline `<svg>` elements.'
-                DESIGN_CARD_PATTERNS='Use `<Card>` component for all card-like containers. Do not hand-roll `rounded-xl border border-gray-200 bg-white` — use the Card abstraction.'
-                DESIGN_DARK_MODE="Dark mode is handled via the \`.dark\` class and CSS variables. Components using semantic color tokens adapt automatically. Do not add manual \`dark:bg-gray-*\` overrides."
-                ;;
-            3)
-                DESIGN_SYSTEM_NAME="custom"
-                DESIGN_COLOR_RULES="{{DESIGN_COLOR_RULES}} — Run \`/improve\` to auto-detect from project files, or fill in manually."
-                DESIGN_COMPONENT_IMPORTS="{{DESIGN_COMPONENT_IMPORTS}} — Run \`/improve\` to auto-detect, or fill in manually."
-                DESIGN_ICON_USAGE="{{DESIGN_ICON_USAGE}} — Run \`/improve\` to auto-detect, or fill in manually."
-                DESIGN_CARD_PATTERNS="{{DESIGN_CARD_PATTERNS}} — Run \`/improve\` to auto-detect, or fill in manually."
-                DESIGN_DARK_MODE="{{DESIGN_DARK_MODE}} — Run \`/improve\` to auto-detect, or fill in manually."
-                ;;
-            4|*)
-                DESIGN_SYSTEM_NAME="none"
-                DESIGN_COLOR_RULES="No design system configured. Consider running \`/scaffold-design-system\` to bootstrap one."
-                DESIGN_COMPONENT_IMPORTS="No component library configured."
-                DESIGN_ICON_USAGE="No icon library configured."
-                DESIGN_CARD_PATTERNS="No card patterns documented."
-                DESIGN_DARK_MODE="No dark mode conventions documented."
-                ;;
+            1) DESIGN_SYSTEM_NAME="untitled-ui" ;;
+            2) DESIGN_SYSTEM_NAME="shadcn" ;;
+            3) DESIGN_SYSTEM_NAME="custom" ;;
+            4|*) DESIGN_SYSTEM_NAME="none" ;;
         esac
         ;;
     *)
-        # Non-frontend projects don't need a design system
-        DESIGN_COLOR_RULES="N/A — backend project."
-        DESIGN_COMPONENT_IMPORTS="N/A — backend project."
-        DESIGN_ICON_USAGE="N/A — backend project."
-        DESIGN_CARD_PATTERNS="N/A — backend project."
-        DESIGN_DARK_MODE="N/A — backend project."
+        # Non-frontend projects use the _backend preset
+        DESIGN_SYSTEM_NAME="_backend"
         ;;
 esac
+
+# Load design system values from config/design-systems.json
+eval "$(python3 << DESIGN_EOF
+import json, os
+
+framework_dir = os.environ.get('FRAMEWORK_DIR', '.')
+design_name = '$DESIGN_SYSTEM_NAME'
+
+with open(os.path.join(framework_dir, 'config', 'design-systems.json')) as f:
+    systems = json.load(f)
+
+cfg = systems.get(design_name, systems['none'])
+
+def shell_escape(val):
+    return val.replace("'", "'\\''")
+
+for var, key in [
+    ('DESIGN_COLOR_RULES', 'color_rules'),
+    ('DESIGN_COMPONENT_IMPORTS', 'component_imports'),
+    ('DESIGN_ICON_USAGE', 'icon_usage'),
+    ('DESIGN_CARD_PATTERNS', 'card_patterns'),
+    ('DESIGN_DARK_MODE', 'dark_mode'),
+]:
+    val = shell_escape(cfg.get(key, ''))
+    print(f"{var}='{val}'")
+DESIGN_EOF
+)"
 
 # ═══════════════════════════════════════════════════════════════
 # Generate project files
@@ -383,266 +328,120 @@ done
 
 echo "Configuring skills for your project..."
 
-# Build tracker-specific command blocks
-TRACKER_FETCH=""
-TRACKER_CREATE=""
-TRACKER_SET_PROGRESS=""
-TRACKER_SET_REVIEW=""
-TRACKER_LINK_PR=""
-TRACKER_URL=""
+# Build tracker-specific command blocks (from config/trackers.json)
+export ADO_ORG ADO_PROJECT JIRA_DOMAIN JIRA_PROJECT LINEAR_TEAM FRAMEWORK_DIR
 
-case $TRACKER_NAME in
-    ado)
-        TRACKER_FETCH='```bash
-PAT=$(grep AZURE_DEVOPS_EXT_PAT .env | cut -d= -f2)
-curl -s "https://dev.azure.com/'"$ADO_ORG"'/'"$ADO_PROJECT"'/_apis/wit/workitems/{id}?api-version=7.1&\$expand=all" -u ":${PAT}"
-```'
-        TRACKER_URL="https://dev.azure.com/$ADO_ORG/$ADO_PROJECT/_workitems/edit/{id}"
-        TRACKER_SET_PROGRESS='```bash
-PAT=$(grep AZURE_DEVOPS_EXT_PAT .env | cut -d= -f2)
-curl -s -X PATCH "https://dev.azure.com/'"$ADO_ORG"'/'"$ADO_PROJECT"'/_apis/wit/workitems/{id}?api-version=7.1" \
-  -H "Content-Type: application/json-patch+json" -u ":${PAT}" \
-  -d '"'"'[{"op": "replace", "path": "/fields/System.State", "value": "In Progress"}]'"'"'
-```'
-        TRACKER_SET_REVIEW='```bash
-PAT=$(grep AZURE_DEVOPS_EXT_PAT .env | cut -d= -f2)
-curl -s -X PATCH "https://dev.azure.com/'"$ADO_ORG"'/'"$ADO_PROJECT"'/_apis/wit/workitems/{id}?api-version=7.1" \
-  -H "Content-Type: application/json-patch+json" -u ":${PAT}" \
-  -d '"'"'[{"op": "replace", "path": "/fields/System.State", "value": "In Peer Testing"}]'"'"'
-```'
-        ;;
-    jira)
-        TRACKER_FETCH='```bash
-curl -s "https://'"$JIRA_DOMAIN"'/rest/api/3/issue/{key}" \
-  -H "Authorization: Basic $(echo -n $(grep JIRA_EMAIL .env | cut -d= -f2):$(grep JIRA_API_TOKEN .env | cut -d= -f2) | base64)"
-```'
-        TRACKER_URL="https://$JIRA_DOMAIN/browse/{key}"
-        TRACKER_SET_PROGRESS='Use Jira REST API to transition issue to "In Progress".'
-        TRACKER_SET_REVIEW='Use Jira REST API to transition issue to "In Review".'
-        ;;
-    github)
-        TRACKER_FETCH='```bash
-gh issue view {number} --json title,body,state,labels,assignees
-```'
-        TRACKER_URL="$(git remote get-url origin 2>/dev/null | sed 's/\.git$//' || echo 'https://github.com/org/repo')/issues/{number}"
-        TRACKER_SET_PROGRESS='```bash
-gh issue edit {number} --add-label "in-progress"
-```'
-        TRACKER_SET_REVIEW='```bash
-gh issue edit {number} --add-label "in-review" --remove-label "in-progress"
-```'
-        ;;
-    linear)
-        TRACKER_FETCH='Use Linear GraphQL API to fetch issue by identifier.'
-        TRACKER_URL="https://linear.app/team/$LINEAR_TEAM/issue/{id}"
-        TRACKER_SET_PROGRESS='Use Linear GraphQL API to update issue state to "In Progress".'
-        TRACKER_SET_REVIEW='Use Linear GraphQL API to update issue state to "In Review".'
-        ;;
-    none)
-        TRACKER_FETCH='No work item tracker configured. Ask user for ticket details.'
-        TRACKER_URL=""
-        TRACKER_SET_PROGRESS='No tracker configured.'
-        TRACKER_SET_REVIEW='No tracker configured.'
-        ;;
-esac
+eval "$(python3 << TRACKER_EOF
+import json, os
 
-# Build project-type-specific commands
-FORMAT_CMD=""
-FORMAT_VERIFY=""
-TEST_CMD=""
-DEPLOY_VALIDATE=""
+framework_dir = os.environ.get('FRAMEWORK_DIR', '.')
+tracker_name = '$TRACKER_NAME'
 
-case $PROJECT_TYPE_NAME in
-    salesforce)
-        FORMAT_CMD='npx prettier --write "path/to/specific/file"'
-        FORMAT_VERIFY='npm run prettier:verify'
-        TEST_CMD='sf apex run test -l RunLocalTests -w 30'
-        DEPLOY_VALIDATE='sf project deploy validate -x manifest/package.xml -l RunLocalTests -w 30 -o {alias}'
-        ;;
-    nodejs|react)
-        FORMAT_CMD='npx prettier --write "path/to/file"'
-        FORMAT_VERIFY='npx prettier --check .'
-        TEST_CMD='npm test'
-        DEPLOY_VALIDATE='npm run build && npm test'
-        ;;
-    python)
-        FORMAT_CMD='black path/to/file.py'
-        FORMAT_VERIFY='black --check . && ruff check .'
-        TEST_CMD='pytest'
-        DEPLOY_VALIDATE='pytest && mypy .'
-        ;;
-    go)
-        FORMAT_CMD='gofmt -w path/to/file.go'
-        FORMAT_VERIFY='gofmt -l . | grep -q . && echo "needs formatting" || echo "ok"'
-        TEST_CMD='go test ./...'
-        DEPLOY_VALIDATE='go build ./... && go test ./... && go vet ./...'
-        ;;
-    java)
-        FORMAT_CMD='./gradlew spotlessApply'
-        FORMAT_VERIFY='./gradlew spotlessCheck'
-        TEST_CMD='./gradlew test'
-        DEPLOY_VALIDATE='./gradlew build test'
-        ;;
-    rails)
-        FORMAT_CMD='bundle exec rubocop -a path/to/file.rb'
-        FORMAT_VERIFY='bundle exec rubocop'
-        TEST_CMD='bundle exec rspec'
-        DEPLOY_VALIDATE='bundle exec rspec && bundle exec rubocop'
-        ;;
-    *)
-        FORMAT_CMD='# Configure your formatter command'
-        FORMAT_VERIFY='# Configure your format verification command'
-        TEST_CMD='# Configure your test command'
-        DEPLOY_VALIDATE='# Configure your validation command'
-        ;;
-esac
+with open(os.path.join(framework_dir, 'config', 'trackers.json')) as f:
+    trackers = json.load(f)
 
-# Build type check, dep check, security audit commands
-TYPE_CHECK_CMD=""
-DEP_CHECK_CMD=""
-SECURITY_AUDIT_CMD=""
-ERROR_TRACKING=""
+cfg = trackers.get(tracker_name, trackers['none'])
+
+def replace_tracker_placeholders(val):
+    val = val.replace('{{ADO_ORG}}', os.environ.get('ADO_ORG', ''))
+    val = val.replace('{{ADO_PROJECT}}', os.environ.get('ADO_PROJECT', ''))
+    val = val.replace('{{JIRA_DOMAIN}}', os.environ.get('JIRA_DOMAIN', ''))
+    val = val.replace('{{JIRA_PROJECT}}', os.environ.get('JIRA_PROJECT', ''))
+    val = val.replace('{{LINEAR_TEAM}}', os.environ.get('LINEAR_TEAM', ''))
+    return val
+
+def shell_escape(val):
+    return val.replace("'", "'\\''")
+
+fields = {
+    'TRACKER_FETCH': cfg.get('fetch_ticket', ''),
+    'TRACKER_SET_PROGRESS': cfg.get('set_progress', ''),
+    'TRACKER_SET_REVIEW': cfg.get('set_review', ''),
+    'TRACKER_URL': cfg.get('ticket_url', ''),
+    'TRACKER_CREATE': cfg.get('create_ticket', ''),
+    'TRACKER_CREATE_BUG': cfg.get('create_bug', ''),
+    'TRACKER_LINK_PR': cfg.get('link_pr', ''),
+    'TRACKER_UPDATE_FIELDS': cfg.get('update_fields', ''),
+    'TRACKER_SET_DEPLOYED': cfg.get('set_deployed', ''),
+    'TRACKER_CONFIG': cfg.get('config', ''),
+}
+
+for key, val in fields.items():
+    val = replace_tracker_placeholders(val)
+    print(f"{key}='{shell_escape(val)}'")
+TRACKER_EOF
+)"
+
+# Build project-type-specific commands and file patterns (from config/project-types.json)
 DEFAULT_MODEL="sonnet"
 
-case $PROJECT_TYPE_NAME in
-    salesforce)
-        TYPE_CHECK_CMD='sf apex run test --code-coverage -l RunLocalTests'
-        DEP_CHECK_CMD='# N/A for Salesforce'
-        SECURITY_AUDIT_CMD='sf scanner run --target . --format csv'
-        ERROR_TRACKING='ErrorTrackingUtils.trackException(e)'
-        ;;
-    nodejs|react)
-        TYPE_CHECK_CMD='npx tsc --noEmit'
-        DEP_CHECK_CMD='npm outdated && npm audit'
-        SECURITY_AUDIT_CMD='npm audit'
-        ERROR_TRACKING='console.error(error)'
-        ;;
-    python)
-        TYPE_CHECK_CMD='mypy .'
-        DEP_CHECK_CMD='pip list --outdated && pip-audit'
-        SECURITY_AUDIT_CMD='pip-audit && bandit -r .'
-        ERROR_TRACKING='logger.exception("error", exc_info=True)'
-        ;;
-    go)
-        TYPE_CHECK_CMD='go vet ./...'
-        DEP_CHECK_CMD='go list -m -u all'
-        SECURITY_AUDIT_CMD='govulncheck ./...'
-        ERROR_TRACKING='log.Printf("error: %v", err)'
-        ;;
-    java)
-        TYPE_CHECK_CMD='./gradlew compileJava'
-        DEP_CHECK_CMD='./gradlew dependencyUpdates'
-        SECURITY_AUDIT_CMD='./gradlew dependencyCheckAnalyze'
-        ERROR_TRACKING='log.error("error", e)'
-        ;;
-    rails)
-        TYPE_CHECK_CMD='bundle exec srb tc'
-        DEP_CHECK_CMD='bundle outdated && bundle audit check'
-        SECURITY_AUDIT_CMD='bundle audit check && brakeman'
-        ERROR_TRACKING='Rails.logger.error(e.message)'
-        ;;
-    *)
-        TYPE_CHECK_CMD='# Configure your type check command'
-        DEP_CHECK_CMD='# Configure your dependency check command'
-        SECURITY_AUDIT_CMD='# Configure your security audit command'
-        ERROR_TRACKING='// Log the error with full context'
-        ;;
-esac
+eval "$(python3 << PROJTYPE_EOF
+import json, os
 
-# Build file pattern placeholders for rules (per project type)
-API_ROUTE_PATTERNS=""
-COMPONENT_PATTERNS=""
-TEST_PATTERNS=""
-DATABASE_PATTERNS=""
-SOURCE_PATTERNS=""
+framework_dir = os.environ.get('FRAMEWORK_DIR', '.')
+project_type = '$PROJECT_TYPE_NAME'
 
-case $PROJECT_TYPE_NAME in
-    salesforce)
-        API_ROUTE_PATTERNS='"**/RestResource*.cls"'
-        COMPONENT_PATTERNS='"**/lwc/**/*.js", "**/lwc/**/*.html"'
-        TEST_PATTERNS='"*Test.cls", "*_Test.cls"'
-        DATABASE_PATTERNS='"**/*.object-meta.xml", "**/*.field-meta.xml"'
-        SOURCE_PATTERNS='"**/*.cls", "**/*.trigger"'
-        ;;
-    nodejs)
-        API_ROUTE_PATTERNS='"**/routes/**/*.ts", "**/routes/**/*.js", "**/*.route.ts", "**/*.api.ts"'
-        COMPONENT_PATTERNS='"**/*.tsx", "**/*.jsx"'
-        TEST_PATTERNS='"**/*.test.ts", "**/*.spec.ts", "**/__tests__/**/*"'
-        DATABASE_PATTERNS='"**/migrations/**/*", "**/models/**/*", "schema.prisma"'
-        SOURCE_PATTERNS='"**/*.ts", "**/*.js"'
-        ;;
-    react)
-        API_ROUTE_PATTERNS='"app/api/**/*.ts", "**/routes/**/*.ts", "**/*.api.ts"'
-        COMPONENT_PATTERNS='"**/*.tsx", "**/*.jsx", "components/**/*"'
-        TEST_PATTERNS='"**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/__tests__/**/*"'
-        DATABASE_PATTERNS='"**/migrations/**/*", "**/models/**/*", "schema.prisma"'
-        SOURCE_PATTERNS='"**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"'
-        ;;
-    python)
-        API_ROUTE_PATTERNS='"**/routes/*.py", "**/views/*.py", "**/endpoints/*.py"'
-        COMPONENT_PATTERNS='"**/templates/**/*.html"'
-        TEST_PATTERNS='"test_*.py", "*_test.py", "tests/**/*.py"'
-        DATABASE_PATTERNS='"**/models.py", "**/models/*.py", "**/migrations/**/*", "alembic/**/*"'
-        SOURCE_PATTERNS='"**/*.py"'
-        ;;
-    go)
-        API_ROUTE_PATTERNS='"**/handlers/*.go", "**/api/*.go", "**/routes/*.go"'
-        COMPONENT_PATTERNS='"**/templates/**/*.html", "**/templates/**/*.templ"'
-        TEST_PATTERNS='"*_test.go"'
-        DATABASE_PATTERNS='"**/models/*.go", "**/migrations/**/*", "**/repository/*.go"'
-        SOURCE_PATTERNS='"**/*.go"'
-        ;;
-    java)
-        API_ROUTE_PATTERNS='"**/*Controller.java", "**/*Resource.java", "**/*Endpoint.java"'
-        COMPONENT_PATTERNS='"**/templates/**/*.html"'
-        TEST_PATTERNS='"**/*Test.java", "**/*Spec.java", "src/test/**/*"'
-        DATABASE_PATTERNS='"**/entity/*.java", "**/repository/*.java", "**/migrations/**/*"'
-        SOURCE_PATTERNS='"**/*.java"'
-        ;;
-    rails)
-        API_ROUTE_PATTERNS='"app/controllers/**/*.rb", "config/routes.rb"'
-        COMPONENT_PATTERNS='"app/views/**/*.erb", "app/helpers/**/*.rb", "app/components/**/*.rb"'
-        TEST_PATTERNS='"spec/**/*.rb", "test/**/*.rb"'
-        DATABASE_PATTERNS='"db/migrate/**/*", "app/models/**/*.rb"'
-        SOURCE_PATTERNS='"**/*.rb"'
-        ;;
-    *)
-        API_ROUTE_PATTERNS='"**/routes/**/*", "**/api/**/*"'
-        COMPONENT_PATTERNS='"**/components/**/*"'
-        TEST_PATTERNS='"**/*test*", "**/*spec*"'
-        DATABASE_PATTERNS='"**/models/**/*", "**/migrations/**/*"'
-        SOURCE_PATTERNS='"**/*.{ts,js,py,go,java,rb}"'
-        ;;
-esac
+with open(os.path.join(framework_dir, 'config', 'project-types.json')) as f:
+    types = json.load(f)
 
-# Build notification command
-NOTIFY_CMD=""
-case $NOTIFY_NAME in
-    slack)
-        NOTIFY_CMD='```bash
-export $(grep -v '"'"'^#'"'"' .env | grep -v '"'"'^$'"'"' | xargs) && curl -s -X POST "${SLACK_WEBHOOK_URL}" \
-  -H "Content-Type: application/json" \
-  -d "{\"text\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}"
-```'
-        ;;
-    teams)
-        NOTIFY_CMD='```bash
-export $(grep -v '"'"'^#'"'"' .env | grep -v '"'"'^$'"'"' | xargs) && curl -s -X POST "${TEAMS_WEBHOOK_URL}" \
-  -H "Content-Type: application/json" \
-  -d "{\"text\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}"
-```'
-        ;;
-    discord)
-        NOTIFY_CMD='```bash
-export $(grep -v '"'"'^#'"'"' .env | grep -v '"'"'^$'"'"' | xargs) && curl -s -X POST "${DISCORD_WEBHOOK_URL}" \
-  -H "Content-Type: application/json" \
-  -d "{\"content\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}"
-```'
-        ;;
-    none)
-        NOTIFY_CMD='No notification system configured. Log the halt message.'
-        ;;
-esac
+cfg = types.get(project_type, types['generic'])
+
+# Shell-escape single quotes in values
+def shell_escape(val):
+    return val.replace("'", "'\\''")
+
+# Command variables
+for var, key in [
+    ('FORMAT_CMD', 'format_cmd'),
+    ('FORMAT_VERIFY', 'format_verify'),
+    ('TEST_CMD', 'test_cmd'),
+    ('DEPLOY_VALIDATE', 'deploy_validate'),
+    ('TYPE_CHECK_CMD', 'type_check_cmd'),
+    ('DEP_CHECK_CMD', 'dep_check_cmd'),
+    ('SECURITY_AUDIT_CMD', 'security_audit_cmd'),
+    ('ERROR_TRACKING', 'error_tracking'),
+]:
+    val = shell_escape(cfg.get(key, ''))
+    print(f"{var}='{val}'")
+
+# Pattern variables (arrays joined with comma-space, each element quoted)
+for var, key in [
+    ('API_ROUTE_PATTERNS', 'api_route_patterns'),
+    ('COMPONENT_PATTERNS', 'component_patterns'),
+    ('TEST_PATTERNS', 'test_patterns'),
+    ('DATABASE_PATTERNS', 'database_patterns'),
+    ('SOURCE_PATTERNS', 'source_patterns'),
+]:
+    patterns = cfg.get(key, [])
+    joined = ', '.join(f'"{p}"' for p in patterns)
+    print(f"{var}='{shell_escape(joined)}'")
+PROJTYPE_EOF
+)"
+
+# Build notification commands (from config/notifications.json)
+eval "$(python3 << NOTIFY_EOF
+import json, os
+
+framework_dir = os.environ.get('FRAMEWORK_DIR', '.')
+notify_name = '$NOTIFY_NAME'
+
+with open(os.path.join(framework_dir, 'config', 'notifications.json')) as f:
+    notifications = json.load(f)
+
+cfg = notifications.get(notify_name, notifications['none'])
+
+def shell_escape(val):
+    return val.replace("'", "'\\''")
+
+for var, key in [
+    ('NOTIFY_CMD', 'halt'),
+    ('NOTIFY_DEPLOY_CMD', 'deploy_success'),
+    ('NOTIFY_MERGE_CMD', 'merge_resolve'),
+]:
+    val = shell_escape(cfg.get(key, ''))
+    print(f"{var}='{val}'")
+NOTIFY_EOF
+)"
 
 # ── Copy agents ──────────────────────────────────────────────────
 
@@ -718,10 +517,14 @@ export PROJECT_DIR BASE_BRANCH PROJECT_SHORT
 export FORMAT_CMD FORMAT_VERIFY TEST_CMD DEPLOY_VALIDATE
 export TYPE_CHECK_CMD DEP_CHECK_CMD SECURITY_AUDIT_CMD DEFAULT_MODEL
 export TRACKER_FETCH TRACKER_SET_PROGRESS TRACKER_SET_REVIEW
-export TRACKER_URL TRACKER_LINK_PR TRACKER_CREATE NOTIFY_CMD
+export TRACKER_URL TRACKER_LINK_PR TRACKER_CREATE TRACKER_CREATE_BUG
+export TRACKER_UPDATE_FIELDS TRACKER_SET_DEPLOYED
+export NOTIFY_CMD NOTIFY_DEPLOY_CMD NOTIFY_MERGE_CMD
 export ERROR_TRACKING
 export API_ROUTE_PATTERNS COMPONENT_PATTERNS TEST_PATTERNS
 export DATABASE_PATTERNS SOURCE_PATTERNS
+export DESIGN_COLOR_RULES DESIGN_COMPONENT_IMPORTS DESIGN_ICON_USAGE
+export DESIGN_CARD_PATTERNS DESIGN_DARK_MODE
 
 python3 << 'REPLACE_ALL_EOF'
 import os, glob
@@ -749,15 +552,15 @@ replacements = {
     '{{TRACKER_TICKET_URL}}': os.environ.get('TRACKER_URL', '{ticket_url}'),
     '{{TRACKER_LINK_PR}}': os.environ.get('TRACKER_LINK_PR', 'Configure PR-to-ticket linking.'),
     '{{TRACKER_CREATE_TICKET}}': os.environ.get('TRACKER_CREATE', 'Configure ticket creation.'),
-    '{{TRACKER_CREATE_BUG}}': os.environ.get('TRACKER_CREATE', 'Configure bug creation.'),
-    '{{TRACKER_UPDATE_FIELDS}}': 'Configure tracker field update command.',
-    '{{TRACKER_SET_DEPLOYED}}': 'Configure tracker deployed state transition.',
+    '{{TRACKER_CREATE_BUG}}': os.environ.get('TRACKER_CREATE_BUG', 'Configure bug creation.'),
+    '{{TRACKER_UPDATE_FIELDS}}': os.environ.get('TRACKER_UPDATE_FIELDS', 'Configure tracker field update command.'),
+    '{{TRACKER_SET_DEPLOYED}}': os.environ.get('TRACKER_SET_DEPLOYED', 'Configure tracker deployed state transition.'),
 
     # Notification placeholders
     '{{NOTIFY_HALT}}': os.environ.get('NOTIFY_CMD', 'Log halt message.'),
     '{{NOTIFY_HALT_FACTORY}}': os.environ.get('NOTIFY_CMD', 'Log halt message.'),
-    '{{NOTIFY_MERGE_RESOLVE}}': os.environ.get('NOTIFY_CMD', 'Log merge resolution message.').replace('halted', 'merge-resolved').replace('Manual intervention needed', 'Merged result needs human verification'),
-    '{{NOTIFY_DEPLOY_SUCCESS}}': os.environ.get('NOTIFY_CMD', 'Log deploy success.').replace('halted', 'deployed').replace('Manual intervention needed', 'Deployment complete'),
+    '{{NOTIFY_DEPLOY_SUCCESS}}': os.environ.get('NOTIFY_DEPLOY_CMD', 'No notification system configured. Log deploy success.'),
+    '{{NOTIFY_MERGE_RESOLVE}}': os.environ.get('NOTIFY_MERGE_CMD', 'No notification system configured. Log merge resolution message.'),
 
     # Error/deploy placeholders
     '{{ERROR_QUERY_COMMAND}}': 'Configure error query command for your monitoring system.',
@@ -773,6 +576,13 @@ replacements = {
     '{{TEST_PATTERNS}}': os.environ.get('TEST_PATTERNS', '"**/*test*", "**/*spec*"'),
     '{{DATABASE_PATTERNS}}': os.environ.get('DATABASE_PATTERNS', '"**/models/**/*", "**/migrations/**/*"'),
     '{{SOURCE_PATTERNS}}': os.environ.get('SOURCE_PATTERNS', '"**/*.{ts,js,py,go,java,rb}"'),
+
+    # Design system placeholders
+    '{{DESIGN_COLOR_RULES}}': os.environ.get('DESIGN_COLOR_RULES', 'Not configured.'),
+    '{{DESIGN_COMPONENT_IMPORTS}}': os.environ.get('DESIGN_COMPONENT_IMPORTS', 'Not configured.'),
+    '{{DESIGN_ICON_USAGE}}': os.environ.get('DESIGN_ICON_USAGE', 'Not configured.'),
+    '{{DESIGN_CARD_PATTERNS}}': os.environ.get('DESIGN_CARD_PATTERNS', 'Not configured.'),
+    '{{DESIGN_DARK_MODE}}': os.environ.get('DESIGN_DARK_MODE', 'Not configured.'),
 }
 
 # Process all directories in a single pass
@@ -999,36 +809,43 @@ if [ ! -f "$PROJECT_DIR/.env" ]; then
 # Work Item Tracker
 ENV_EOF
 
-    case $TRACKER_NAME in
-        ado)
-            cat >> "$PROJECT_DIR/.env" << 'ENV_EOF'
-AZURE_DEVOPS_EXT_PAT=your-pat-here
-ENV_EOF
-            ;;
-        jira)
-            cat >> "$PROJECT_DIR/.env" << 'ENV_EOF'
-JIRA_EMAIL=your-email@company.com
-JIRA_API_TOKEN=your-token-here
-ENV_EOF
-            ;;
-        linear)
-            cat >> "$PROJECT_DIR/.env" << 'ENV_EOF'
-LINEAR_API_KEY=your-key-here
-ENV_EOF
-            ;;
-    esac
+    # Append tracker env vars from config/trackers.json
+    python3 << ENV_TRACKER_EOF
+import json, os
 
-    case $NOTIFY_NAME in
-        slack)
-            echo "SLACK_WEBHOOK_URL=https://hooks.slack.com/services/..." >> "$PROJECT_DIR/.env"
-            ;;
-        teams)
-            echo "TEAMS_WEBHOOK_URL=https://outlook.office.com/webhook/..." >> "$PROJECT_DIR/.env"
-            ;;
-        discord)
-            echo "DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/..." >> "$PROJECT_DIR/.env"
-            ;;
-    esac
+framework_dir = os.environ.get('FRAMEWORK_DIR', '.')
+project_dir = os.environ.get('PROJECT_DIR', '.')
+tracker_name = '$TRACKER_NAME'
+
+with open(os.path.join(framework_dir, 'config', 'trackers.json')) as f:
+    trackers = json.load(f)
+
+cfg = trackers.get(tracker_name, trackers['none'])
+env_vars = cfg.get('env_vars', [])
+if env_vars:
+    with open(os.path.join(project_dir, '.env'), 'a') as f:
+        for var in env_vars:
+            f.write(var + '\n')
+ENV_TRACKER_EOF
+
+    # Append notification env vars from config/notifications.json
+    python3 << ENV_NOTIFY_EOF
+import json, os
+
+framework_dir = os.environ.get('FRAMEWORK_DIR', '.')
+project_dir = os.environ.get('PROJECT_DIR', '.')
+notify_name = '$NOTIFY_NAME'
+
+with open(os.path.join(framework_dir, 'config', 'notifications.json')) as f:
+    notifications = json.load(f)
+
+cfg = notifications.get(notify_name, notifications['none'])
+env_var = cfg.get('env_var', '')
+env_placeholder = cfg.get('env_placeholder', '')
+if env_var and env_placeholder:
+    with open(os.path.join(project_dir, '.env'), 'a') as f:
+        f.write(f'{env_var}={env_placeholder}\n')
+ENV_NOTIFY_EOF
 
     # Ensure .env is gitignored
     if [ -f "$PROJECT_DIR/.gitignore" ]; then

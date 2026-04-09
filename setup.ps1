@@ -98,39 +98,18 @@ $TRACKER_NAME = switch ($TRACKER_TYPE) {
     default { "none" }
 }
 
-$TRACKER_CONFIG = ""
+# Collect tracker-specific user inputs (config values loaded later from JSON)
 switch ($TRACKER_NAME) {
     "ado" {
         $ADO_ORG = Read-Host "ADO Organization"
         $ADO_PROJECT = Read-Host "ADO Project"
-        $TRACKER_CONFIG = @"
-- **Organization:** ``$ADO_ORG``
-- **Project:** ``$ADO_PROJECT``
-- **URL:** https://dev.azure.com/$ADO_ORG/$ADO_PROJECT
-- **Auth:** PAT stored in ``.env`` as ``AZURE_DEVOPS_EXT_PAT``
-"@
     }
     "jira" {
         $JIRA_DOMAIN = Read-Host "Jira Domain (e.g., mycompany.atlassian.net)"
         $JIRA_PROJECT = Read-Host "Jira Project Key (e.g., PROJ)"
-        $TRACKER_CONFIG = @"
-- **Domain:** ``$JIRA_DOMAIN``
-- **Project:** ``$JIRA_PROJECT``
-- **Auth:** API token in ``.env`` as ``JIRA_API_TOKEN`` and email as ``JIRA_EMAIL``
-"@
     }
     "linear" {
         $LINEAR_TEAM = Read-Host "Linear Team ID"
-        $TRACKER_CONFIG = @"
-- **Team:** ``$LINEAR_TEAM``
-- **Auth:** API key in ``.env`` as ``LINEAR_API_KEY``
-"@
-    }
-    "github" {
-        $TRACKER_CONFIG = "- **Tracker:** GitHub Issues (uses ``gh`` CLI)`n- **Auth:** ``gh auth login``"
-    }
-    "none" {
-        $TRACKER_CONFIG = "- No work item tracker configured. Tickets managed manually."
     }
 }
 
@@ -193,11 +172,6 @@ if (-not $PROJECT_SHORT) { $PROJECT_SHORT = $PROJECT_NAME }
 # -- 7. Design System --
 
 $DESIGN_SYSTEM_NAME = "none"
-$DESIGN_COLOR_RULES = ""
-$DESIGN_COMPONENT_IMPORTS = ""
-$DESIGN_ICON_USAGE = ""
-$DESIGN_CARD_PATTERNS = ""
-$DESIGN_DARK_MODE = ""
 
 if ($PROJECT_TYPE_NAME -in "react", "nodejs") {
     Write-Host ""
@@ -213,81 +187,27 @@ if ($PROJECT_TYPE_NAME -in "react", "nodejs") {
         if (-not $valid) { Write-Host "Invalid selection. Please enter a number 1-4." }
     } while (-not $valid)
 
-    switch ($DESIGN_TYPE) {
-        "1" {
-            $DESIGN_SYSTEM_NAME = "untitled-ui"
-            $DESIGN_COLOR_RULES = "**MUST use semantic color classes - never raw colors like ``text-gray-900`` or ``bg-blue-700``.**`n`nUse ``text-primary``, ``text-secondary``, ``text-tertiary`` for text. Use ``border-primary``, ``border-secondary`` for borders. Use ``bg-primary``, ``bg-secondary``, ``bg-brand-solid`` for backgrounds. Use ``fg-primary``, ``fg-secondary``, ``fg-quaternary`` for icons/foreground elements.`n`nSemantic variants exist for: ``brand``, ``error``, ``warning``, ``success``, plus ``_hover``, ``_on-brand``, ``_alt``, ``_subtle`` modifiers. See ``src/styles/theme.css`` for the full color token reference."
-            $DESIGN_COMPONENT_IMPORTS = @"
-``````typescript
-import { Button } from "@/components/base/buttons/button";
-import { Input } from "@/components/base/input/input";
-import { Select } from "@/components/base/select/select";
-import { Checkbox } from "@/components/base/checkbox/checkbox";
-import { Badge } from "@/components/base/badges/badges";
-import { Avatar } from "@/components/base/avatar/avatar";
-``````
-
-Never use raw ``<button>``, ``<input>``, or ``<select>`` elements in feature code. Always use the base component library.
-"@
-            $DESIGN_ICON_USAGE = @"
-``````typescript
-import { Home01, Settings01, ChevronDown } from "@untitledui/icons";
-``````
-
-Sizing: ``size-4`` (16px), ``size-5`` (20px), ``size-6`` (24px). Color: use semantic text colors (``text-fg-secondary``). Never use inline ``<svg>`` elements.
-"@
-            $DESIGN_CARD_PATTERNS = "**Glass cards**: ``bg-primary/80 backdrop-blur-xl border border-secondary shadow-xs```n**Separator lines**: ``border-black/15 dark:border-white/15```n**Default transitions**: ``transition duration-100 ease-linear``"
-            $DESIGN_DARK_MODE = "Dark mode is handled at the design token level via CSS custom properties. Components should NOT need per-element ``dark:`` classes when using semantic tokens. If a component needs a dark mode override, the design token system has a gap - fix the token, don't patch the component."
-        }
-        "2" {
-            $DESIGN_SYSTEM_NAME = "shadcn"
-            $DESIGN_COLOR_RULES = "**Use CSS variable-based colors from the shadcn/ui theme.**`n`nUse ``text-foreground``, ``text-muted-foreground``, ``text-primary``, ``text-destructive`` etc. Never use raw Tailwind colors like ``text-gray-900``. See ``globals.css`` or ``tailwind.config`` for the full token reference."
-            $DESIGN_COMPONENT_IMPORTS = @"
-``````typescript
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-``````
-
-Never use raw HTML elements for interactive controls in feature code. Always use the shadcn/ui component library.
-"@
-            $DESIGN_ICON_USAGE = @"
-``````typescript
-import { Home, Settings, ChevronDown } from "lucide-react";
-``````
-
-Sizing: ``size={16}``, ``size={20}``, ``size={24}`` or ``className="h-4 w-4"```. Color: inherits from parent text color. Never use inline ``<svg>`` elements.
-"@
-            $DESIGN_CARD_PATTERNS = "Use ``<Card>`` component for all card-like containers. Do not hand-roll ``rounded-xl border border-gray-200 bg-white`` - use the Card abstraction."
-            $DESIGN_DARK_MODE = "Dark mode is handled via the ``.dark`` class and CSS variables. Components using semantic color tokens adapt automatically. Do not add manual ``dark:bg-gray-*`` overrides."
-        }
-        "3" {
-            $DESIGN_SYSTEM_NAME = "custom"
-            $DESIGN_COLOR_RULES = "{{DESIGN_COLOR_RULES}} - Run ``/improve`` to auto-detect from project files, or fill in manually."
-            $DESIGN_COMPONENT_IMPORTS = "{{DESIGN_COMPONENT_IMPORTS}} - Run ``/improve`` to auto-detect, or fill in manually."
-            $DESIGN_ICON_USAGE = "{{DESIGN_ICON_USAGE}} - Run ``/improve`` to auto-detect, or fill in manually."
-            $DESIGN_CARD_PATTERNS = "{{DESIGN_CARD_PATTERNS}} - Run ``/improve`` to auto-detect, or fill in manually."
-            $DESIGN_DARK_MODE = "{{DESIGN_DARK_MODE}} - Run ``/improve`` to auto-detect, or fill in manually."
-        }
-        default {
-            $DESIGN_SYSTEM_NAME = "none"
-            $DESIGN_COLOR_RULES = "No design system configured. Consider running ``/scaffold-design-system`` to bootstrap one."
-            $DESIGN_COMPONENT_IMPORTS = "No component library configured."
-            $DESIGN_ICON_USAGE = "No icon library configured."
-            $DESIGN_CARD_PATTERNS = "No card patterns documented."
-            $DESIGN_DARK_MODE = "No dark mode conventions documented."
-        }
+    $DESIGN_SYSTEM_NAME = switch ($DESIGN_TYPE) {
+        "1" { "untitled-ui" }
+        "2" { "shadcn" }
+        "3" { "custom" }
+        default { "none" }
     }
 } else {
-    # Non-frontend projects don't need a design system
-    $DESIGN_COLOR_RULES = "N/A - backend project."
-    $DESIGN_COMPONENT_IMPORTS = "N/A - backend project."
-    $DESIGN_ICON_USAGE = "N/A - backend project."
-    $DESIGN_CARD_PATTERNS = "N/A - backend project."
-    $DESIGN_DARK_MODE = "N/A - backend project."
+    # Non-frontend projects use the _backend preset
+    $DESIGN_SYSTEM_NAME = "_backend"
 }
+
+# Load design system values from config/design-systems.json
+$designSystems = Get-Content "$FRAMEWORK_DIR/config/design-systems.json" -Raw -Encoding UTF8 | ConvertFrom-Json
+$designCfg = $designSystems.$DESIGN_SYSTEM_NAME
+if (-not $designCfg) { $designCfg = $designSystems.none }
+
+$DESIGN_COLOR_RULES = $designCfg.color_rules
+$DESIGN_COMPONENT_IMPORTS = $designCfg.component_imports
+$DESIGN_ICON_USAGE = $designCfg.icon_usage
+$DESIGN_CARD_PATTERNS = $designCfg.card_patterns
+$DESIGN_DARK_MODE = $designCfg.dark_mode
 
 # ============================================================
 # Generate project files
@@ -427,301 +347,62 @@ Get-ChildItem "$FRAMEWORK_DIR/templates/hooks" -Filter "*.sh" -ErrorAction Silen
 
 # -- Build project-type-specific commands --
 
-$FORMAT_CMD = ""
-$FORMAT_VERIFY = ""
-$TEST_CMD = ""
-$DEPLOY_VALIDATE = ""
-$TYPE_CHECK_CMD = ""
-$DEP_CHECK_CMD = ""
-$SECURITY_AUDIT_CMD = ""
-$ERROR_TRACKING = ""
+# -- Load project-type-specific commands and file patterns from config/project-types.json --
+
 $DEFAULT_MODEL = "sonnet"
 
-switch ($PROJECT_TYPE_NAME) {
-    "salesforce" {
-        $FORMAT_CMD = 'npx prettier --write "path/to/specific/file"'
-        $FORMAT_VERIFY = 'npm run prettier:verify'
-        $TEST_CMD = 'sf apex run test -l RunLocalTests -w 30'
-        $DEPLOY_VALIDATE = 'sf project deploy validate -x manifest/package.xml -l RunLocalTests -w 30 -o {alias}'
-        $TYPE_CHECK_CMD = 'sf apex run test --code-coverage -l RunLocalTests'
-        $DEP_CHECK_CMD = '# N/A for Salesforce'
-        $SECURITY_AUDIT_CMD = 'sf scanner run --target . --format csv'
-        $ERROR_TRACKING = 'ErrorTrackingUtils.trackException(e)'
-    }
-    { $_ -in "nodejs", "react" } {
-        $FORMAT_CMD = 'npx prettier --write "path/to/file"'
-        $FORMAT_VERIFY = 'npx prettier --check .'
-        $TEST_CMD = 'npm test'
-        $DEPLOY_VALIDATE = 'npm run build && npm test'
-        $TYPE_CHECK_CMD = 'npx tsc --noEmit'
-        $DEP_CHECK_CMD = 'npm outdated && npm audit'
-        $SECURITY_AUDIT_CMD = 'npm audit'
-        $ERROR_TRACKING = 'console.error(error)'
-    }
-    "python" {
-        $FORMAT_CMD = 'black path/to/file.py'
-        $FORMAT_VERIFY = 'black --check . && ruff check .'
-        $TEST_CMD = 'pytest'
-        $DEPLOY_VALIDATE = 'pytest && mypy .'
-        $TYPE_CHECK_CMD = 'mypy .'
-        $DEP_CHECK_CMD = 'pip list --outdated && pip-audit'
-        $SECURITY_AUDIT_CMD = 'pip-audit && bandit -r .'
-        $ERROR_TRACKING = 'logger.exception("error", exc_info=True)'
-    }
-    "go" {
-        $FORMAT_CMD = 'gofmt -w path/to/file.go'
-        $FORMAT_VERIFY = 'gofmt -l .'
-        $TEST_CMD = 'go test ./...'
-        $DEPLOY_VALIDATE = 'go build ./... && go test ./... && go vet ./...'
-        $TYPE_CHECK_CMD = 'go vet ./...'
-        $DEP_CHECK_CMD = 'go list -m -u all'
-        $SECURITY_AUDIT_CMD = 'govulncheck ./...'
-        $ERROR_TRACKING = 'log.Printf("error: %v", err)'
-    }
-    "java" {
-        $FORMAT_CMD = './gradlew spotlessApply'
-        $FORMAT_VERIFY = './gradlew spotlessCheck'
-        $TEST_CMD = './gradlew test'
-        $DEPLOY_VALIDATE = './gradlew build test'
-        $TYPE_CHECK_CMD = './gradlew compileJava'
-        $DEP_CHECK_CMD = './gradlew dependencyUpdates'
-        $SECURITY_AUDIT_CMD = './gradlew dependencyCheckAnalyze'
-        $ERROR_TRACKING = 'log.error("error", e)'
-    }
-    "rails" {
-        $FORMAT_CMD = 'bundle exec rubocop -a path/to/file.rb'
-        $FORMAT_VERIFY = 'bundle exec rubocop'
-        $TEST_CMD = 'bundle exec rspec'
-        $DEPLOY_VALIDATE = 'bundle exec rspec && bundle exec rubocop'
-        $TYPE_CHECK_CMD = 'bundle exec srb tc'
-        $DEP_CHECK_CMD = 'bundle outdated && bundle audit check'
-        $SECURITY_AUDIT_CMD = 'bundle audit check && brakeman'
-        $ERROR_TRACKING = 'Rails.logger.error(e.message)'
-    }
-    default {
-        $FORMAT_CMD = '# Configure your formatter command'
-        $FORMAT_VERIFY = '# Configure your format verification command'
-        $TEST_CMD = '# Configure your test command'
-        $DEPLOY_VALIDATE = '# Configure your validation command'
-        $TYPE_CHECK_CMD = '# Configure your type check command'
-        $DEP_CHECK_CMD = '# Configure your dependency check command'
-        $SECURITY_AUDIT_CMD = '# Configure your security audit command'
-        $ERROR_TRACKING = '// Log the error with full context'
-    }
+$projectTypes = Get-Content "$FRAMEWORK_DIR/config/project-types.json" -Raw -Encoding UTF8 | ConvertFrom-Json
+$typeConfig = $projectTypes.$PROJECT_TYPE_NAME
+if (-not $typeConfig) { $typeConfig = $projectTypes.generic }
+
+$FORMAT_CMD = $typeConfig.format_cmd
+$FORMAT_VERIFY = $typeConfig.format_verify
+$TEST_CMD = $typeConfig.test_cmd
+$DEPLOY_VALIDATE = $typeConfig.deploy_validate
+$TYPE_CHECK_CMD = $typeConfig.type_check_cmd
+$DEP_CHECK_CMD = $typeConfig.dep_check_cmd
+$SECURITY_AUDIT_CMD = $typeConfig.security_audit_cmd
+$ERROR_TRACKING = $typeConfig.error_tracking
+
+# Pattern variables (arrays joined with comma-space, each element quoted)
+$API_ROUTE_PATTERNS = ($typeConfig.api_route_patterns | ForEach-Object { "`"$_`"" }) -join ", "
+$COMPONENT_PATTERNS = ($typeConfig.component_patterns | ForEach-Object { "`"$_`"" }) -join ", "
+$TEST_PATTERNS = ($typeConfig.test_patterns | ForEach-Object { "`"$_`"" }) -join ", "
+$DATABASE_PATTERNS = ($typeConfig.database_patterns | ForEach-Object { "`"$_`"" }) -join ", "
+$SOURCE_PATTERNS = ($typeConfig.source_patterns | ForEach-Object { "`"$_`"" }) -join ", "
+
+# -- Load tracker commands from config/trackers.json --
+
+$trackersConfig = Get-Content "$FRAMEWORK_DIR/config/trackers.json" -Raw -Encoding UTF8 | ConvertFrom-Json
+$trackerConfig = $trackersConfig.$TRACKER_NAME
+if (-not $trackerConfig) { $trackerConfig = $trackersConfig.none }
+
+# Replace tracker-specific placeholders with user-provided values
+function Replace-TrackerPlaceholders($val) {
+    if (-not $val) { return "" }
+    $val = $val.Replace('{{ADO_ORG}}', $(if ($ADO_ORG) { $ADO_ORG } else { '' }))
+    $val = $val.Replace('{{ADO_PROJECT}}', $(if ($ADO_PROJECT) { $ADO_PROJECT } else { '' }))
+    $val = $val.Replace('{{JIRA_DOMAIN}}', $(if ($JIRA_DOMAIN) { $JIRA_DOMAIN } else { '' }))
+    $val = $val.Replace('{{JIRA_PROJECT}}', $(if ($JIRA_PROJECT) { $JIRA_PROJECT } else { '' }))
+    $val = $val.Replace('{{LINEAR_TEAM}}', $(if ($LINEAR_TEAM) { $LINEAR_TEAM } else { '' }))
+    return $val
 }
 
-# -- Build file pattern placeholders for rules --
+$TRACKER_FETCH = Replace-TrackerPlaceholders $trackerConfig.fetch_ticket
+$TRACKER_SET_PROGRESS = Replace-TrackerPlaceholders $trackerConfig.set_progress
+$TRACKER_SET_REVIEW = Replace-TrackerPlaceholders $trackerConfig.set_review
+$TRACKER_URL = Replace-TrackerPlaceholders $trackerConfig.ticket_url
+$TRACKER_CONFIG = Replace-TrackerPlaceholders $trackerConfig.config
 
-$API_ROUTE_PATTERNS = ""
-$COMPONENT_PATTERNS = ""
-$TEST_PATTERNS = ""
-$DATABASE_PATTERNS = ""
-$SOURCE_PATTERNS = ""
+# -- Load notification commands from config/notifications.json --
 
-switch ($PROJECT_TYPE_NAME) {
-    "salesforce" {
-        $API_ROUTE_PATTERNS = '"**/RestResource*.cls"'
-        $COMPONENT_PATTERNS = '"**/lwc/**/*.js", "**/lwc/**/*.html"'
-        $TEST_PATTERNS = '"*Test.cls", "*_Test.cls"'
-        $DATABASE_PATTERNS = '"**/*.object-meta.xml", "**/*.field-meta.xml"'
-        $SOURCE_PATTERNS = '"**/*.cls", "**/*.trigger"'
-    }
-    { $_ -in "nodejs" } {
-        $API_ROUTE_PATTERNS = '"**/routes/**/*.ts", "**/routes/**/*.js", "**/*.route.ts", "**/*.api.ts"'
-        $COMPONENT_PATTERNS = '"**/*.tsx", "**/*.jsx"'
-        $TEST_PATTERNS = '"**/*.test.ts", "**/*.spec.ts", "**/__tests__/**/*"'
-        $DATABASE_PATTERNS = '"**/migrations/**/*", "**/models/**/*", "schema.prisma"'
-        $SOURCE_PATTERNS = '"**/*.ts", "**/*.js"'
-    }
-    "react" {
-        $API_ROUTE_PATTERNS = '"app/api/**/*.ts", "**/routes/**/*.ts", "**/*.api.ts"'
-        $COMPONENT_PATTERNS = '"**/*.tsx", "**/*.jsx", "components/**/*"'
-        $TEST_PATTERNS = '"**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/__tests__/**/*"'
-        $DATABASE_PATTERNS = '"**/migrations/**/*", "**/models/**/*", "schema.prisma"'
-        $SOURCE_PATTERNS = '"**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"'
-    }
-    "python" {
-        $API_ROUTE_PATTERNS = '"**/routes/*.py", "**/views/*.py", "**/endpoints/*.py"'
-        $COMPONENT_PATTERNS = '"**/templates/**/*.html"'
-        $TEST_PATTERNS = '"test_*.py", "*_test.py", "tests/**/*.py"'
-        $DATABASE_PATTERNS = '"**/models.py", "**/models/*.py", "**/migrations/**/*", "alembic/**/*"'
-        $SOURCE_PATTERNS = '"**/*.py"'
-    }
-    "go" {
-        $API_ROUTE_PATTERNS = '"**/handlers/*.go", "**/api/*.go", "**/routes/*.go"'
-        $COMPONENT_PATTERNS = '"**/templates/**/*.html", "**/templates/**/*.templ"'
-        $TEST_PATTERNS = '"*_test.go"'
-        $DATABASE_PATTERNS = '"**/models/*.go", "**/migrations/**/*", "**/repository/*.go"'
-        $SOURCE_PATTERNS = '"**/*.go"'
-    }
-    "java" {
-        $API_ROUTE_PATTERNS = '"**/*Controller.java", "**/*Resource.java", "**/*Endpoint.java"'
-        $COMPONENT_PATTERNS = '"**/templates/**/*.html"'
-        $TEST_PATTERNS = '"**/*Test.java", "**/*Spec.java", "src/test/**/*"'
-        $DATABASE_PATTERNS = '"**/entity/*.java", "**/repository/*.java", "**/migrations/**/*"'
-        $SOURCE_PATTERNS = '"**/*.java"'
-    }
-    "rails" {
-        $API_ROUTE_PATTERNS = '"app/controllers/**/*.rb", "config/routes.rb"'
-        $COMPONENT_PATTERNS = '"app/views/**/*.erb", "app/helpers/**/*.rb", "app/components/**/*.rb"'
-        $TEST_PATTERNS = '"spec/**/*.rb", "test/**/*.rb"'
-        $DATABASE_PATTERNS = '"db/migrate/**/*", "app/models/**/*.rb"'
-        $SOURCE_PATTERNS = '"**/*.rb"'
-    }
-    default {
-        $API_ROUTE_PATTERNS = '"**/routes/**/*", "**/api/**/*"'
-        $COMPONENT_PATTERNS = '"**/components/**/*"'
-        $TEST_PATTERNS = '"**/*test*", "**/*spec*"'
-        $DATABASE_PATTERNS = '"**/models/**/*", "**/migrations/**/*"'
-        $SOURCE_PATTERNS = '"**/*.{ts,js,py,go,java,rb}"'
-    }
-}
+$notifyConfig = Get-Content "$FRAMEWORK_DIR/config/notifications.json" -Raw -Encoding UTF8 | ConvertFrom-Json
+$notifyCfg = $notifyConfig.$NOTIFY_NAME
+if (-not $notifyCfg) { $notifyCfg = $notifyConfig.none }
 
-# -- Build tracker commands --
-
-$TRACKER_FETCH = ""
-$TRACKER_SET_PROGRESS = ""
-$TRACKER_SET_REVIEW = ""
-$TRACKER_URL = ""
-
-switch ($TRACKER_NAME) {
-    "ado" {
-        $TRACKER_FETCH = @"
-``````bash
-PAT=`$(grep AZURE_DEVOPS_EXT_PAT .env | cut -d= -f2)
-curl -s "https://dev.azure.com/$ADO_ORG/$ADO_PROJECT/_apis/wit/workitems/{id}?api-version=7.1&`$expand=all" -u ":`${PAT}"
-``````
-"@
-        $TRACKER_URL = "https://dev.azure.com/$ADO_ORG/$ADO_PROJECT/_workitems/edit/{id}"
-        $TRACKER_SET_PROGRESS = @"
-``````bash
-PAT=`$(grep AZURE_DEVOPS_EXT_PAT .env | cut -d= -f2)
-curl -s -X PATCH "https://dev.azure.com/$ADO_ORG/$ADO_PROJECT/_apis/wit/workitems/{id}?api-version=7.1" \
-  -H "Content-Type: application/json-patch+json" -u ":`${PAT}" \
-  -d '[{"op": "replace", "path": "/fields/System.State", "value": "In Progress"}]'
-``````
-"@
-        $TRACKER_SET_REVIEW = @"
-``````bash
-PAT=`$(grep AZURE_DEVOPS_EXT_PAT .env | cut -d= -f2)
-curl -s -X PATCH "https://dev.azure.com/$ADO_ORG/$ADO_PROJECT/_apis/wit/workitems/{id}?api-version=7.1" \
-  -H "Content-Type: application/json-patch+json" -u ":`${PAT}" \
-  -d '[{"op": "replace", "path": "/fields/System.State", "value": "In Peer Testing"}]'
-``````
-"@
-    }
-    "jira" {
-        $TRACKER_FETCH = @"
-``````bash
-curl -s "https://$JIRA_DOMAIN/rest/api/3/issue/{key}" \
-  -H "Authorization: Basic `$(echo -n `$(grep JIRA_EMAIL .env | cut -d= -f2):`$(grep JIRA_API_TOKEN .env | cut -d= -f2) | base64)"
-``````
-"@
-        $TRACKER_URL = "https://$JIRA_DOMAIN/browse/{key}"
-        $TRACKER_SET_PROGRESS = "Use Jira REST API to transition issue to `"In Progress`"."
-        $TRACKER_SET_REVIEW = "Use Jira REST API to transition issue to `"In Review`"."
-    }
-    "linear" {
-        $TRACKER_FETCH = "Use Linear GraphQL API to fetch issue by identifier."
-        $TRACKER_URL = "https://linear.app/team/$LINEAR_TEAM/issue/{id}"
-        $TRACKER_SET_PROGRESS = "Use Linear GraphQL API to update issue state to `"In Progress`"."
-        $TRACKER_SET_REVIEW = "Use Linear GraphQL API to update issue state to `"In Review`"."
-    }
-    "github" {
-        $TRACKER_FETCH = "``````bash`ngh issue view {number} --json title,body,state,labels,assignees`n``````"
-        $TRACKER_URL = "https://github.com/org/repo/issues/{number}"
-        $TRACKER_SET_PROGRESS = "``````bash`ngh issue edit {number} --add-label `"in-progress`"`n``````"
-        $TRACKER_SET_REVIEW = "``````bash`ngh issue edit {number} --add-label `"in-review`" --remove-label `"in-progress`"`n``````"
-    }
-    "none" {
-        $TRACKER_FETCH = "No work item tracker configured. Ask user for ticket details."
-        $TRACKER_SET_PROGRESS = "No tracker configured."
-        $TRACKER_SET_REVIEW = "No tracker configured."
-    }
-}
-
-# -- Build notification commands --
-
-$NOTIFY_CMD = ""
-$NOTIFY_DEPLOY_CMD = ""
-$NOTIFY_MERGE_CMD = ""
-
-switch ($NOTIFY_NAME) {
-    "slack" {
-        $NOTIFY_CMD = @"
-``````bash
-source .env && curl -s -X POST "`${SLACK_WEBHOOK_URL}" \
-  -H "Content-Type: application/json" \
-  -d "{\"text\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}"
-``````
-"@
-        $NOTIFY_DEPLOY_CMD = @"
-``````bash
-source .env && curl -s -X POST "`${SLACK_WEBHOOK_URL}" \
-  -H "Content-Type: application/json" \
-  -d "{\"text\":\"Factory deployed for {TICKET_ID}: {reason}. Deployment complete.\"}"
-``````
-"@
-        $NOTIFY_MERGE_CMD = @"
-``````bash
-source .env && curl -s -X POST "`${SLACK_WEBHOOK_URL}" \
-  -H "Content-Type: application/json" \
-  -d "{\"text\":\"Factory merge-resolved for {TICKET_ID}: {reason}. Merged result needs human verification.\"}"
-``````
-"@
-    }
-    "teams" {
-        $NOTIFY_CMD = @"
-``````bash
-source .env && curl -s -X POST "`${TEAMS_WEBHOOK_URL}" \
-  -H "Content-Type: application/json" \
-  -d "{\"text\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}"
-``````
-"@
-        $NOTIFY_DEPLOY_CMD = @"
-``````bash
-source .env && curl -s -X POST "`${TEAMS_WEBHOOK_URL}" \
-  -H "Content-Type: application/json" \
-  -d "{\"text\":\"Factory deployed for {TICKET_ID}: {reason}. Deployment complete.\"}"
-``````
-"@
-        $NOTIFY_MERGE_CMD = @"
-``````bash
-source .env && curl -s -X POST "`${TEAMS_WEBHOOK_URL}" \
-  -H "Content-Type: application/json" \
-  -d "{\"text\":\"Factory merge-resolved for {TICKET_ID}: {reason}. Merged result needs human verification.\"}"
-``````
-"@
-    }
-    "discord" {
-        $NOTIFY_CMD = @"
-``````bash
-source .env && curl -s -X POST "`${DISCORD_WEBHOOK_URL}" \
-  -H "Content-Type: application/json" \
-  -d "{\"content\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}"
-``````
-"@
-        $NOTIFY_DEPLOY_CMD = @"
-``````bash
-source .env && curl -s -X POST "`${DISCORD_WEBHOOK_URL}" \
-  -H "Content-Type: application/json" \
-  -d "{\"content\":\"Factory deployed for {TICKET_ID}: {reason}. Deployment complete.\"}"
-``````
-"@
-        $NOTIFY_MERGE_CMD = @"
-``````bash
-source .env && curl -s -X POST "`${DISCORD_WEBHOOK_URL}" \
-  -H "Content-Type: application/json" \
-  -d "{\"content\":\"Factory merge-resolved for {TICKET_ID}: {reason}. Merged result needs human verification.\"}"
-``````
-"@
-    }
-    default {
-        $NOTIFY_CMD = "No notification system configured. Log the halt message."
-        $NOTIFY_DEPLOY_CMD = "No notification system configured. Log deploy success."
-        $NOTIFY_MERGE_CMD = "No notification system configured. Log merge resolution message."
-    }
-}
+$NOTIFY_CMD = $notifyCfg.halt
+$NOTIFY_DEPLOY_CMD = $notifyCfg.deploy_success
+$NOTIFY_MERGE_CMD = $notifyCfg.merge_resolve
 
 # -- Replace placeholders in all copied files --
 
@@ -749,11 +430,11 @@ $replacements = @{
     '{{TRACKER_SET_IN_PROGRESS}}'  = $TRACKER_SET_PROGRESS
     '{{TRACKER_SET_IN_REVIEW}}'    = $TRACKER_SET_REVIEW
     '{{TRACKER_TICKET_URL}}'       = $TRACKER_URL
-    '{{TRACKER_LINK_PR}}'          = 'Linked automatically via PR body "Closes #number".'
-    '{{TRACKER_CREATE_TICKET}}'    = 'gh issue create --title "TITLE" --body "BODY"'
-    '{{TRACKER_CREATE_BUG}}'       = 'gh issue create --title "Bug: TITLE" --body "BODY" --label bug'
-    '{{TRACKER_UPDATE_FIELDS}}'    = 'Use gh issue edit to update labels and assignees.'
-    '{{TRACKER_SET_DEPLOYED}}'     = 'gh issue edit {number} --add-label "deployed"'
+    '{{TRACKER_LINK_PR}}'          = (Replace-TrackerPlaceholders $trackerConfig.link_pr)
+    '{{TRACKER_CREATE_TICKET}}'    = (Replace-TrackerPlaceholders $trackerConfig.create_ticket)
+    '{{TRACKER_CREATE_BUG}}'       = (Replace-TrackerPlaceholders $trackerConfig.create_bug)
+    '{{TRACKER_UPDATE_FIELDS}}'    = (Replace-TrackerPlaceholders $trackerConfig.update_fields)
+    '{{TRACKER_SET_DEPLOYED}}'     = (Replace-TrackerPlaceholders $trackerConfig.set_deployed)
     '{{NOTIFY_HALT}}'              = $NOTIFY_CMD
     '{{NOTIFY_HALT_FACTORY}}'      = $NOTIFY_CMD
     '{{NOTIFY_DEPLOY_SUCCESS}}'    = $NOTIFY_DEPLOY_CMD
@@ -1010,28 +691,19 @@ if (-not (Test-Path $envFile)) {
 # Work Item Tracker
 "@
 
-        switch ($TRACKER_NAME) {
-            "ado" {
-                $envContent += "`nAZURE_DEVOPS_EXT_PAT=your-pat-here"
-            }
-            "jira" {
-                $envContent += "`nJIRA_EMAIL=your-email@company.com`nJIRA_API_TOKEN=your-token-here"
-            }
-            "linear" {
-                $envContent += "`nLINEAR_API_KEY=your-key-here"
+        # Append tracker env vars from config/trackers.json
+        $trackerEnvVars = $trackerConfig.env_vars
+        if ($trackerEnvVars) {
+            foreach ($envVar in $trackerEnvVars) {
+                $envContent += "`n$envVar"
             }
         }
 
-        switch ($NOTIFY_NAME) {
-            "slack" {
-                $envContent += "`nSLACK_WEBHOOK_URL=https://hooks.slack.com/services/..."
-            }
-            "teams" {
-                $envContent += "`nTEAMS_WEBHOOK_URL=https://outlook.office.com/webhook/..."
-            }
-            "discord" {
-                $envContent += "`nDISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/..."
-            }
+        # Append notification env vars from config/notifications.json
+        $notifyEnvVar = $notifyCfg.env_var
+        $notifyEnvPlaceholder = $notifyCfg.env_placeholder
+        if ($notifyEnvVar -and $notifyEnvPlaceholder) {
+            $envContent += "`n$notifyEnvVar=$notifyEnvPlaceholder"
         }
 
         Set-Content $envFile $envContent -Encoding UTF8
