@@ -34,10 +34,10 @@ claude-code-framework/
 │   ├── mcp.json                 # MCP server config (→ .mcp.json)
 │   ├── agents/                  # 12 AI agent definitions
 │   ├── commands/                # 6 quick command definitions
-│   ├── rules/                   # 6 file-pattern guardrails
+│   ├── rules/                   # 9 file-pattern guardrails
 │   ├── hooks/                   # 5 lifecycle scripts
 │   └── statusline/              # Status bar config
-├── skills/                      # 16 workflow skills + 1 template
+├── skills/                      # 17 workflow skills + 1 template
 ├── workflows/                   # 4 GitHub Actions CI/CD templates
 ├── memory/                      # Memory system templates
 └── docs/                        # Framework documentation
@@ -56,6 +56,11 @@ Common placeholders:
 - `{{FORMAT_COMMAND}}` — project formatter (prettier, black, etc.)
 - `{{TRACKER_FETCH_TICKET}}` — API call to fetch work items
 - `{{API_ROUTE_PATTERNS}}` — glob patterns for rule file scoping
+- `{{SOURCE_PATTERNS}}` — glob patterns for source files (used by auth-security, data-protection, error-handling rules)
+- `{{COMPONENT_PATTERNS}}` — glob patterns for UI components (used by components, design-system rules)
+- `{{DATABASE_PATTERNS}}` — glob patterns for DB files
+- `{{DEFAULT_MODEL}}` — default Claude model (sonnet)
+- `{{DESIGN_COLOR_RULES}}`, `{{DESIGN_COMPONENT_IMPORTS}}`, `{{DESIGN_ICON_USAGE}}`, `{{DESIGN_CARD_PATTERNS}}`, `{{DESIGN_DARK_MODE}}` — design system conventions
 
 ### Adding New Skills
 
@@ -81,11 +86,11 @@ Create a `.sh` file in `templates/hooks/`. Wire it up in `templates/settings.loc
 
 Both `setup.sh` and `setup.ps1` follow the same flow:
 
-1. **Prompt** — project type, tracker, CI/CD, base branch, notification system
+1. **Prompt** — project type, tracker, CI/CD, base branch, notification system, project short name, design system
 2. **Build placeholders** — map project type to commands (test, format, deploy, type-check, etc.)
 3. **Copy files** — skills, agents, commands, rules, hooks, settings
 4. **Replace placeholders** — sed (bash) or .Replace() (PowerShell) in all copied files
-5. **Conditional logic** — skip `components.md` rule for backend-only projects
+5. **Conditional logic** — skip `components.md` and `design-system.md` rules for backend-only projects or when no design system is configured
 6. **Generate extras** — .env template, GitHub Actions workflows, CLAUDE.md
 
 When modifying `setup.sh`, always mirror changes to `setup.ps1`.
@@ -101,6 +106,7 @@ Spawn pre-configured teams for parallel analysis of the framework:
 | **Release** | `/team release` | security-auditor, devops-engineer, performance-optimizer |
 | **Quality** | `/team quality` | code-reviewer, test-writer, performance-optimizer |
 | **Documentation** | `/team documentation` | documentation-writer, api-designer |
+| **Design** | `/team design` | ui-ux-reviewer, performance-optimizer, refactor-advisor |
 | **Full** | `/team full` | All 12 agents |
 | **Custom** | `/team custom a b c` | Any combination |
 

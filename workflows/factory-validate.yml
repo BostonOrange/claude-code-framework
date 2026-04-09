@@ -9,6 +9,14 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: factory-validate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     if: contains(github.event.pull_request.labels.*.name, 'factory')

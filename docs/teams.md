@@ -57,6 +57,11 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents �
 **When:** After implementation, before PR creation
 **Output:** Code review + generated tests + performance analysis
 
+### `/team design` — Design Review Team
+**Agents:** ui-ux-reviewer + performance-optimizer + refactor-advisor
+**When:** After UI changes, design system updates, component refactoring
+**Output:** UX review, performance analysis, refactoring recommendations
+
 ### `/team documentation` — Documentation Team
 **Agents:** documentation-writer + api-designer
 **When:** After API changes, before releases, during onboarding prep

@@ -1,11 +1,40 @@
 # Claude Code Framework — Interactive Setup Wizard (Windows PowerShell)
 # Usage: cd your-project/ ; & ~/Developer/claude-code-framework/setup.ps1
 
+param(
+    [switch]$DryRun,
+    [switch]$Reset,
+    [switch]$Help
+)
+
+if ($Help) {
+    Write-Host "Usage: setup.ps1 [-DryRun] [-Reset]"
+    Write-Host "  -DryRun   Show what would be done without making changes"
+    Write-Host "  -Reset    Remove framework files from target project"
+    exit 0
+}
+
 $ErrorActionPreference = "Stop"
 
 $FRAMEWORK_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 $PROJECT_DIR = Get-Location
 $PROJECT_NAME = Split-Path -Leaf $PROJECT_DIR
+
+if ($Reset) {
+    Write-Host "Removing framework files..."
+    $dirs = @("skills", "agents", "commands", "rules", "hooks")
+    foreach ($dir in $dirs) {
+        $path = Join-Path $PROJECT_DIR ".claude/$dir"
+        if (Test-Path $path) { Remove-Item -Recurse -Force $path }
+    }
+    $files = @(".claude/settings.local.json", ".mcp.json")
+    foreach ($file in $files) {
+        $path = Join-Path $PROJECT_DIR $file
+        if (Test-Path $path) { Remove-Item -Force $path }
+    }
+    Write-Host "Framework files removed. CLAUDE.md and .env preserved."
+    exit 0
+}
 
 Write-Host "======================================"
 Write-Host "  Claude Code Framework Setup"
@@ -13,6 +42,7 @@ Write-Host "======================================"
 Write-Host ""
 Write-Host "Project: $PROJECT_NAME"
 Write-Host "Directory: $PROJECT_DIR"
+if ($DryRun) { Write-Host "Mode:    DRY RUN (no changes will be made)" }
 Write-Host ""
 
 # -- 1. Project Type --
@@ -26,7 +56,12 @@ Write-Host "  5) Java / Spring Boot"
 Write-Host "  6) React / Next.js"
 Write-Host "  7) Ruby on Rails"
 Write-Host "  8) Other"
-$PROJECT_TYPE = Read-Host "Choice [1-8]"
+do {
+    $PROJECT_TYPE = Read-Host "Choice [1-8]"
+    if (-not $PROJECT_TYPE) { $PROJECT_TYPE = "8" }
+    $valid = $PROJECT_TYPE -match '^[1-8]$'
+    if (-not $valid) { Write-Host "Invalid selection. Please enter a number 1-8." }
+} while (-not $valid)
 
 $PROJECT_TYPE_NAME = switch ($PROJECT_TYPE) {
     "1" { "salesforce" }
@@ -48,7 +83,12 @@ Write-Host "  2) Jira"
 Write-Host "  3) Linear"
 Write-Host "  4) GitHub Issues"
 Write-Host "  5) None"
-$TRACKER_TYPE = Read-Host "Choice [1-5]"
+do {
+    $TRACKER_TYPE = Read-Host "Choice [1-5]"
+    if (-not $TRACKER_TYPE) { $TRACKER_TYPE = "5" }
+    $valid = $TRACKER_TYPE -match '^[1-5]$'
+    if (-not $valid) { Write-Host "Invalid selection. Please enter a number 1-5." }
+} while (-not $valid)
 
 $TRACKER_NAME = switch ($TRACKER_TYPE) {
     "1" { "ado" }
@@ -102,7 +142,12 @@ Write-Host "  1) GitHub Actions"
 Write-Host "  2) GitLab CI"
 Write-Host "  3) CircleCI"
 Write-Host "  4) None / Manual"
-$CI_TYPE = Read-Host "Choice [1-4]"
+do {
+    $CI_TYPE = Read-Host "Choice [1-4]"
+    if (-not $CI_TYPE) { $CI_TYPE = "4" }
+    $valid = $CI_TYPE -match '^[1-4]$'
+    if (-not $valid) { Write-Host "Invalid selection. Please enter a number 1-4." }
+} while (-not $valid)
 
 $CI_NAME = switch ($CI_TYPE) {
     "1" { "github-actions" }
@@ -114,8 +159,8 @@ $CI_NAME = switch ($CI_TYPE) {
 # -- 4. Base Branch --
 
 Write-Host ""
-$BASE_BRANCH = Read-Host "Primary integration branch [develop]"
-if (-not $BASE_BRANCH) { $BASE_BRANCH = "develop" }
+$BASE_BRANCH = Read-Host "Primary integration branch [main]"
+if (-not $BASE_BRANCH) { $BASE_BRANCH = "main" }
 
 # -- 5. Notification System --
 
@@ -125,7 +170,12 @@ Write-Host "  1) Slack"
 Write-Host "  2) Microsoft Teams"
 Write-Host "  3) Discord"
 Write-Host "  4) None"
-$NOTIFY_TYPE = Read-Host "Choice [1-4]"
+do {
+    $NOTIFY_TYPE = Read-Host "Choice [1-4]"
+    if (-not $NOTIFY_TYPE) { $NOTIFY_TYPE = "4" }
+    $valid = $NOTIFY_TYPE -match '^[1-4]$'
+    if (-not $valid) { Write-Host "Invalid selection. Please enter a number 1-4." }
+} while (-not $valid)
 
 $NOTIFY_NAME = switch ($NOTIFY_TYPE) {
     "1" { "slack" }
@@ -139,6 +189,105 @@ $NOTIFY_NAME = switch ($NOTIFY_TYPE) {
 Write-Host ""
 $PROJECT_SHORT = Read-Host "Short project name (for worktrees, e.g., 'myapp') [$PROJECT_NAME]"
 if (-not $PROJECT_SHORT) { $PROJECT_SHORT = $PROJECT_NAME }
+
+# -- 7. Design System --
+
+$DESIGN_SYSTEM_NAME = "none"
+$DESIGN_COLOR_RULES = ""
+$DESIGN_COMPONENT_IMPORTS = ""
+$DESIGN_ICON_USAGE = ""
+$DESIGN_CARD_PATTERNS = ""
+$DESIGN_DARK_MODE = ""
+
+if ($PROJECT_TYPE_NAME -in "react", "nodejs") {
+    Write-Host ""
+    Write-Host "What design system foundation does this project use?"
+    Write-Host "  1) Untitled UI (premium, React Aria based)"
+    Write-Host "  2) shadcn/ui (open source, Radix based)"
+    Write-Host "  3) Custom / existing (I'll configure it later)"
+    Write-Host "  4) None - no design system"
+    do {
+        $DESIGN_TYPE = Read-Host "Choice [1-4]"
+        if (-not $DESIGN_TYPE) { $DESIGN_TYPE = "4" }
+        $valid = $DESIGN_TYPE -match '^[1-4]$'
+        if (-not $valid) { Write-Host "Invalid selection. Please enter a number 1-4." }
+    } while (-not $valid)
+
+    switch ($DESIGN_TYPE) {
+        "1" {
+            $DESIGN_SYSTEM_NAME = "untitled-ui"
+            $DESIGN_COLOR_RULES = "**MUST use semantic color classes - never raw colors like ``text-gray-900`` or ``bg-blue-700``.**`n`nUse ``text-primary``, ``text-secondary``, ``text-tertiary`` for text. Use ``border-primary``, ``border-secondary`` for borders. Use ``bg-primary``, ``bg-secondary``, ``bg-brand-solid`` for backgrounds. Use ``fg-primary``, ``fg-secondary``, ``fg-quaternary`` for icons/foreground elements.`n`nSemantic variants exist for: ``brand``, ``error``, ``warning``, ``success``, plus ``_hover``, ``_on-brand``, ``_alt``, ``_subtle`` modifiers. See ``src/styles/theme.css`` for the full color token reference."
+            $DESIGN_COMPONENT_IMPORTS = @"
+``````typescript
+import { Button } from "@/components/base/buttons/button";
+import { Input } from "@/components/base/input/input";
+import { Select } from "@/components/base/select/select";
+import { Checkbox } from "@/components/base/checkbox/checkbox";
+import { Badge } from "@/components/base/badges/badges";
+import { Avatar } from "@/components/base/avatar/avatar";
+``````
+
+Never use raw ``<button>``, ``<input>``, or ``<select>`` elements in feature code. Always use the base component library.
+"@
+            $DESIGN_ICON_USAGE = @"
+``````typescript
+import { Home01, Settings01, ChevronDown } from "@untitledui/icons";
+``````
+
+Sizing: ``size-4`` (16px), ``size-5`` (20px), ``size-6`` (24px). Color: use semantic text colors (``text-fg-secondary``). Never use inline ``<svg>`` elements.
+"@
+            $DESIGN_CARD_PATTERNS = "**Glass cards**: ``bg-primary/80 backdrop-blur-xl border border-secondary shadow-xs```n**Separator lines**: ``border-black/15 dark:border-white/15```n**Default transitions**: ``transition duration-100 ease-linear``"
+            $DESIGN_DARK_MODE = "Dark mode is handled at the design token level via CSS custom properties. Components should NOT need per-element ``dark:`` classes when using semantic tokens. If a component needs a dark mode override, the design token system has a gap - fix the token, don't patch the component."
+        }
+        "2" {
+            $DESIGN_SYSTEM_NAME = "shadcn"
+            $DESIGN_COLOR_RULES = "**Use CSS variable-based colors from the shadcn/ui theme.**`n`nUse ``text-foreground``, ``text-muted-foreground``, ``text-primary``, ``text-destructive`` etc. Never use raw Tailwind colors like ``text-gray-900``. See ``globals.css`` or ``tailwind.config`` for the full token reference."
+            $DESIGN_COMPONENT_IMPORTS = @"
+``````typescript
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+``````
+
+Never use raw HTML elements for interactive controls in feature code. Always use the shadcn/ui component library.
+"@
+            $DESIGN_ICON_USAGE = @"
+``````typescript
+import { Home, Settings, ChevronDown } from "lucide-react";
+``````
+
+Sizing: ``size={16}``, ``size={20}``, ``size={24}`` or ``className="h-4 w-4"```. Color: inherits from parent text color. Never use inline ``<svg>`` elements.
+"@
+            $DESIGN_CARD_PATTERNS = "Use ``<Card>`` component for all card-like containers. Do not hand-roll ``rounded-xl border border-gray-200 bg-white`` - use the Card abstraction."
+            $DESIGN_DARK_MODE = "Dark mode is handled via the ``.dark`` class and CSS variables. Components using semantic color tokens adapt automatically. Do not add manual ``dark:bg-gray-*`` overrides."
+        }
+        "3" {
+            $DESIGN_SYSTEM_NAME = "custom"
+            $DESIGN_COLOR_RULES = "{{DESIGN_COLOR_RULES}} - Run ``/improve`` to auto-detect from project files, or fill in manually."
+            $DESIGN_COMPONENT_IMPORTS = "{{DESIGN_COMPONENT_IMPORTS}} - Run ``/improve`` to auto-detect, or fill in manually."
+            $DESIGN_ICON_USAGE = "{{DESIGN_ICON_USAGE}} - Run ``/improve`` to auto-detect, or fill in manually."
+            $DESIGN_CARD_PATTERNS = "{{DESIGN_CARD_PATTERNS}} - Run ``/improve`` to auto-detect, or fill in manually."
+            $DESIGN_DARK_MODE = "{{DESIGN_DARK_MODE}} - Run ``/improve`` to auto-detect, or fill in manually."
+        }
+        default {
+            $DESIGN_SYSTEM_NAME = "none"
+            $DESIGN_COLOR_RULES = "No design system configured. Consider running ``/scaffold-design-system`` to bootstrap one."
+            $DESIGN_COMPONENT_IMPORTS = "No component library configured."
+            $DESIGN_ICON_USAGE = "No icon library configured."
+            $DESIGN_CARD_PATTERNS = "No card patterns documented."
+            $DESIGN_DARK_MODE = "No dark mode conventions documented."
+        }
+    }
+} else {
+    # Non-frontend projects don't need a design system
+    $DESIGN_COLOR_RULES = "N/A - backend project."
+    $DESIGN_COMPONENT_IMPORTS = "N/A - backend project."
+    $DESIGN_ICON_USAGE = "N/A - backend project."
+    $DESIGN_CARD_PATTERNS = "N/A - backend project."
+    $DESIGN_DARK_MODE = "N/A - backend project."
+}
 
 # ============================================================
 # Generate project files
@@ -154,72 +303,115 @@ $isGitRepo = git rev-parse --git-dir 2>$null
 if ($isGitRepo) {
     $currentBranch = git rev-parse --abbrev-ref HEAD 2>$null
     if ($currentBranch -and $currentBranch -ne $BASE_BRANCH) {
-        Write-Host "Renaming branch '$currentBranch' -> '$BASE_BRANCH'..."
-        git branch -m $currentBranch $BASE_BRANCH
+        $confirm = Read-Host "Current branch is '$currentBranch'. Rename to '$BASE_BRANCH' and update remote? [y/N]"
+        if ($confirm -ne 'y' -and $confirm -ne 'Y') {
+            Write-Host "Skipping branch rename. Using '$currentBranch' as-is."
+            $BASE_BRANCH = $currentBranch
+        } else {
+            if (-not $DryRun) {
+                Write-Host "Renaming branch '$currentBranch' -> '$BASE_BRANCH'..."
+                git branch -m $currentBranch $BASE_BRANCH
 
-        $hasRemote = git remote get-url origin 2>$null
-        if ($hasRemote) {
-            Write-Host "Pushing '$BASE_BRANCH' to remote..."
-            git push -u origin $BASE_BRANCH 2>$null
+                $hasRemote = git remote get-url origin 2>$null
+                if ($hasRemote) {
+                    Write-Host "Pushing '$BASE_BRANCH' to remote..."
+                    git push -u origin $BASE_BRANCH 2>$null
 
-            # Try to set default branch (requires gh CLI)
-            if (Get-Command gh -ErrorAction SilentlyContinue) {
-                gh repo edit --default-branch $BASE_BRANCH 2>$null
+                    # Try to set default branch (requires gh CLI)
+                    if (Get-Command gh -ErrorAction SilentlyContinue) {
+                        gh repo edit --default-branch $BASE_BRANCH 2>$null
+                    }
+
+                    # Delete old remote branch
+                    git push origin --delete $currentBranch 2>$null
+                }
+            } else {
+                Write-Host "[DRY-RUN] Would rename branch '$currentBranch' -> '$BASE_BRANCH'"
+                Write-Host "[DRY-RUN] Would push '$BASE_BRANCH' to remote and delete '$currentBranch'"
             }
-
-            # Delete old remote branch
-            git push origin --delete $currentBranch 2>$null
         }
     }
 }
 
 # -- Create directories --
 
-New-Item -ItemType Directory -Force -Path ".claude/skills" | Out-Null
-New-Item -ItemType Directory -Force -Path ".claude/agents" | Out-Null
-New-Item -ItemType Directory -Force -Path ".claude/commands" | Out-Null
-New-Item -ItemType Directory -Force -Path ".claude/rules" | Out-Null
-New-Item -ItemType Directory -Force -Path ".claude/hooks" | Out-Null
-New-Item -ItemType Directory -Force -Path ".claude/statusline" | Out-Null
-New-Item -ItemType Directory -Force -Path "docs/stories" | Out-Null
+if (-not $DryRun) {
+    New-Item -ItemType Directory -Force -Path ".claude/skills" | Out-Null
+    New-Item -ItemType Directory -Force -Path ".claude/agents" | Out-Null
+    New-Item -ItemType Directory -Force -Path ".claude/commands" | Out-Null
+    New-Item -ItemType Directory -Force -Path ".claude/rules" | Out-Null
+    New-Item -ItemType Directory -Force -Path ".claude/hooks" | Out-Null
+    New-Item -ItemType Directory -Force -Path ".claude/statusline" | Out-Null
+    New-Item -ItemType Directory -Force -Path "docs/stories" | Out-Null
+} else {
+    Write-Host "[DRY-RUN] Would create directories: .claude/skills, agents, commands, rules, hooks, statusline, docs/stories"
+}
 
 # -- Copy skills --
 
 Write-Host "Copying skills..."
-Get-ChildItem -Directory "$FRAMEWORK_DIR/skills" | ForEach-Object {
-    Copy-Item -Recurse -Force $_.FullName ".claude/skills/$($_.Name)"
-    Write-Host "  + /$($_.Name)"
+Get-ChildItem -Directory "$FRAMEWORK_DIR/skills" | Where-Object { $_.Name -ne "_template" } | ForEach-Object {
+    if (-not $DryRun) {
+        Copy-Item -Recurse -Force $_.FullName ".claude/skills/$($_.Name)"
+    }
+    Write-Host "  $(if ($DryRun) { '[DRY-RUN] Would copy' } else { '+' }) /$($_.Name)"
 }
 
 # -- Copy agents --
 
 Write-Host "Copying agents..."
 Get-ChildItem "$FRAMEWORK_DIR/templates/agents" -Filter "*.md" -ErrorAction SilentlyContinue | ForEach-Object {
-    Copy-Item $_.FullName ".claude/agents/$($_.Name)" -Force
-    Write-Host "  + $($_.Name)"
+    if (-not $DryRun) {
+        Copy-Item $_.FullName ".claude/agents/$($_.Name)" -Force
+    }
+    Write-Host "  $(if ($DryRun) { '[DRY-RUN] Would copy' } else { '+' }) $($_.Name)"
 }
 
 # -- Copy commands --
 
 Write-Host "Copying commands..."
 Get-ChildItem "$FRAMEWORK_DIR/templates/commands" -Filter "*.md" -ErrorAction SilentlyContinue | ForEach-Object {
-    Copy-Item $_.FullName ".claude/commands/$($_.Name)" -Force
-    Write-Host "  + $($_.Name)"
+    if (-not $DryRun) {
+        Copy-Item $_.FullName ".claude/commands/$($_.Name)" -Force
+    }
+    Write-Host "  $(if ($DryRun) { '[DRY-RUN] Would copy' } else { '+' }) $($_.Name)"
 }
 
 # -- Copy rules --
 
 Write-Host "Copying rules..."
 Get-ChildItem "$FRAMEWORK_DIR/templates/rules" -Filter "*.md" -ErrorAction SilentlyContinue | ForEach-Object {
-    Copy-Item $_.FullName ".claude/rules/$($_.Name)" -Force
-    Write-Host "  + $($_.Name)"
+    if (-not $DryRun) {
+        Copy-Item $_.FullName ".claude/rules/$($_.Name)" -Force
+    }
+    Write-Host "  $(if ($DryRun) { '[DRY-RUN] Would copy' } else { '+' }) $($_.Name)"
 }
 
 # Skip frontend rules for backend-only projects
 if ($PROJECT_TYPE_NAME -in "python", "go", "java") {
-    if (Test-Path ".claude/rules/components.md") {
-        Remove-Item ".claude/rules/components.md" -Force
-        Write-Host "  Skipped components.md (backend-only project)"
+    if (-not $DryRun) {
+        if (Test-Path ".claude/rules/components.md") {
+            Remove-Item ".claude/rules/components.md" -Force
+            Write-Host "  Skipped components.md (backend-only project)"
+        }
+        if (Test-Path ".claude/rules/design-system.md") {
+            Remove-Item ".claude/rules/design-system.md" -Force
+            Write-Host "  Skipped design-system.md (backend-only project)"
+        }
+    } else {
+        Write-Host "[DRY-RUN] Would skip components.md and design-system.md (backend-only project)"
+    }
+}
+
+# Skip design-system rule if no design system configured
+if ($DESIGN_SYSTEM_NAME -eq "none") {
+    if (-not $DryRun) {
+        if (Test-Path ".claude/rules/design-system.md") {
+            Remove-Item ".claude/rules/design-system.md" -Force
+            Write-Host "  Skipped design-system.md (no design system configured)"
+        }
+    } else {
+        Write-Host "[DRY-RUN] Would skip design-system.md (no design system configured)"
     }
 }
 
@@ -227,8 +419,10 @@ if ($PROJECT_TYPE_NAME -in "python", "go", "java") {
 
 Write-Host "Copying hooks..."
 Get-ChildItem "$FRAMEWORK_DIR/templates/hooks" -Filter "*.sh" -ErrorAction SilentlyContinue | ForEach-Object {
-    Copy-Item $_.FullName ".claude/hooks/$($_.Name)" -Force
-    Write-Host "  + $($_.Name)"
+    if (-not $DryRun) {
+        Copy-Item $_.FullName ".claude/hooks/$($_.Name)" -Force
+    }
+    Write-Host "  $(if ($DryRun) { '[DRY-RUN] Would copy' } else { '+' }) $($_.Name)"
 }
 
 # -- Build project-type-specific commands --
@@ -391,6 +585,48 @@ $TRACKER_SET_REVIEW = ""
 $TRACKER_URL = ""
 
 switch ($TRACKER_NAME) {
+    "ado" {
+        $TRACKER_FETCH = @"
+``````bash
+PAT=`$(grep AZURE_DEVOPS_EXT_PAT .env | cut -d= -f2)
+curl -s "https://dev.azure.com/$ADO_ORG/$ADO_PROJECT/_apis/wit/workitems/{id}?api-version=7.1&`$expand=all" -u ":`${PAT}"
+``````
+"@
+        $TRACKER_URL = "https://dev.azure.com/$ADO_ORG/$ADO_PROJECT/_workitems/edit/{id}"
+        $TRACKER_SET_PROGRESS = @"
+``````bash
+PAT=`$(grep AZURE_DEVOPS_EXT_PAT .env | cut -d= -f2)
+curl -s -X PATCH "https://dev.azure.com/$ADO_ORG/$ADO_PROJECT/_apis/wit/workitems/{id}?api-version=7.1" \
+  -H "Content-Type: application/json-patch+json" -u ":`${PAT}" \
+  -d '[{"op": "replace", "path": "/fields/System.State", "value": "In Progress"}]'
+``````
+"@
+        $TRACKER_SET_REVIEW = @"
+``````bash
+PAT=`$(grep AZURE_DEVOPS_EXT_PAT .env | cut -d= -f2)
+curl -s -X PATCH "https://dev.azure.com/$ADO_ORG/$ADO_PROJECT/_apis/wit/workitems/{id}?api-version=7.1" \
+  -H "Content-Type: application/json-patch+json" -u ":`${PAT}" \
+  -d '[{"op": "replace", "path": "/fields/System.State", "value": "In Peer Testing"}]'
+``````
+"@
+    }
+    "jira" {
+        $TRACKER_FETCH = @"
+``````bash
+curl -s "https://$JIRA_DOMAIN/rest/api/3/issue/{key}" \
+  -H "Authorization: Basic `$(echo -n `$(grep JIRA_EMAIL .env | cut -d= -f2):`$(grep JIRA_API_TOKEN .env | cut -d= -f2) | base64)"
+``````
+"@
+        $TRACKER_URL = "https://$JIRA_DOMAIN/browse/{key}"
+        $TRACKER_SET_PROGRESS = "Use Jira REST API to transition issue to `"In Progress`"."
+        $TRACKER_SET_REVIEW = "Use Jira REST API to transition issue to `"In Review`"."
+    }
+    "linear" {
+        $TRACKER_FETCH = "Use Linear GraphQL API to fetch issue by identifier."
+        $TRACKER_URL = "https://linear.app/team/$LINEAR_TEAM/issue/{id}"
+        $TRACKER_SET_PROGRESS = "Use Linear GraphQL API to update issue state to `"In Progress`"."
+        $TRACKER_SET_REVIEW = "Use Linear GraphQL API to update issue state to `"In Review`"."
+    }
     "github" {
         $TRACKER_FETCH = "``````bash`ngh issue view {number} --json title,body,state,labels,assignees`n``````"
         $TRACKER_URL = "https://github.com/org/repo/issues/{number}"
@@ -401,6 +637,89 @@ switch ($TRACKER_NAME) {
         $TRACKER_FETCH = "No work item tracker configured. Ask user for ticket details."
         $TRACKER_SET_PROGRESS = "No tracker configured."
         $TRACKER_SET_REVIEW = "No tracker configured."
+    }
+}
+
+# -- Build notification commands --
+
+$NOTIFY_CMD = ""
+$NOTIFY_DEPLOY_CMD = ""
+$NOTIFY_MERGE_CMD = ""
+
+switch ($NOTIFY_NAME) {
+    "slack" {
+        $NOTIFY_CMD = @"
+``````bash
+source .env && curl -s -X POST "`${SLACK_WEBHOOK_URL}" \
+  -H "Content-Type: application/json" \
+  -d "{\"text\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}"
+``````
+"@
+        $NOTIFY_DEPLOY_CMD = @"
+``````bash
+source .env && curl -s -X POST "`${SLACK_WEBHOOK_URL}" \
+  -H "Content-Type: application/json" \
+  -d "{\"text\":\"Factory deployed for {TICKET_ID}: {reason}. Deployment complete.\"}"
+``````
+"@
+        $NOTIFY_MERGE_CMD = @"
+``````bash
+source .env && curl -s -X POST "`${SLACK_WEBHOOK_URL}" \
+  -H "Content-Type: application/json" \
+  -d "{\"text\":\"Factory merge-resolved for {TICKET_ID}: {reason}. Merged result needs human verification.\"}"
+``````
+"@
+    }
+    "teams" {
+        $NOTIFY_CMD = @"
+``````bash
+source .env && curl -s -X POST "`${TEAMS_WEBHOOK_URL}" \
+  -H "Content-Type: application/json" \
+  -d "{\"text\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}"
+``````
+"@
+        $NOTIFY_DEPLOY_CMD = @"
+``````bash
+source .env && curl -s -X POST "`${TEAMS_WEBHOOK_URL}" \
+  -H "Content-Type: application/json" \
+  -d "{\"text\":\"Factory deployed for {TICKET_ID}: {reason}. Deployment complete.\"}"
+``````
+"@
+        $NOTIFY_MERGE_CMD = @"
+``````bash
+source .env && curl -s -X POST "`${TEAMS_WEBHOOK_URL}" \
+  -H "Content-Type: application/json" \
+  -d "{\"text\":\"Factory merge-resolved for {TICKET_ID}: {reason}. Merged result needs human verification.\"}"
+``````
+"@
+    }
+    "discord" {
+        $NOTIFY_CMD = @"
+``````bash
+source .env && curl -s -X POST "`${DISCORD_WEBHOOK_URL}" \
+  -H "Content-Type: application/json" \
+  -d "{\"content\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}"
+``````
+"@
+        $NOTIFY_DEPLOY_CMD = @"
+``````bash
+source .env && curl -s -X POST "`${DISCORD_WEBHOOK_URL}" \
+  -H "Content-Type: application/json" \
+  -d "{\"content\":\"Factory deployed for {TICKET_ID}: {reason}. Deployment complete.\"}"
+``````
+"@
+        $NOTIFY_MERGE_CMD = @"
+``````bash
+source .env && curl -s -X POST "`${DISCORD_WEBHOOK_URL}" \
+  -H "Content-Type: application/json" \
+  -d "{\"content\":\"Factory merge-resolved for {TICKET_ID}: {reason}. Merged result needs human verification.\"}"
+``````
+"@
+    }
+    default {
+        $NOTIFY_CMD = "No notification system configured. Log the halt message."
+        $NOTIFY_DEPLOY_CMD = "No notification system configured. Log deploy success."
+        $NOTIFY_MERGE_CMD = "No notification system configured. Log merge resolution message."
     }
 }
 
@@ -435,90 +754,122 @@ $replacements = @{
     '{{TRACKER_CREATE_BUG}}'       = 'gh issue create --title "Bug: TITLE" --body "BODY" --label bug'
     '{{TRACKER_UPDATE_FIELDS}}'    = 'Use gh issue edit to update labels and assignees.'
     '{{TRACKER_SET_DEPLOYED}}'     = 'gh issue edit {number} --add-label "deployed"'
-    '{{NOTIFY_HALT}}'              = 'Log halt message.'
-    '{{NOTIFY_HALT_FACTORY}}'      = 'Log halt message.'
-    '{{NOTIFY_DEPLOY_SUCCESS}}'    = 'Log deploy success.'
+    '{{NOTIFY_HALT}}'              = $NOTIFY_CMD
+    '{{NOTIFY_HALT_FACTORY}}'      = $NOTIFY_CMD
+    '{{NOTIFY_DEPLOY_SUCCESS}}'    = $NOTIFY_DEPLOY_CMD
+    '{{NOTIFY_MERGE_RESOLVE}}'     = $NOTIFY_MERGE_CMD
     '{{ERROR_QUERY_COMMAND}}'      = 'Configure error query command for your monitoring system.'
     '{{ERROR_UPDATE_STATUS}}'      = 'Configure error status update command.'
     '{{ERROR_DISMISS}}'            = 'Configure error dismiss command.'
     '{{DEPLOY_COMMAND}}'           = $DEPLOY_VALIDATE
+    '{{DESIGN_COLOR_RULES}}'       = $DESIGN_COLOR_RULES
+    '{{DESIGN_COMPONENT_IMPORTS}}' = $DESIGN_COMPONENT_IMPORTS
+    '{{DESIGN_ICON_USAGE}}'        = $DESIGN_ICON_USAGE
+    '{{DESIGN_CARD_PATTERNS}}'     = $DESIGN_CARD_PATTERNS
+    '{{DESIGN_DARK_MODE}}'         = $DESIGN_DARK_MODE
 }
 
 # Replace in skills, agents, commands, rules, hooks
 $searchDirs = @(".claude/skills", ".claude/agents", ".claude/commands", ".claude/rules", ".claude/hooks")
 $updatedCount = 0
 
-foreach ($searchDir in $searchDirs) {
-    if (Test-Path $searchDir) {
-        $files = Get-ChildItem -Recurse $searchDir -Include "*.md", "*.sh" -ErrorAction SilentlyContinue
-        foreach ($file in $files) {
-            $content = Get-Content $file.FullName -Raw -Encoding UTF8
-            if (-not $content) { continue }
-            $changed = $false
-            foreach ($key in $replacements.Keys) {
-                if ($content.Contains($key)) {
-                    $content = $content.Replace($key, $replacements[$key])
-                    $changed = $true
+if (-not $DryRun) {
+    foreach ($searchDir in $searchDirs) {
+        if (Test-Path $searchDir) {
+            $files = Get-ChildItem -Recurse $searchDir -Include "*.md", "*.sh" -ErrorAction SilentlyContinue
+            foreach ($file in $files) {
+                $content = Get-Content $file.FullName -Raw -Encoding UTF8
+                if (-not $content) { continue }
+                $changed = $false
+                foreach ($key in $replacements.Keys) {
+                    if ($content.Contains($key)) {
+                        $content = $content.Replace($key, $replacements[$key])
+                        $changed = $true
+                    }
                 }
-            }
-            if ($changed) {
-                Set-Content $file.FullName $content -Encoding UTF8 -NoNewline
-                $updatedCount++
+                if ($changed) {
+                    Set-Content $file.FullName $content -Encoding UTF8 -NoNewline
+                    $updatedCount++
+                }
             }
         }
     }
+    Write-Host "  Updated $updatedCount files"
+} else {
+    Write-Host "[DRY-RUN] Would replace placeholders in all copied .md and .sh files"
 }
-Write-Host "  Updated $updatedCount files"
 
 # -- Copy settings --
 
 Write-Host "Copying settings..."
-Copy-Item "$FRAMEWORK_DIR/templates/settings.local.json" ".claude/settings.local.json" -Force
+if (-not $DryRun) {
+    Copy-Item "$FRAMEWORK_DIR/templates/settings.local.json" ".claude/settings.local.json" -Force
 
-# Replace model placeholder in settings
-$settingsContent = Get-Content ".claude/settings.local.json" -Raw -Encoding UTF8
-$settingsContent = $settingsContent.Replace('{{DEFAULT_MODEL}}', $DEFAULT_MODEL)
-Set-Content ".claude/settings.local.json" $settingsContent -Encoding UTF8 -NoNewline
+    # Replace model placeholder in settings
+    $settingsContent = Get-Content ".claude/settings.local.json" -Raw -Encoding UTF8
+    $settingsContent = $settingsContent.Replace('{{DEFAULT_MODEL}}', $DEFAULT_MODEL)
+    Set-Content ".claude/settings.local.json" $settingsContent -Encoding UTF8 -NoNewline
+} else {
+    Write-Host "[DRY-RUN] Would copy settings.local.json and replace model placeholder"
+}
 
 # -- Copy MCP server config --
 
 Write-Host "Copying MCP server config..."
-Copy-Item "$FRAMEWORK_DIR/templates/mcp.json" ".mcp.json" -Force
-Write-Host "  + .mcp.json (Context7 documentation server)"
+if (-not $DryRun) {
+    Copy-Item "$FRAMEWORK_DIR/templates/mcp.json" ".mcp.json" -Force
+    Write-Host "  + .mcp.json (Context7 documentation server)"
+} else {
+    Write-Host "[DRY-RUN] Would copy .mcp.json (Context7 documentation server)"
+}
 
 # -- Install user-level settings.json --
 
 $CLAUDE_HOME = Join-Path $env:USERPROFILE ".claude"
-New-Item -ItemType Directory -Force -Path $CLAUDE_HOME | Out-Null
 
-if (-not (Test-Path (Join-Path $CLAUDE_HOME "settings.json"))) {
-    Write-Host "Installing user-level settings.json..."
-    Copy-Item "$FRAMEWORK_DIR/templates/settings.json" (Join-Path $CLAUDE_HOME "settings.json") -Force
-    Write-Host "  + ~/.claude/settings.json (AI factory permissions)"
+if (-not $DryRun) {
+    New-Item -ItemType Directory -Force -Path $CLAUDE_HOME | Out-Null
+
+    if (-not (Test-Path (Join-Path $CLAUDE_HOME "settings.json"))) {
+        Write-Host "Installing user-level settings.json..."
+        Copy-Item "$FRAMEWORK_DIR/templates/settings.json" (Join-Path $CLAUDE_HOME "settings.json") -Force
+        Write-Host "  + ~/.claude/settings.json (AI factory permissions)"
+    } else {
+        Write-Host "  ~/.claude/settings.json already exists - skipping"
+    }
+
+    Copy-Item "$FRAMEWORK_DIR/templates/statusline/statusline-command.sh" ".claude/statusline/statusline-command.sh" -Force
 } else {
-    Write-Host "  ~/.claude/settings.json already exists - skipping"
+    Write-Host "[DRY-RUN] Would install user-level settings.json and statusline config"
 }
-
-Copy-Item "$FRAMEWORK_DIR/templates/statusline/statusline-command.sh" ".claude/statusline/statusline-command.sh" -Force
 
 # -- Create CLAUDE.md if none exists --
 
 if (-not (Test-Path "CLAUDE.md")) {
-    Write-Host "Creating CLAUDE.md..."
-    Copy-Item "$FRAMEWORK_DIR/templates/CLAUDE.md.template" "CLAUDE.md"
+    if (-not $DryRun) {
+        Write-Host "Creating CLAUDE.md..."
+        Copy-Item "$FRAMEWORK_DIR/templates/CLAUDE.md.template" "CLAUDE.md"
 
-    $claudeContent = Get-Content "CLAUDE.md" -Raw -Encoding UTF8
-    $claudeContent = $claudeContent.Replace('{{BASE_BRANCH}}', $BASE_BRANCH)
-    $claudeContent = $claudeContent.Replace('{{PROJECT_SHORT_NAME}}', $PROJECT_SHORT)
-    $claudeContent = $claudeContent.Replace('{{TRACKER_CONFIG}}', $TRACKER_CONFIG)
-    $claudeContent = $claudeContent.Replace('{{FORMAT_COMMAND}}', $FORMAT_CMD)
-    $claudeContent = $claudeContent.Replace('{{FORMAT_VERIFY_COMMAND}}', $FORMAT_VERIFY)
-    $claudeContent = $claudeContent.Replace('{{TEST_COMMAND}}', $TEST_CMD)
-    $claudeContent = $claudeContent.Replace('{{DEPLOY_VALIDATE_COMMAND}}', $DEPLOY_VALIDATE)
-    $claudeContent = $claudeContent.Replace('{{TYPE_CHECK_COMMAND}}', $TYPE_CHECK_CMD)
-    Set-Content "CLAUDE.md" $claudeContent -Encoding UTF8 -NoNewline
+        $claudeContent = Get-Content "CLAUDE.md" -Raw -Encoding UTF8
+        $claudeContent = $claudeContent.Replace('{{BASE_BRANCH}}', $BASE_BRANCH)
+        $claudeContent = $claudeContent.Replace('{{PROJECT_SHORT_NAME}}', $PROJECT_SHORT)
+        $claudeContent = $claudeContent.Replace('{{TRACKER_CONFIG}}', $TRACKER_CONFIG)
+        $claudeContent = $claudeContent.Replace('{{FORMAT_COMMAND}}', $FORMAT_CMD)
+        $claudeContent = $claudeContent.Replace('{{FORMAT_VERIFY_COMMAND}}', $FORMAT_VERIFY)
+        $claudeContent = $claudeContent.Replace('{{TEST_COMMAND}}', $TEST_CMD)
+        $claudeContent = $claudeContent.Replace('{{DEPLOY_VALIDATE_COMMAND}}', $DEPLOY_VALIDATE)
+        $claudeContent = $claudeContent.Replace('{{TYPE_CHECK_COMMAND}}', $TYPE_CHECK_CMD)
+        $claudeContent = $claudeContent.Replace('{{DESIGN_COLOR_RULES}}', $DESIGN_COLOR_RULES)
+        $claudeContent = $claudeContent.Replace('{{DESIGN_COMPONENT_IMPORTS}}', $DESIGN_COMPONENT_IMPORTS)
+        $claudeContent = $claudeContent.Replace('{{DESIGN_ICON_USAGE}}', $DESIGN_ICON_USAGE)
+        $claudeContent = $claudeContent.Replace('{{DESIGN_CARD_PATTERNS}}', $DESIGN_CARD_PATTERNS)
+        $claudeContent = $claudeContent.Replace('{{DESIGN_DARK_MODE}}', $DESIGN_DARK_MODE)
+        Set-Content "CLAUDE.md" $claudeContent -Encoding UTF8 -NoNewline
 
-    Write-Host "  Created CLAUDE.md (fill in project-specific sections marked with {{...}})"
+        Write-Host "  Created CLAUDE.md (fill in project-specific sections marked with {{...}})"
+    } else {
+        Write-Host "[DRY-RUN] Would create CLAUDE.md from template with placeholders replaced"
+    }
 } else {
     Write-Host "  CLAUDE.md already exists - skipping"
 }
@@ -527,10 +878,174 @@ if (-not (Test-Path "CLAUDE.md")) {
 
 if ($CI_NAME -eq "github-actions") {
     Write-Host "Creating GitHub Actions workflows..."
-    New-Item -ItemType Directory -Force -Path ".github/workflows" | Out-Null
-    Get-ChildItem "$FRAMEWORK_DIR/workflows" -Filter "*.yml" | ForEach-Object {
-        Copy-Item $_.FullName ".github/workflows/$($_.Name)" -Force
-        Write-Host "  + $($_.Name)"
+    if (-not $DryRun) {
+        New-Item -ItemType Directory -Force -Path ".github/workflows" | Out-Null
+        Get-ChildItem "$FRAMEWORK_DIR/workflows" -Filter "*.yml" | ForEach-Object {
+            Copy-Item $_.FullName ".github/workflows/$($_.Name)" -Force
+            Write-Host "  + $($_.Name)"
+        }
+    } else {
+        Write-Host "[DRY-RUN] Would create .github/workflows/ and copy CI/CD pipeline files"
+    }
+}
+
+# -- Install Claude Code hooks to user home --
+
+Write-Host "Setting up Claude Code hooks..."
+$CLAUDE_HOOKS_HOME = Join-Path $env:USERPROFILE ".claude\hooks"
+
+if (-not $DryRun) {
+    New-Item -ItemType Directory -Force -Path $CLAUDE_HOOKS_HOME | Out-Null
+
+    $sessionStopDest = Join-Path $CLAUDE_HOOKS_HOME "session-stop.sh"
+    if (-not (Test-Path $sessionStopDest)) {
+        Copy-Item "$FRAMEWORK_DIR/templates/hooks/session-stop.sh" $sessionStopDest -Force
+        Write-Host "  + Session stop sound hook"
+    }
+} else {
+    Write-Host "[DRY-RUN] Would install session stop hook to ~/.claude/hooks/"
+}
+
+# -- Set up pre-commit hooks (formatting + linting) --
+
+Write-Host "Setting up pre-commit hooks..."
+
+switch ($PROJECT_TYPE_NAME) {
+    { $_ -in "nodejs", "react" } {
+        $pkgJson = Join-Path $PROJECT_DIR "package.json"
+        if (Test-Path $pkgJson) {
+            $pkgContent = Get-Content $pkgJson -Raw -ErrorAction SilentlyContinue
+            if ($pkgContent -and -not $pkgContent.Contains('"husky"')) {
+                Write-Host "  Install pre-commit hooks with:"
+                Write-Host "    npx husky init"
+                Write-Host "    npm install --save-dev lint-staged"
+                Write-Host '    echo "npx lint-staged" > .husky/pre-commit'
+                Write-Host ""
+                Write-Host "  Add to package.json:"
+                Write-Host '    "lint-staged": { "*.{js,jsx,ts,tsx,json,css,md}": "prettier --write" }'
+            } else {
+                Write-Host "  husky already configured"
+            }
+        }
+    }
+    "python" {
+        if (-not (Get-Command pre-commit -ErrorAction SilentlyContinue)) {
+            Write-Host "  Install pre-commit hooks with:"
+            Write-Host "    pip install pre-commit"
+            Write-Host "    pre-commit install"
+        }
+        $precommitCfg = Join-Path $PROJECT_DIR ".pre-commit-config.yaml"
+        if (-not (Test-Path $precommitCfg)) {
+            if (-not $DryRun) {
+                @"
+repos:
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.7
+    hooks:
+      - id: ruff
+        args: [--fix]
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+"@ | Set-Content $precommitCfg -Encoding UTF8
+                Write-Host "  + Created .pre-commit-config.yaml"
+                Write-Host "  Run 'pre-commit install' to activate"
+            } else {
+                Write-Host "[DRY-RUN] Would create .pre-commit-config.yaml"
+            }
+        }
+    }
+    "go" {
+        Write-Host "  Go uses gofmt automatically. For pre-commit hooks:"
+        Write-Host "    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"
+        Write-Host "  Add to .git/hooks/pre-commit:"
+        Write-Host '    gofmt -l . | grep -q . && echo "Run gofmt" && exit 1'
+    }
+    "java" {
+        Write-Host "  For Java, configure spotless in build.gradle:"
+        Write-Host '    plugins { id "com.diffplug.spotless" }'
+        Write-Host "  Then: ./gradlew spotlessApply"
+    }
+    "salesforce" {
+        $pkgJson = Join-Path $PROJECT_DIR "package.json"
+        if (Test-Path $pkgJson) {
+            $pkgContent = Get-Content $pkgJson -Raw -ErrorAction SilentlyContinue
+            if ($pkgContent -and -not $pkgContent.Contains('"husky"')) {
+                Write-Host "  Install pre-commit hooks with:"
+                Write-Host "    npx husky init"
+                Write-Host "    npm install --save-dev lint-staged"
+                Write-Host '    echo "npx lint-staged" > .husky/pre-commit'
+            } else {
+                Write-Host "  husky already configured"
+            }
+        }
+    }
+    "rails" {
+        Write-Host "  For Ruby, use overcommit or lefthook:"
+        Write-Host "    gem install overcommit && overcommit --install"
+    }
+    default {
+        Write-Host "  Configure pre-commit hooks for your project manually"
+    }
+}
+
+# -- Create .env template --
+
+$envFile = Join-Path $PROJECT_DIR ".env"
+if (-not (Test-Path $envFile)) {
+    if (-not $DryRun) {
+        Write-Host "Creating .env template..."
+        $envContent = @"
+# Claude Code Framework - Environment Variables
+# Copy this to .env and fill in your values
+
+# Work Item Tracker
+"@
+
+        switch ($TRACKER_NAME) {
+            "ado" {
+                $envContent += "`nAZURE_DEVOPS_EXT_PAT=your-pat-here"
+            }
+            "jira" {
+                $envContent += "`nJIRA_EMAIL=your-email@company.com`nJIRA_API_TOKEN=your-token-here"
+            }
+            "linear" {
+                $envContent += "`nLINEAR_API_KEY=your-key-here"
+            }
+        }
+
+        switch ($NOTIFY_NAME) {
+            "slack" {
+                $envContent += "`nSLACK_WEBHOOK_URL=https://hooks.slack.com/services/..."
+            }
+            "teams" {
+                $envContent += "`nTEAMS_WEBHOOK_URL=https://outlook.office.com/webhook/..."
+            }
+            "discord" {
+                $envContent += "`nDISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/..."
+            }
+        }
+
+        Set-Content $envFile $envContent -Encoding UTF8
+
+        # Ensure .env is gitignored
+        $gitignoreFile = Join-Path $PROJECT_DIR ".gitignore"
+        if (Test-Path $gitignoreFile) {
+            $gitignoreContent = Get-Content $gitignoreFile -Raw -ErrorAction SilentlyContinue
+            if ($gitignoreContent -and -not ($gitignoreContent -match '(?m)^\.env$')) {
+                Add-Content $gitignoreFile "`n.env"
+            }
+        }
+    } else {
+        Write-Host "[DRY-RUN] Would create .env template and update .gitignore"
     }
 }
 
@@ -549,12 +1064,13 @@ Write-Host "Tracker:     $TRACKER_NAME"
 Write-Host "CI/CD:       $CI_NAME"
 Write-Host "Base branch: $BASE_BRANCH"
 Write-Host "Notify:      $NOTIFY_NAME"
+Write-Host "Design:      $DESIGN_SYSTEM_NAME"
 Write-Host ""
 Write-Host "Files created:"
-Write-Host "  .claude/skills/         - 16 workflow skills (incl. /team, /improve)"
+Write-Host "  .claude/skills/         - 17 workflow skills (incl. /team, /improve, /scaffold-design-system)"
 Write-Host "  .claude/agents/         - 12 AI agents (full team: architect to framework-improver)"
 Write-Host "  .claude/commands/       - 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)"
-Write-Host "  .claude/rules/          - coding guardrails (api-routes, tests, database, config, error-handling)"
+Write-Host "  .claude/rules/          - 9 coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components)"
 Write-Host "  .claude/hooks/          - 5 lifecycle hooks (guardrails, pre-commit, post-edit-sync, session-start, session-stop)"
 Write-Host "  .claude/settings.local.json - project permissions, hooks"
 Write-Host "  .mcp.json               - MCP servers (Context7 documentation)"

@@ -21,6 +21,7 @@ When editing any source file, enforce these data protection rules. These prevent
 - Commit a `.env.example` with placeholder values. Never commit `.env` with real values.
 - If you find real API keys, tokens, or secrets in any file (including `.env` on disk), flag it — the credentials must be rotated immediately.
 - Default values for secrets must be obviously invalid (e.g., `"CHANGE-ME-IN-PRODUCTION"`) and the application must refuse to start in production with the default.
+- **Never place secrets in client-exposed environment variables** (`NEXT_PUBLIC_*`, `VITE_*`, `REACT_APP_*`, `NUXT_PUBLIC_*`). These are compiled into the frontend JavaScript bundle and visible to all users. Only public, non-sensitive values belong in client-prefixed env vars.
 
 ## Sensitive Data in Logs
 

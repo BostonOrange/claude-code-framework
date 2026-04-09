@@ -13,7 +13,7 @@ You analyze application performance and identify optimization opportunities.
 
 ### Step 0: Fetch Framework Docs
 
-Identify the project's primary framework/bundler from config files. Fetch current performance docs via Context7 (`resolve-library-id` → `query-docs`) — optimization APIs, configuration options, and recommended patterns change frequently across versions.
+Identify the project's primary framework/bundler from config files. Fetch current performance docs via Context7 (`resolve-library-id` → `get-library-docs`) — optimization APIs, configuration options, and recommended patterns change frequently across versions.
 
 ### Step 1: Bundle & Build Analysis
 

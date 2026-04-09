@@ -167,7 +167,7 @@ Hooks are bash scripts placed in `.claude/hooks/`. They run at lifecycle events 
 | `/changelog` | Generate changelog from commits |
 | `/dep-check` | Check for outdated dependencies |
 
-### Rules (6)
+### Rules (9)
 
 | Rule | Patterns | Key Standards |
 |------|----------|---------------|
@@ -177,6 +177,9 @@ Hooks are bash scripts placed in `.claude/hooks/`. They run at lifecycle events 
 | `database` | Models, migrations | Parameterized queries, indexes, transactions |
 | `config-files` | JSON, YAML, TOML | No secrets, document values |
 | `error-handling` | Source files | No silent catches, context, tracking |
+| `auth-security` | Source files | Fail-closed auth, CSRF, RBAC, session security, SSRF |
+| `data-protection` | Source files | No PII in git, credentials, log redaction, third-party data |
+| `design-system` | UI components | Semantic tokens, spacing, typography, theme compliance |
 
 ### Hooks (5)
 

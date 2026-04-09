@@ -7,26 +7,27 @@ patterns:
 
 When editing API route files, follow these rules:
 
-## Input Validation
+## Endpoint Design
+- Every endpoint must have a clear, single purpose
+- Use RESTful resource naming: plural nouns for collections, nested paths for relationships
+- Use appropriate HTTP methods: GET (read), POST (create), PUT (replace), PATCH (update), DELETE (remove)
 - Validate ALL request input at the handler boundary before any business logic
 - Use the project's validation library (Zod, Pydantic, struct tags, etc.)
-- Never trust client-provided data — validate types, ranges, and formats
 
-## Authentication & Authorization
-- Every endpoint must have an authentication check unless explicitly documented as public
-- Check authorization (permissions) after authentication, before data access
-- Never rely solely on client-side auth checks
+## Versioning
+- Include API version in the URL path (e.g., `/api/v1/`) or via headers — pick one convention and enforce it project-wide
+- Never remove or rename fields in a published API version — add new fields, deprecate old ones
 
 ## Response Format
 - Return structured error responses with appropriate HTTP status codes
 - Never return raw exception messages or stack traces to clients
 - Use consistent response envelope format across all endpoints
 
+## Error Responses
+- Use standard HTTP status codes: 400 (bad input), 401 (unauthenticated), 403 (unauthorized), 404 (not found), 409 (conflict), 422 (validation), 429 (rate limited), 500 (server error)
+- Include a machine-readable error code and a human-readable message in every error response
+- Never expose internal implementation details (stack traces, SQL errors, file paths) in error responses
+
 ## Logging
 - Log request metadata (method, path, status code, duration)
-- Never log request/response bodies containing PII or credentials
 - Include correlation/request IDs in log entries
-
-## Rate Limiting
-- Public endpoints must have rate limiting configured
-- Document rate limit expectations in endpoint comments

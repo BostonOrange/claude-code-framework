@@ -4,6 +4,12 @@
 
 set -e
 
+# Guard against unreplaced placeholders
+if [[ "$0" == *"{{"* ]] || [[ "{{TYPE_CHECK_COMMAND}}" == *"{{"* ]]; then
+    echo "ERROR: pre-commit hook has unreplaced placeholders. Re-run setup."
+    exit 1
+fi
+
 echo "Running pre-commit checks..."
 
 # ── Step 1: Type Check ──────────────────────────────────────────

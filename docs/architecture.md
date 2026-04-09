@@ -3,78 +3,83 @@
 ## System Design
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Claude Code Framework                        │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │  CLAUDE.md — Project Instructions                         │   │
-│  │  Loaded every conversation. Defines coding standards,     │   │
-│  │  branching strategy, deployment patterns, skill catalog.  │   │
-│  └──────────────────────────────────────────────────────────┘   │
-│                                                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │ Workflow      │  │ Integration  │  │ Domain Knowledge     │  │
-│  │ Skills        │  │ Adapters     │  │ Skills               │  │
-│  │               │  │              │  │                      │  │
-│  │ /develop      │  │ Tracker:     │  │ /your-domain         │  │
-│  │ /validate     │  │  ADO/Jira/   │  │   references/        │  │
-│  │ /factory      │  │  Linear/GH   │  │     objects.md       │  │
-│  │ /check-ready  │  │              │  │     api-specs.md     │  │
-│  │ /draft-story  │  │ CI/CD:       │  │     patterns.md      │  │
-│  │ /refine-story │  │  GH Actions/ │  │                      │  │
-│  │ /mock-endpoint│  │  GitLab CI   │  │ /another-domain      │  │
-│  │ /merge-resolve│  │              │  │   references/        │  │
-│  │ /fetch-docs   │  │ Deploy:      │  │     ...              │  │
-│  │ /update-track │  │  SF/AWS/     │  │                      │  │
-│  │ /error-analyze│  │  Vercel/K8s  │  │                      │  │
-│  │ /add-reference│  │              │  │                      │  │
-│  │ /deploy       │  │ Notify:      │  │                      │  │
-│  │ /team         │  │  Slack/Teams │  │                      │  │
-│  │ /improve      │  │              │  │                      │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-│                                                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │ Agents (12)  │  │ Commands     │  │ Rules & Hooks        │  │
-│  │              │  │              │  │                      │  │
-│  │ architect    │  │ /quick-test  │  │ Rules:               │  │
-│  │ code-reviewer│  │ /lint-fix    │  │  api-routes          │  │
-│  │ security-    │  │ /check-types │  │  components           │  │
-│  │   auditor    │  │ /branch-     │  │  tests               │  │
-│  │ refactor-    │  │   status     │  │  database             │  │
-│  │   advisor    │  │ /changelog   │  │  error-handling       │  │
-│  │ devops-eng   │  │ /dep-check   │  │  config-files         │  │
-│  │ ui-ux-review │  │              │  │                      │  │
-│  │ perf-optim   │  │ Teams:       │  │ Hooks:               │  │
-│  │ api-designer │  │  /team review│  │  pre-commit          │  │
-│  │ db-architect │  │  /team arch  │  │  session-start       │  │
-│  │ test-writer  │  │  /team rel   │  │  session-stop        │  │
-│  │ doc-writer   │  │  /team full  │  │  guardrails          │  │
-│  │ fw-improver  │  │  /team custom│  │  post-edit-sync      │  │
-│  │              │  │              │  │                      │  │
-│  │              │  │              │  │ Self-Improvement:    │  │
-│  │              │  │              │  │  /improve            │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-│                                                                  │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │  MCP Servers — .mcp.json                                  │   │
-│  │  Context7: live library docs. Used proactively by skills  │   │
-│  │  (/develop, /draft-story, /mock-endpoint, /refine-story)  │   │
-│  │  and agents (architect, api-designer, test-writer, etc.)  │   │
-│  └──────────────────────────────────────────────────────────┘   │
-│                                                                  │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │  Memory System — ~/.claude/projects/{path}/memory/        │   │
-│  │  Persists: user preferences, feedback, project context,   │   │
-│  │  external references. Loaded via MEMORY.md index.         │   │
-│  └──────────────────────────────────────────────────────────┘   │
-│                                                                  │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │  CI/CD Workflows — .github/workflows/ (or .gitlab-ci)     │   │
-│  │  factory-validate → factory-auto-merge → factory-deploy   │   │
-│  └──────────────────────────────────────────────────────────┘   │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                        Claude Code Framework                         │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌────────────────────────────────────────────────────────────────┐  │
+│  │  CLAUDE.md — Project Instructions                              │  │
+│  │  Loaded every conversation. Defines coding standards,          │  │
+│  │  branching strategy, deployment patterns, skill catalog.       │  │
+│  └────────────────────────────────────────────────────────────────┘  │
+│                                                                      │
+│  ┌─────────────────┐  ┌──────────────┐  ┌──────────────────────┐     │
+│  │ Workflow        │  │ Integration  │  │ Domain Knowledge     │     │
+│  │ Skills (17)     │  │ Adapters     │  │ Skills               │     │
+│  │                 │  │              │  │                      │     │
+│  │ /develop        │  │ Tracker:     │  │ /your-domain         │     │
+│  │ /validate       │  │  ADO/Jira/   │  │   references/        │     │
+│  │ /factory        │  │  Linear/GH   │  │     objects.md       │     │
+│  │ /check-ready    │  │              │  │     api-specs.md     │     │
+│  │ /draft-story    │  │ CI/CD:       │  │     patterns.md      │     │
+│  │ /refine-story   │  │  GH Actions/ │  │                      │     │
+│  │ /mock-endpoint  │  │  GitLab CI   │  │ /another-domain      │     │
+│  │ /merge-resolve  │  │              │  │   references/        │     │
+│  │ /fetch-docs     │  │ Deploy:      │  │     ...              │     │
+│  │ /update-tracker │  │  SF/AWS/     │  │                      │     │
+│  │ /error-analyze  │  │  Vercel/K8s  │  │                      │     │
+│  │ /add-reference  │  │              │  │                      │     │
+│  │ /deploy         │  │ Notify:      │  │                      │     │
+│  │ /team           │  │  Slack/Teams │  │                      │     │
+│  │ /improve        │  │              │  │                      │     │
+│  │ /ai-update      │  │              │  │                      │     │
+│  │ /scaffold-ds    │  │              │  │                      │     │
+│  └─────────────────┘  └──────────────┘  └──────────────────────┘     │
+│                                                                      │
+│  ┌──────────────┐  ┌──────────────┐  ┌─────────────────────────┐     │
+│  │ Agents (12)  │  │ Commands     │  │ Rules & Hooks           │     │
+│  │              │  │              │  │                         │     │
+│  │ architect    │  │ /quick-test  │  │ Rules:                  │     │
+│  │ code-reviewer│  │ /lint-fix    │  │  api-routes             │     │
+│  │ security-    │  │ /check-types │  │  components             │     │
+│  │   auditor    │  │ /branch-     │  │  tests                  │     │
+│  │ refactor-    │  │   status     │  │  database               │     │
+│  │   advisor    │  │ /changelog   │  │  error-handling         │     │
+│  │ devops-eng   │  │ /dep-check   │  │  config-files           │     │
+│  │ ui-ux-review │  │              │  │  auth-security          │     │
+│  │ perf-optim   │  │ Teams:       │  │  data-protection        │     │
+│  │ api-designer │  │  /team review│  │  design-system          │     │
+│  │ db-architect │  │  /team arch  │  │                         │     │
+│  │ test-writer  │  │  /team rel   │  │ Hooks:                  │     │
+│  │ doc-writer   │  │  /team full  │  │  pre-commit             │     │
+│  │ fw-improver  │  │  /team custom│  │  session-start          │     │
+│  │              │  │              │  │  session-stop           │     │
+│  │              │  │              │  │  guardrails             │     │
+│  │              │  │              │  │  post-edit-sync         │     │
+│  │              │  │              │  │                         │     │
+│  │              │  │              │  │ Self-Improvement:       │     │
+│  │              │  │              │  │  /improve               │     │
+│  └──────────────┘  └──────────────┘  └─────────────────────────┘     │
+│                                                                      │
+│  ┌────────────────────────────────────────────────────────────────┐  │
+│  │  MCP Servers — .mcp.json                                       │  │
+│  │  Context7: live library docs. Used proactively by skills       │  │
+│  │  (/develop, /draft-story, /mock-endpoint, /refine-story)       │  │
+│  │  and agents (architect, api-designer, test-writer, etc.)       │  │
+│  └────────────────────────────────────────────────────────────────┘  │
+│                                                                      │
+│  ┌────────────────────────────────────────────────────────────────┐  │
+│  │  Memory System — ~/.claude/projects/{path}/memory/             │  │
+│  │  Persists: user preferences, feedback, project context,        │  │
+│  │  external references. Loaded via MEMORY.md index.              │  │
+│  └────────────────────────────────────────────────────────────────┘  │
+│                                                                      │
+│  ┌────────────────────────────────────────────────────────────────┐  │
+│  │  CI/CD Workflows — .github/workflows/ (or .gitlab-ci)          │  │
+│  │  factory-validate → factory-auto-merge → factory-deploy        │  │
+│  └────────────────────────────────────────────────────────────────┘  │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ## How Skills Work
@@ -138,7 +143,7 @@ Each skill is self-contained but aware of the pipeline context via flags:
 |----------|--------|----------------|
 | **Lifecycle** | develop, validate, factory | Multi-phase, long-running, chain other skills |
 | **Planning** | draft-story, refine-story, check-readiness | Analyze content, produce structured reports |
-| **Integration** | update-tracker, deploy, error-analyze, fetch-docs, mock-endpoint | Call external APIs, modify external state |
+| **Integration** | update-tracker, deploy, error-analyze, fetch-docs, mock-endpoint, scaffold-design-system | Call external APIs, modify external state, scaffold project assets |
 | **Collaboration** | team, merge-resolve | Orchestrate agents or resolve conflicts |
 | **Meta** | ai-update, add-reference, improve | Modify the AI system itself |
 
@@ -309,7 +314,10 @@ your-project/
 │   │   ├── tests.md
 │   │   ├── database.md
 │   │   ├── config-files.md
-│   │   └── error-handling.md
+│   │   ├── error-handling.md
+│   │   ├── auth-security.md
+│   │   ├── data-protection.md
+│   │   └── design-system.md
 │   ├── hooks/                         # Lifecycle scripts
 │   │   ├── guardrails.sh              # PreToolUse: block dangerous ops
 │   │   ├── pre-commit.sh
@@ -352,3 +360,21 @@ See [agents-commands-rules.md](agents-commands-rules.md) for details on when to 
         ├── MEMORY.md                  # Memory index
         └── *.md                       # Individual memory files
 ```
+
+## Model Configuration Hierarchy
+
+The framework uses a deliberate model hierarchy to balance cost and capability:
+
+| Level | File | Model | Purpose |
+|-------|------|-------|---------|
+| **User-level** | `~/.claude/settings.json` | `opus` | Global default for all projects |
+| **Project-level** | `.claude/settings.local.json` | `sonnet` | Overrides user-level for the main conversation |
+| **Agent definitions** | `.claude/agents/*.md` | `opus` | Each agent specifies its own model in YAML frontmatter |
+
+This is intentional:
+
+- **Main conversation** uses the faster, cheaper model (`sonnet`) for routine tasks like running commands, reading files, and answering questions. The project-level setting overrides the user-level default.
+- **Specialized agents** always run as `opus` regardless of the project-level default. Agents perform complex analysis (security audits, architecture reviews, code generation) where the most capable model produces meaningfully better results.
+- **User-level** sets `opus` as the global fallback so that projects without a `settings.local.json` still get the best model.
+
+To change this behavior, edit `settings.local.json` to set a different project-level model, or edit individual agent `.md` files to change their model.

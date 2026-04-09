@@ -1,94 +1,55 @@
 #!/bin/bash
 # Claude Code Framework — PreToolUse Guardrails
 # Catches dangerous Bash operations BEFORE they execute.
-# Returns non-zero exit + message to block the operation and prompt user.
+# Exit codes: 0 = allow, 1 = soft block (ask user), 2 = hard block (deny).
 
 COMMAND="$1"
 
 # Skip if no command provided
 [ -z "$COMMAND" ] && exit 0
 
-# ── Destructive deployments (must ask) ───────────────────────────
+# Helper: print message and exit with given code (default: soft block)
+block() { echo "$1"; echo "Command: $COMMAND"; exit "${2:-1}"; }
+
+# ── Destructive deployments (soft block — ask user) ─────────────
 
 # Salesforce deploy (not validate)
-if echo "$COMMAND" | grep -qE "sf (project )?deploy (start|quick)" && ! echo "$COMMAND" | grep -q "validate"; then
-    echo "BLOCKED: Salesforce deployment detected. This will push code to an org."
-    echo "Command: $COMMAND"
-    echo "If this is intentional, run the command manually."
-    exit 1
+if [[ "$COMMAND" =~ sf\ (project\ )?deploy\ (start|quick) ]] && [[ ! "$COMMAND" =~ validate ]]; then
+    block "CAUTION: Salesforce deployment detected. This will push code to an org."
 fi
 
 # Salesforce org delete
-if echo "$COMMAND" | grep -qE "sf org delete"; then
-    echo "BLOCKED: Salesforce org deletion detected."
-    echo "Command: $COMMAND"
-    exit 1
-fi
+[[ "$COMMAND" =~ sf\ org\ delete ]] && block "CAUTION: Salesforce org deletion detected."
 
 # Vercel production deploy
-if echo "$COMMAND" | grep -qE "vercel (deploy|promote).*--prod"; then
-    echo "BLOCKED: Production deployment detected."
-    echo "Command: $COMMAND"
-    exit 1
-fi
+[[ "$COMMAND" =~ vercel\ (deploy|promote).*--prod ]] && block "CAUTION: Production deployment detected."
 
 # Kubernetes apply/delete
-if echo "$COMMAND" | grep -qE "kubectl (apply|delete|scale)"; then
-    echo "BLOCKED: Kubernetes mutation detected."
-    echo "Command: $COMMAND"
-    exit 1
-fi
+[[ "$COMMAND" =~ kubectl\ (apply|delete|scale) ]] && block "CAUTION: Kubernetes mutation detected."
 
 # Terraform apply/destroy
-if echo "$COMMAND" | grep -qE "terraform (apply|destroy)"; then
-    echo "BLOCKED: Terraform state mutation detected."
-    echo "Command: $COMMAND"
-    exit 1
-fi
+[[ "$COMMAND" =~ terraform\ (apply|destroy) ]] && block "CAUTION: Terraform state mutation detected."
 
-# ── Database migrations (must ask) ───────────────────────────────
+# ── Database migrations (soft block — ask user) ─────────────────
 
-if echo "$COMMAND" | grep -qiE "(prisma (db push|migrate deploy)|alembic upgrade|knex migrate|rake db:migrate|flyway migrate|sequelize db:migrate)"; then
-    echo "BLOCKED: Database migration detected. This will modify the database schema."
-    echo "Command: $COMMAND"
-    exit 1
-fi
+[[ "$COMMAND" =~ (prisma\ (db\ push|migrate\ deploy)|alembic\ upgrade|knex\ migrate|rake\ db:migrate|flyway\ migrate|sequelize\ db:migrate) ]] && \
+    block "CAUTION: Database migration detected. This will modify the database schema."
 
-# ── Git force operations (must ask) ──────────────────────────────
+# ── Git force operations (soft block — ask user) ────────────────
 
-if echo "$COMMAND" | grep -qE "git push.*(-f|--force)"; then
-    echo "BLOCKED: Force push detected. This can overwrite remote history."
-    echo "Command: $COMMAND"
-    exit 1
-fi
+[[ "$COMMAND" =~ git\ push.*(-f|--force) ]] && block "CAUTION: Force push detected. This can overwrite remote history."
 
-if echo "$COMMAND" | grep -qE "git reset --hard"; then
-    echo "BLOCKED: Hard reset detected. This will discard uncommitted changes."
-    echo "Command: $COMMAND"
-    exit 1
-fi
+[[ "$COMMAND" =~ git\ reset\ --hard ]] && block "CAUTION: Hard reset detected. This will discard uncommitted changes."
 
-if echo "$COMMAND" | grep -qE "git clean -[a-z]*f"; then
-    echo "BLOCKED: Git clean with force flag detected. This will delete untracked files."
-    echo "Command: $COMMAND"
-    exit 1
-fi
+[[ "$COMMAND" =~ git\ clean\ -[a-z]*f ]] && block "CAUTION: Git clean with force flag detected. This will delete untracked files."
 
-# ── Destructive file operations (catastrophic) ───────────────────
+# ── Destructive file operations (hard block) ────────────────────
 
-if echo "$COMMAND" | grep -qE "rm -rf\s+(/|~|\\\$HOME)"; then
-    echo "BLOCKED: Catastrophic delete detected."
-    echo "Command: $COMMAND"
-    exit 2
-fi
+[[ "$COMMAND" =~ rm\ -rf[[:space:]]+(\/|~|\$HOME|\.\/?)([[:space:]]|$) ]] && block "BLOCKED: Catastrophic delete detected." 2
 
-# ── Docker registry push (must ask) ──────────────────────────────
+# ── Docker registry push (soft block — ask user) ────────────────
 
-if echo "$COMMAND" | grep -qE "docker push"; then
-    echo "BLOCKED: Docker registry push detected."
-    echo "Command: $COMMAND"
-    exit 1
-fi
+[[ "$COMMAND" =~ docker\ push ]] && block "CAUTION: Docker registry push detected."
 
 # All clear
 exit 0

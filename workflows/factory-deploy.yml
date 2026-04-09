@@ -9,6 +9,14 @@ on:
   pull_request:
     types: [closed]
 
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: factory-deploy-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ── Step 1: Classify auto vs semi-auto ────────────────────────
   classify:
@@ -29,8 +37,10 @@ jobs:
 
       - name: Extract ticket ID from PR title
         id: ticket
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          TITLE="${{ github.event.pull_request.title }}"
+          TITLE="$PR_TITLE"
           # Match common patterns: US-123, PROJ-123, TICKET-123, #123
           TICKET_ID=$(echo "$TITLE" | grep -oP '^\w+-\d+' | head -1)
           if [ -z "$TICKET_ID" ]; then
@@ -41,12 +51,14 @@ jobs:
 
       - name: Check for semi-auto indicators
         id: classify
+        env:
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
         run: |
           IS_SEMI_AUTO="false"
           MANUAL_STEPS=""
 
           # Check 1: PR has explicit 'factory-semi-auto' label
-          if echo '${{ toJSON(github.event.pull_request.labels.*.name) }}' | grep -q 'factory-semi-auto'; then
+          if echo "$PR_LABELS" | grep -q 'factory-semi-auto'; then
             IS_SEMI_AUTO="true"
           fi
 
@@ -119,9 +131,10 @@ jobs:
 
       - name: Notify team
         if: always()
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           TICKET_ID="${{ needs.classify.outputs.ticket_id }}"
-          PR_TITLE="${{ github.event.pull_request.title }}"
 
           if [ "${{ steps.deploy.outputs.success }}" = "true" ]; then
             MESSAGE="Deployed ${TICKET_ID}: ${PR_TITLE} — ready for smoke testing"
@@ -171,10 +184,11 @@ jobs:
 
     steps:
       - name: Notify team — manual config required
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          MANUAL_STEPS: ${{ needs.classify.outputs.manual_steps }}
         run: |
           TICKET_ID="${{ needs.classify.outputs.ticket_id }}"
-          PR_TITLE="${{ github.event.pull_request.title }}"
-          MANUAL_STEPS="${{ needs.classify.outputs.manual_steps }}"
 
           MESSAGE="${TICKET_ID} merged: ${PR_TITLE}
 
@@ -191,6 +205,8 @@ jobs:
           #   -d "{\"text\":\"${MESSAGE}\"}"
 
       - name: Write job summary
+        env:
+          MANUAL_STEPS: ${{ needs.classify.outputs.manual_steps }}
         run: |
           TICKET_ID="${{ needs.classify.outputs.ticket_id }}"
           echo "## Factory Deploy Summary (Semi-Auto)" >> "$GITHUB_STEP_SUMMARY"
@@ -203,4 +219,4 @@ jobs:
           echo "| Deploy | Awaiting manual config |" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "### Manual Steps Required" >> "$GITHUB_STEP_SUMMARY"
-          echo "${{ needs.classify.outputs.manual_steps }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "$MANUAL_STEPS" >> "$GITHUB_STEP_SUMMARY"

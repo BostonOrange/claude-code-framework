@@ -52,10 +52,7 @@ If user provides docs or a URL, extract the API surface. If the API is already c
 
 #### Via Context7 (for known libraries/SDKs)
 
-If the external service has an official SDK or client library, fetch its docs before writing the contract:
-1. Call `resolve-library-id` with the library/SDK name
-2. Call `query-docs` for endpoint signatures, auth patterns, and response shapes
-3. Use fetched docs to populate the contract accurately instead of guessing
+If the external service has an official SDK or client library, fetch documentation using the `/fetch-docs` skill pattern (resolve-library-id then get-library-docs) for endpoint signatures, auth patterns, and response shapes. Use fetched docs to populate the contract accurately instead of guessing.
 
 #### Scanning existing code
 
@@ -150,6 +147,8 @@ Write to: `__mocks__/{service-name}/{endpoint-name}.json` (or project's test fix
 
 ### 3. Generate Integration Wrapper
 
+> **Language note:** Adapt examples to your project's language and test framework. The patterns below use TypeScript/Jest as examples — substitute your project's equivalents (e.g., pytest for Python, go test for Go, JUnit for Java).
+
 Create a thin wrapper that abstracts the external call. This is the **only place** in the codebase that knows about the real URL.
 
 ```typescript
@@ -173,6 +172,29 @@ export async function fetchDepartures(siteId: number, transport: string) {
 - **Typed responses** — define TypeScript interfaces matching the contract
 - **Error wrapping** — throw typed errors, never expose raw HTTP details to callers
 - **No business logic** — the wrapper only fetches and returns. Transform elsewhere
+
+#### Language alternatives
+
+**Python (requests):**
+```python
+# src/services/departures.py
+BASE_URL = os.environ.get("SL_API_URL", "https://api.example.com")
+
+def fetch_departures(site_id: int, transport: str) -> dict:
+    resp = requests.get(f"{BASE_URL}/v1/sites/{site_id}/departures", params={"transport": transport})
+    resp.raise_for_status()
+    return resp.json()
+```
+
+**Go (net/http):**
+```go
+// services/departures.go
+func FetchDepartures(siteID int, transport string) (*DeparturesResponse, error) {
+    url := fmt.Sprintf("%s/v1/sites/%d/departures?transport=%s", baseURL, siteID, transport)
+    resp, err := http.Get(url)
+    // ... error handling, json.Decode into typed struct
+}
+```
 
 ### 4. Generate Test Helpers
 
@@ -223,6 +245,33 @@ describe('Departures API', () => {
     await expect(fetchDepartures(1002, 'METRO')).rejects.toThrow(ServiceError);
   });
 });
+```
+
+#### Language alternatives
+
+**Python (pytest + unittest.mock):**
+```python
+# tests/test_departures.py
+from unittest.mock import patch
+
+@patch("services.departures.fetch_departures")
+def test_returns_departures(mock_fetch):
+    mock_fetch.return_value = load_fixture("departures-happy.json")
+    result = fetch_departures(1002, "METRO")
+    assert len(result["departures"]) > 0
+```
+
+**Go (httptest):**
+```go
+// services/departures_test.go
+func TestFetchDepartures(t *testing.T) {
+    srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        json.NewEncoder(w).Encode(loadFixture("departures-happy.json"))
+    }))
+    defer srv.Close()
+    result, err := FetchDepartures(srv.URL, 1002, "METRO")
+    // ... assertions
+}
 ```
 
 ### 6. Update Index

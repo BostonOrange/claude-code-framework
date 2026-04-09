@@ -33,7 +33,7 @@ Design docs may cover **multiple tickets** — propose how to split.
 1. User describes business need
 2. Ask clarifying questions (Who, What, Why, When, Where)
 3. Explore codebase for relevant patterns
-4. Fetch library/framework docs via Context7 (`resolve-library-id` → `query-docs`) when the solution involves external dependencies — verify actual API capabilities before committing to a technical approach
+4. Fetch documentation using the `/fetch-docs` skill pattern (resolve-library-id then get-library-docs) when the solution involves external dependencies — verify actual API capabilities before committing to a technical approach
 5. Propose solution options if multiple approaches exist
 5. Draft complete ticket
 6. Present open questions for stakeholder follow-up

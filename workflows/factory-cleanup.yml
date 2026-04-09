@@ -9,6 +9,10 @@ on:
   pull_request:
     types: [closed]
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   cleanup:
     name: Clean up ephemeral environment

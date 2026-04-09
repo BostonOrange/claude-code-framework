@@ -127,14 +127,7 @@ Create `docs/stories/{TICKET_ID}/` with:
 
 ### Library Documentation Lookup
 
-Before writing code, identify which libraries/frameworks the implementation touches. For each:
-
-1. Check the knowledge base: `.claude/skills/fetch-docs/references/INDEX.md`
-2. If cached docs exist and cover the topic → read them
-3. If not cached → fetch via Context7 (`resolve-library-id` → `query-docs`) and persist per `/fetch-docs` rules
-4. If Context7 returns nothing → fall back to web search
-
-This ensures implementation uses current API patterns, not stale training data.
+Before writing code, identify which libraries/frameworks the implementation touches. Fetch documentation using the `/fetch-docs` skill pattern (resolve-library-id then get-library-docs). This ensures implementation uses current API patterns, not stale training data.
 
 ### Implementation
 

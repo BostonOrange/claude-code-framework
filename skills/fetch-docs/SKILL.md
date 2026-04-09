@@ -57,7 +57,7 @@ Before fetching, check if docs already exist:
 #### Via Context7 (preferred for libraries)
 
 1. Call `resolve-library-id` with the library name
-2. Call `query-docs` with the resolved ID and specific topic
+2. Call `get-library-docs` with the resolved ID and specific topic
 3. Extract the relevant code examples and API details
 
 #### Via Web Search (fallback)

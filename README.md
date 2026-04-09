@@ -1,6 +1,6 @@
 # Claude Code Framework
 
-A reusable AI development workflow framework for Claude Code. Extracted from a production Salesforce FSL project where this system reduced human touchpoints from 5+ to 2 per feature.
+A reusable AI development workflow framework for Claude Code. This system reduces human touchpoints from 5+ to 2 per feature.
 
 ## What This Is
 
@@ -25,8 +25,13 @@ Three separable layers:
 ### 1. Run Setup
 
 ```bash
+# macOS / Linux
 cd your-project/
 bash ~/Developer/claude-code-framework/setup.sh
+
+# Windows PowerShell
+cd your-project\
+& ~\Developer\claude-code-framework\setup.ps1
 ```
 
 The setup wizard asks:
@@ -37,10 +42,10 @@ The setup wizard asks:
 - Notification system (Slack, Teams, Discord, none)
 
 Then generates:
-- `.claude/skills/` — 16 workflow skills adapted to your stack (incl. `/team`, `/improve`)
+- `.claude/skills/` — 17 workflow skills adapted to your stack (incl. `/team`, `/improve`)
 - `.claude/agents/` — 12 AI agents covering full team roles (all opus)
 - `.claude/commands/` — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)
-- `.claude/rules/` — file-pattern-scoped coding guardrails
+- `.claude/rules/` — 9 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components)
 - `.claude/hooks/` — 5 lifecycle hooks (guardrails, pre-commit, post-edit-sync, session-start, session-stop)
 - `.claude/settings.local.json` — project permissions, hooks
 - `.mcp.json` — MCP servers (Context7 documentation)
@@ -87,7 +92,7 @@ mkdir -p .claude/skills/my-domain/references/
 | `/refine-story` | Improve existing stories with gap analysis |
 | `/merge-resolve` | AI-powered merge conflict resolution — reads both features' story docs to understand intent, resolves per file type |
 | `/error-analyze` | Triage errors from monitoring, create tickets |
-| `/team` | Spawn agent teams for parallel analysis (review, architecture, release, quality, full) |
+| `/team` | Spawn agent teams for parallel analysis (review, architecture, release, quality, design, documentation, full) |
 | `/improve` | Self-improvement — update CLAUDE.md, rules, settings from project analysis |
 | `/ai-update` | Branch + PR for AI process file changes |
 | `/add-reference` | Add/update domain knowledge references |
@@ -95,6 +100,7 @@ mkdir -p .claude/skills/my-domain/references/
 | `/deploy` | Orchestrate deployments to environments |
 | `/fetch-docs` | Fetch and persist external documentation |
 | `/mock-endpoint` | Mock external API integrations |
+| `/scaffold-design-system` | Scaffold design system tokens, components, and theme config |
 
 ### AI Agents (12 specialized teammates)
 
@@ -122,6 +128,7 @@ mkdir -p .claude/skills/my-domain/references/
 | Release | `/team release` | security-auditor + devops-engineer + performance-optimizer |
 | Quality | `/team quality` | code-reviewer + test-writer + performance-optimizer |
 | Documentation | `/team documentation` | documentation-writer + api-designer |
+| Design | `/team design` | ui-ux-reviewer + performance-optimizer + refactor-advisor |
 | Full | `/team full` | All 12 agents |
 | Custom | `/team custom a b` | Any combination |
 
@@ -148,6 +155,9 @@ File-pattern-scoped rules that Claude follows automatically when editing matchin
 | `database` | Models, migrations | Parameterized queries, indexes, reversible migrations |
 | `config-files` | JSON, YAML, TOML | No secrets, document values, validate at startup |
 | `error-handling` | Source files | No silent catches, error tracking, context on re-throw |
+| `auth-security` | Source files | Fail-closed auth, CSRF, RBAC enforcement, session security, redirects |
+| `data-protection` | Source files | No PII in git, no credentials on disk, log redaction, third-party data |
+| `design-system` | UI components | Semantic tokens, spacing scale, consistent typography, theme compliance |
 
 ### Hooks (lifecycle quality gates)
 
@@ -200,35 +210,29 @@ File-pattern-scoped rules that Claude follows automatically when editing matchin
 
 > The `framework-improver` agent runs automatically in the background after **any session where files were modified** — not just `/develop` and `/factory`. This is enforced via CLAUDE.md instructions, so documentation and `.claude/` config always stay in sync with the actual project state. Changes are logged to `docs/ai-improvements.md`.
 
-## Integration Adapters
+## Integration Configuration
 
-The framework uses adapter placeholders (`{{TRACKER_*}}`, `{{CI_*}}`, `{{DEPLOY_*}}`, `{{NOTIFY_*}}`) that `setup.sh` replaces with your specific tools:
+The framework connects to external systems through the **setup wizard** and **environment variables** -- not separate adapter files. During setup, you select your tracker, CI/CD platform, deployment target, and notification system. The wizard writes concrete API calls and commands into your skill files by replacing placeholder tokens (`{{TRACKER_*}}`, `{{CI_*}}`, `{{DEPLOY_*}}`, `{{NOTIFY_*}}`).
 
-### Work Item Trackers
+### Setup Wizard Integrations
 
-| Tracker | Adapter | What It Configures |
-|---------|---------|-------------------|
-| Azure DevOps | `adapters/ado.env` | REST API endpoints, PAT auth, field mappings, WIQL queries |
-| Jira | `adapters/jira.env` | REST API v3, API token auth, JQL queries, custom fields |
-| Linear | `adapters/linear.env` | GraphQL API, API key auth, team/project IDs |
-| GitHub Issues | `adapters/github.env` | `gh` CLI, labels, milestones, project boards |
+| Category | Options | What Gets Configured |
+|----------|---------|---------------------|
+| **Work Item Tracker** | Azure DevOps, Jira, Linear, GitHub Issues | Ticket fetch commands, field mappings, state transitions |
+| **CI/CD Platform** | GitHub Actions, GitLab CI, CircleCI | Workflow files in `.github/workflows/` or equivalent |
+| **Deployment Target** | Salesforce, AWS, Vercel, Docker/K8s, Generic | Deploy commands in `/deploy` skill and CI workflows |
+| **Notifications** | Slack, Teams, Discord, None | Post-deploy and review notification commands |
 
-### CI/CD Platforms
+### Credentials via .env
 
-| Platform | Adapter | What It Generates |
-|----------|---------|-------------------|
-| GitHub Actions | `workflows/*.yml` | Factory validate, auto-merge, deploy, cleanup |
-| GitLab CI | `.gitlab-ci.yml` | Equivalent pipeline stages |
+After setup, store API credentials in your project's `.env` file (never committed to git):
 
-### Deployment Targets
-
-| Target | Adapter | Deploy Commands |
-|--------|---------|----------------|
-| Salesforce | `adapters/salesforce.env` | `sf project deploy`, scratch orgs, sandbox pool |
-| Vercel | `adapters/vercel.env` | `vercel deploy`, preview URLs |
-| AWS (CDK/SAM) | `adapters/aws.env` | `cdk deploy`, `sam deploy` |
-| Docker/K8s | `adapters/docker.env` | `docker build`, `kubectl apply` |
-| Generic | `adapters/generic.env` | Custom deploy script path |
+| Tracker | Required Variables |
+|---------|--------------------|
+| Azure DevOps | `AZURE_DEVOPS_EXT_PAT`, org/project in skill files |
+| Jira | `JIRA_API_TOKEN`, `JIRA_EMAIL`, domain in skill files |
+| Linear | `LINEAR_API_KEY` |
+| GitHub Issues | Uses `gh` CLI (already authenticated) |
 
 ## Permissions (Safe-by-Default)
 
@@ -307,6 +311,7 @@ Edit `.claude/skills/factory/SKILL.md` to add/remove pipeline stages.
 | `docs/skill-authoring.md` | How to write new skills — format, patterns, categories, testing |
 | `docs/sub-agent-orchestration.md` | How skills spawn parallel agents, pass context, run background tasks |
 | `docs/memory-patterns.md` | How skills read/write memory for smarter behavior across conversations |
+| `docs/troubleshooting.md` | Common issues: hooks, placeholders, Windows paths, MCP, agents |
 | `docs/examples/` | Example configs for Salesforce, Next.js, Python API projects |
 
 ## Files Reference
@@ -348,7 +353,10 @@ claude-code-framework/
 │   │   ├── tests.md
 │   │   ├── database.md
 │   │   ├── config-files.md
-│   │   └── error-handling.md
+│   │   ├── error-handling.md
+│   │   ├── auth-security.md
+│   │   ├── data-protection.md
+│   │   └── design-system.md
 │   ├── hooks/                   # Lifecycle scripts
 │   │   ├── guardrails.sh        # PreToolUse: block dangerous ops
 │   │   ├── pre-commit.sh
@@ -373,7 +381,8 @@ claude-code-framework/
 │   ├── team/                    # Agent team spawning
 │   ├── improve/                 # Framework self-improvement
 │   ├── fetch-docs/              # External documentation fetch
-│   └── mock-endpoint/           # Mock API endpoints
+│   ├── mock-endpoint/           # Mock API endpoints
+│   └── scaffold-design-system/  # Design system scaffolding
 ├── workflows/                   # CI/CD templates
 │   ├── factory-validate.yml     # Deploy PR to test env
 │   ├── factory-auto-merge.yml   # Auto-merge after approval
@@ -390,6 +399,3 @@ claude-code-framework/
     └── examples/                # Example configs per project type
 ```
 
-## Origin
-
-Extracted from [Salesforce-Nexus](../Salesforce/Salesforce-Nexus-US-1965/), a production FSL implementation with 21 skills, 4 GitHub Actions workflows, and a factory pipeline that takes stories from draft to deployed with only 2 human touchpoints (story approval + code review).

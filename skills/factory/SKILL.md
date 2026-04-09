@@ -169,20 +169,7 @@ After merge:
 
 ### Step 9: Framework Improvement (Background)
 
-After every factory run, spawn the `framework-improver` agent as a background sub-agent:
-
-```
-Agent: framework-improver
-Mode: background (fire-and-forget)
-```
-
-The improver analyzes what was built and evolves the `.claude/` config:
-- Fills CLAUDE.md placeholders from discovered project patterns
-- Updates rule file patterns if actual file paths have changed
-- Notes new coding patterns, error handling approaches, or test conventions
-- Logs all changes to `docs/ai-improvements.md` (append, never overwrite)
-
-This never blocks the factory pipeline — it runs after the completion report.
+Spawn the `framework-improver` agent in the background per the pattern in `/develop` Phase 9. This never blocks the factory pipeline — it runs after the completion report.
 
 ## Execution Logging
 

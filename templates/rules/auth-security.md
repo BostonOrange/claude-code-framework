@@ -64,4 +64,17 @@ When editing authentication, authorization, session, or API route files, enforce
 
 - All user input entering the system (API request bodies, form data, URL parameters, file uploads) must be validated against a schema before processing.
 - Use a validation library (Zod, Pydantic, Joi, etc.) rather than manual `if` checks — validation libraries are harder to get wrong and produce consistent error messages.
-- File uploads must validate: file type (MIME + magic bytes), file size, and filename characters.
+- File uploads must validate: file type (MIME + magic bytes), file size, and filename characters. Filenames must be sanitized (strip path separators, reject `..` sequences) or replaced with UUIDs to prevent path traversal.
+
+## CORS Configuration
+
+- **Never use `Access-Control-Allow-Origin: *` with `Access-Control-Allow-Credentials: true`.** This allows any website to make authenticated cross-origin requests.
+- If CORS is needed, use an explicit allow-list of trusted origins — never reflect the `Origin` header without validation.
+- Preflight responses (`OPTIONS`) should be cached (`Access-Control-Max-Age`) to reduce overhead.
+
+## Outbound Request Validation (SSRF Prevention)
+
+- **Never fetch URLs directly from user input** (webhooks, image proxies, URL previews, import-from-URL features) without validation.
+- Validate that user-supplied URLs resolve to public IP addresses — block private/internal ranges (`10.x`, `172.16-31.x`, `192.168.x`, `127.x`, `169.254.x`, `::1`, `fc00::/7`).
+- Use an allow-list of permitted schemes (`https://` only where possible) and domains when the set of valid targets is known.
+- If the application must fetch arbitrary URLs, use a dedicated outbound proxy with network-level restrictions.

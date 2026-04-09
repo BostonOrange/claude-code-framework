@@ -180,7 +180,7 @@ Write for a **technical audience**. Be direct, no filler. Use identifiers, not d
 
 ### Code Formatting & Linting
 
-{{FORMAT_COMMANDS}}
+{{FORMAT_COMMAND}}
 
 ### Type Checking
 
@@ -190,11 +190,11 @@ Write for a **technical audience**. Be direct, no filler. Use identifiers, not d
 
 ### Testing
 
-{{TEST_COMMANDS}}
+{{TEST_COMMAND}}
 
 ### Deployment
 
-{{DEPLOY_COMMANDS}}
+{{DEPLOY_VALIDATE_COMMAND}}
 
 ## Version Control
 
@@ -221,7 +221,7 @@ Write for a **technical audience**. Be direct, no filler. Use identifiers, not d
 
 ### Data Protection
 - **No real PII in git** — never commit database files, uploaded documents, or CSVs with real personal data. Use synthetic test data only.
-- **No credentials on disk** — `.env` should have placeholders only. Real secrets belong in a vault or CI secrets. Rotate immediately if exposed.
+- **No credentials on disk** — `.env` should have placeholders only. Real secrets belong in a vault or CI secrets. Rotate immediately if exposed. Never put secrets in client-exposed env vars (`NEXT_PUBLIC_*`, `VITE_*`, `REACT_APP_*`).
 - **No PII in logs** — use opaque IDs, not names/emails/personal numbers. Configure structured logger redaction.
 - **Flag third-party PII sharing** — any code sending personal data to external APIs (AI providers, analytics) must be reviewed for DPA compliance.
 
@@ -241,6 +241,9 @@ Write for a **technical audience**. Be direct, no filler. Use identifiers, not d
 - Keep `.env` and credential files in `.gitignore`
 - Never set `ignoreBuildErrors: true` or equivalent — type errors can hide security bugs
 - Rate limit authentication, AI, and file upload endpoints
+- Never use `Access-Control-Allow-Origin: *` with credentials — use an explicit origin allow-list
+- Validate outbound URLs from user input — block private IP ranges to prevent SSRF
+- Sanitize uploaded filenames (strip path separators, reject `..`) to prevent path traversal
 
 ## Factory Mode
 

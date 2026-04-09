@@ -1,6 +1,6 @@
 # Example: Salesforce Project
 
-This is the original project (Salesforce-Nexus) that the framework was extracted from.
+This example shows how to configure the framework for a Salesforce project.
 
 ## Setup
 
@@ -50,9 +50,9 @@ sf project deploy start -x manifest/package.xml -o {alias}
 ### Shared Metadata Workflow
 FlexiPages, Layouts, Permission Sets are shared. Use pull-merge-deploy pattern.
 
-## What Nexus Has Beyond the Framework
+## Additional Components for Large Salesforce Projects
 
-| Component | Nexus-Specific |
+| Component | Description |
 |-----------|---------------|
 | 5 domain skills | FSL, RCA, FSM, ROT/RUT, Personas |
 | 50+ reference files | Object inventories, flow catalogs, PDF chapters |

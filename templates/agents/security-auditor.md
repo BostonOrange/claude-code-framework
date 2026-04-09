@@ -1,6 +1,6 @@
 ---
 name: security-auditor
-description: Audits code for security vulnerabilities, credential exposure, PII leakage, auth bypass, CSRF, dependency risks, and compliance issues
+description: Audits code for security vulnerabilities, credential exposure, PII leakage, auth bypass, CSRF, CORS, SSRF, dependency risks, and compliance issues
 tools: Read, Glob, Grep, Bash
 model: opus
 ---
@@ -78,6 +78,8 @@ Report vulnerable dependencies with severity levels.
 
 ### Step 5: Authentication & Authorization
 
+**Apply checks from `.claude/rules/auth-security.md` (fail-closed auth, RBAC, session security, CSRF, redirects, rate limiting) and `.claude/rules/data-protection.md` (PII in logs, credential exposure).**
+
 **Check for fail-open auth patterns — the most common critical finding.**
 
 Search for patterns where auth defaults to allowing access:
@@ -126,15 +128,19 @@ For each redirect:
 
 ### Step 8: Input Validation
 
+**Apply checks from `.claude/rules/auth-security.md` (input validation at boundaries, file upload rules, SSRF prevention).**
+
 Check system boundaries for input validation:
 - API route handlers validate request bodies (with a schema library, not manual checks)
 - Query parameters are sanitized before database queries
-- File uploads are validated (type, size, content/magic bytes)
+- File uploads are validated (type, size, content/magic bytes, filename sanitization for path traversal)
 - URL parameters are validated (format, length, allowed values)
 - No raw SQL string concatenation (parameterized queries only)
 - Identity fields (user ID, email, reviewer name) are never accepted from client input — always derived from the authenticated session
 
 ### Step 9: Data Exposure
+
+**Apply checks from `.claude/rules/data-protection.md` (PII in logs, real data in git, credential exposure, third-party data sharing).**
 
 Check for sensitive data in:
 - Log statements (PII: names, emails, personal numbers, medical data, salary information)
@@ -152,7 +158,21 @@ Check for rate limiting on:
 - Endpoints triggering expensive operations (AI calls, file processing, exports)
 - Verify rate limit keys come from the session or IP — not from client-supplied headers
 
-### Step 11: Report
+### Step 11: CORS Configuration
+
+Check for CORS misconfigurations:
+- `Access-Control-Allow-Origin: *` combined with `Access-Control-Allow-Credentials: true` — this allows any website to make authenticated cross-origin requests
+- Reflected `Origin` header without validation (echoing back whatever origin the browser sends)
+- Overly permissive origin allow-lists
+
+### Step 12: SSRF Prevention
+
+Check for server-side request forgery vulnerabilities:
+- Any endpoint that fetches user-supplied URLs (webhooks, image proxies, URL previews, import features)
+- Verify outbound URLs are validated against private/internal IP ranges (`10.x`, `172.16-31.x`, `192.168.x`, `127.x`, `169.254.x`)
+- Check that URL schemes are restricted (`https://` only where possible)
+
+### Step 13: Report
 
 Produce an OWASP-categorized security report:
 

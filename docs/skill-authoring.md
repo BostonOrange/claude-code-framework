@@ -148,7 +148,7 @@ Modify the AI system itself.
 Project-specific knowledge and patterns.
 - No process logic — pure reference
 - Rich `references/` directory
-- Examples: FSL, RCA, FSM (from Nexus)
+- Examples: domain-specific object inventories, API specs, business rules
 
 ## Adding References
 

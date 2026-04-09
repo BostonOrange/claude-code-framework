@@ -4,9 +4,44 @@
 
 set -e
 
+# ── Argument parsing ───────────────────────────────────────────────
+DRY_RUN=false
+RESET=false
+for arg in "$@"; do
+    case "$arg" in
+        --dry-run) DRY_RUN=true ;;
+        --reset) RESET=true ;;
+        --help|-h) echo "Usage: setup.sh [--dry-run] [--reset]"; echo "  --dry-run  Show what would be done without making changes"; echo "  --reset    Remove framework files from target project"; exit 0 ;;
+    esac
+done
+
+if ! command -v python3 &>/dev/null; then
+    echo "ERROR: python3 is required but not found. Install Python 3 and retry."
+    exit 1
+fi
+
 FRAMEWORK_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(pwd)"
 PROJECT_NAME="$(basename "$PROJECT_DIR")"
+
+# ── Reset mode ─────────────────────────────────────────────────────
+if [ "$RESET" = true ]; then
+    echo "Removing framework files..."
+    rm -rf "$PROJECT_DIR/.claude/skills" "$PROJECT_DIR/.claude/agents" "$PROJECT_DIR/.claude/commands" "$PROJECT_DIR/.claude/rules" "$PROJECT_DIR/.claude/hooks"
+    rm -f "$PROJECT_DIR/.claude/settings.local.json" "$PROJECT_DIR/.mcp.json"
+    echo "Framework files removed. CLAUDE.md and .env preserved."
+    echo "To fully clean up, manually remove CLAUDE.md and .env"
+    exit 0
+fi
+
+# ── Portable sed -i function ──────────────────────────────────────
+sed_inplace() {
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "$@"
+    else
+        sed -i "$@"
+    fi
+}
 
 echo "======================================"
 echo "  Claude Code Framework Setup"
@@ -27,7 +62,13 @@ echo "  5) Java / Spring Boot"
 echo "  6) React / Next.js"
 echo "  7) Ruby on Rails"
 echo "  8) Other"
-read -p "Choice [1-8]: " PROJECT_TYPE
+while true; do
+    read -p "Choice [1-8]: " PROJECT_TYPE
+    case "$PROJECT_TYPE" in
+        1|2|3|4|5|6|7|8) break ;;
+        *) echo "Invalid selection. Please enter a number between 1 and 8." ;;
+    esac
+done
 
 case $PROJECT_TYPE in
     1) PROJECT_TYPE_NAME="salesforce" ;;
@@ -38,7 +79,6 @@ case $PROJECT_TYPE in
     6) PROJECT_TYPE_NAME="react" ;;
     7) PROJECT_TYPE_NAME="rails" ;;
     8) PROJECT_TYPE_NAME="generic" ;;
-    *) PROJECT_TYPE_NAME="generic" ;;
 esac
 
 # ── 2. Work Item Tracker ────────────────────────────────────────
@@ -50,7 +90,13 @@ echo "  2) Jira"
 echo "  3) Linear"
 echo "  4) GitHub Issues"
 echo "  5) None"
-read -p "Choice [1-5]: " TRACKER_TYPE
+while true; do
+    read -p "Choice [1-5]: " TRACKER_TYPE
+    case "$TRACKER_TYPE" in
+        1|2|3|4|5) break ;;
+        *) echo "Invalid selection. Please enter a number between 1 and 5." ;;
+    esac
+done
 
 case $TRACKER_TYPE in
     1) TRACKER_NAME="ado" ;;
@@ -58,7 +104,6 @@ case $TRACKER_TYPE in
     3) TRACKER_NAME="linear" ;;
     4) TRACKER_NAME="github" ;;
     5) TRACKER_NAME="none" ;;
-    *) TRACKER_NAME="none" ;;
 esac
 
 # Tracker-specific config
@@ -101,21 +146,44 @@ echo "  1) GitHub Actions"
 echo "  2) GitLab CI"
 echo "  3) CircleCI"
 echo "  4) None / Manual"
-read -p "Choice [1-4]: " CI_TYPE
+while true; do
+    read -p "Choice [1-4]: " CI_TYPE
+    case "$CI_TYPE" in
+        1|2|3|4) break ;;
+        *) echo "Invalid selection. Please enter a number between 1 and 4." ;;
+    esac
+done
 
 case $CI_TYPE in
     1) CI_NAME="github-actions" ;;
     2) CI_NAME="gitlab-ci" ;;
     3) CI_NAME="circleci" ;;
     4) CI_NAME="none" ;;
-    *) CI_NAME="none" ;;
 esac
 
 # ── 4. Base Branch ──────────────────────────────────────────────
 
 echo ""
-read -p "Primary integration branch [develop]: " BASE_BRANCH
-BASE_BRANCH="${BASE_BRANCH:-develop}"
+read -p "Primary integration branch [main]: " BASE_BRANCH
+BASE_BRANCH="${BASE_BRANCH:-main}"
+
+# Check if current branch differs and offer to rename
+currentBranch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+if [ -n "$currentBranch" ] && [ "$currentBranch" != "$BASE_BRANCH" ]; then
+    read -p "Current branch is '$currentBranch'. Rename to '$BASE_BRANCH' and update remote? [y/N]: " CONFIRM
+    if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
+        echo "Skipping branch rename. Using '$currentBranch' as-is."
+        BASE_BRANCH="$currentBranch"
+    else
+        git branch -m "$currentBranch" "$BASE_BRANCH"
+        echo "Renamed local branch '$currentBranch' to '$BASE_BRANCH'."
+        if git remote get-url origin &>/dev/null; then
+            git push origin --delete "$currentBranch" 2>/dev/null || true
+            git push origin "$BASE_BRANCH" -u 2>/dev/null || true
+            echo "Updated remote branch."
+        fi
+    fi
+fi
 
 # ── 5. Notification System ──────────────────────────────────────
 
@@ -125,14 +193,19 @@ echo "  1) Slack"
 echo "  2) Microsoft Teams"
 echo "  3) Discord"
 echo "  4) None"
-read -p "Choice [1-4]: " NOTIFY_TYPE
+while true; do
+    read -p "Choice [1-4]: " NOTIFY_TYPE
+    case "$NOTIFY_TYPE" in
+        1|2|3|4) break ;;
+        *) echo "Invalid selection. Please enter a number between 1 and 4." ;;
+    esac
+done
 
 case $NOTIFY_TYPE in
     1) NOTIFY_NAME="slack" ;;
     2) NOTIFY_NAME="teams" ;;
     3) NOTIFY_NAME="discord" ;;
     4) NOTIFY_NAME="none" ;;
-    *) NOTIFY_NAME="none" ;;
 esac
 
 # ── 6. Project Short Name (for worktrees) ───────────────────────
@@ -158,7 +231,13 @@ case $PROJECT_TYPE_NAME in
         echo "  2) shadcn/ui (open source, Radix based)"
         echo "  3) Custom / existing (I'll configure it later)"
         echo "  4) None — no design system"
-        read -p "Choice [1-4]: " DESIGN_TYPE
+        while true; do
+            read -p "Choice [1-4]: " DESIGN_TYPE
+            case "$DESIGN_TYPE" in
+                1|2|3|4) break ;;
+                *) echo "Invalid selection. Please enter a number between 1 and 4." ;;
+            esac
+        done
 
         case $DESIGN_TYPE in
             1)
@@ -242,6 +321,42 @@ esac
 # Generate project files
 # ═══════════════════════════════════════════════════════════════
 
+if [ "$DRY_RUN" = true ]; then
+    echo ""
+    echo "[DRY-RUN] Would set up Claude Code framework in $PROJECT_DIR"
+    echo "[DRY-RUN] Would create directories: .claude/skills, .claude/statusline, docs/stories"
+    echo "[DRY-RUN] Would copy skills from $FRAMEWORK_DIR/skills/"
+    echo "[DRY-RUN] Would copy agents from $FRAMEWORK_DIR/templates/agents/"
+    echo "[DRY-RUN] Would copy commands from $FRAMEWORK_DIR/templates/commands/"
+    echo "[DRY-RUN] Would copy rules from $FRAMEWORK_DIR/templates/rules/"
+    echo "[DRY-RUN] Would copy hooks from $FRAMEWORK_DIR/templates/hooks/"
+    echo "[DRY-RUN] Would replace all {{PLACEHOLDER}} values in copied files"
+    echo "[DRY-RUN] Would copy settings.local.json, .mcp.json, statusline"
+    if [ ! -f "$PROJECT_DIR/CLAUDE.md" ]; then
+        echo "[DRY-RUN] Would create CLAUDE.md from template"
+    else
+        echo "[DRY-RUN] CLAUDE.md already exists — would skip"
+    fi
+    if [ "$CI_NAME" = "github-actions" ]; then
+        echo "[DRY-RUN] Would create GitHub Actions workflows in .github/workflows/"
+    fi
+    if [ ! -f "$PROJECT_DIR/.env" ]; then
+        echo "[DRY-RUN] Would create .env template"
+    fi
+    echo ""
+    echo "[DRY-RUN] Configuration summary:"
+    echo "  Project:     $PROJECT_NAME"
+    echo "  Type:        $PROJECT_TYPE_NAME"
+    echo "  Tracker:     $TRACKER_NAME"
+    echo "  CI/CD:       $CI_NAME"
+    echo "  Base branch: $BASE_BRANCH"
+    echo "  Notify:      $NOTIFY_NAME"
+    echo "  Design:      $DESIGN_SYSTEM_NAME"
+    echo ""
+    echo "No files were modified. Run without --dry-run to apply."
+    exit 0
+fi
+
 echo ""
 echo "Setting up Claude Code framework..."
 echo ""
@@ -257,6 +372,7 @@ mkdir -p "$PROJECT_DIR/docs/stories"
 echo "Copying skills..."
 for skill_dir in "$FRAMEWORK_DIR/skills"/*/; do
     skill_name=$(basename "$skill_dir")
+    if [ "$skill_name" = "_template" ]; then continue; fi
     if [ -d "$skill_dir" ]; then
         cp -r "$skill_dir" "$PROJECT_DIR/.claude/skills/$skill_name"
         echo "  + /$(basename "$skill_dir")"
@@ -504,21 +620,21 @@ NOTIFY_CMD=""
 case $NOTIFY_NAME in
     slack)
         NOTIFY_CMD='```bash
-source .env && curl -s -X POST "${SLACK_WEBHOOK_URL}" \
+export $(grep -v '"'"'^#'"'"' .env | grep -v '"'"'^$'"'"' | xargs) && curl -s -X POST "${SLACK_WEBHOOK_URL}" \
   -H "Content-Type: application/json" \
   -d "{\"text\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}"
 ```'
         ;;
     teams)
         NOTIFY_CMD='```bash
-source .env && curl -s -X POST "${TEAMS_WEBHOOK_URL}" \
+export $(grep -v '"'"'^#'"'"' .env | grep -v '"'"'^$'"'"' | xargs) && curl -s -X POST "${TEAMS_WEBHOOK_URL}" \
   -H "Content-Type: application/json" \
   -d "{\"text\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}"
 ```'
         ;;
     discord)
         NOTIFY_CMD='```bash
-source .env && curl -s -X POST "${DISCORD_WEBHOOK_URL}" \
+export $(grep -v '"'"'^#'"'"' .env | grep -v '"'"'^$'"'"' | xargs) && curl -s -X POST "${DISCORD_WEBHOOK_URL}" \
   -H "Content-Type: application/json" \
   -d "{\"content\":\"Factory halted for {TICKET_ID}: {reason}. Manual intervention needed.\"}"
 ```'
@@ -527,68 +643,6 @@ source .env && curl -s -X POST "${DISCORD_WEBHOOK_URL}" \
         NOTIFY_CMD='No notification system configured. Log the halt message.'
         ;;
 esac
-
-# Detect OS for portable sed -i (used by skill replacement and later sections)
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    SED_INPLACE="sed -i ''"
-else
-    SED_INPLACE="sed -i"
-fi
-
-# Replace placeholders in all skill files
-find "$PROJECT_DIR/.claude/skills" -name "*.md" -exec $SED_INPLACE \
-    -e "s|{{BASE_BRANCH}}|$BASE_BRANCH|g" \
-    -e "s|{{PROJECT_SHORT_NAME}}|$PROJECT_SHORT|g" \
-    -e "s|{{FORMAT_COMMAND}}|$FORMAT_CMD|g" \
-    -e "s|{{FORMAT_VERIFY_COMMAND}}|$FORMAT_VERIFY|g" \
-    -e "s|{{TEST_COMMAND}}|$TEST_CMD|g" \
-    -e "s|{{DEPLOY_VALIDATE_COMMAND}}|$DEPLOY_VALIDATE|g" \
-    {} +
-
-# Export variables for Python replacement subprocesses
-export PROJECT_DIR TRACKER_FETCH TRACKER_SET_PROGRESS TRACKER_SET_REVIEW
-export TRACKER_URL TRACKER_LINK_PR TRACKER_CREATE NOTIFY_CMD DEPLOY_VALIDATE
-
-# Replace multi-line placeholders (tracker commands, notifications)
-# These are more complex — write them to temp files and use python for replacement
-python3 << 'PYEOF'
-import os, glob
-
-project_dir = os.environ.get('PROJECT_DIR', '.')
-skills_dir = os.path.join(project_dir, '.claude', 'skills')
-
-replacements = {
-    '{{TRACKER_FETCH_TICKET}}': os.environ.get('TRACKER_FETCH', 'Configure tracker fetch command.'),
-    '{{TRACKER_SET_IN_PROGRESS}}': os.environ.get('TRACKER_SET_PROGRESS', 'Configure tracker state transition.'),
-    '{{TRACKER_SET_IN_REVIEW}}': os.environ.get('TRACKER_SET_REVIEW', 'Configure tracker state transition.'),
-    '{{TRACKER_TICKET_URL}}': os.environ.get('TRACKER_URL', '{ticket_url}'),
-    '{{TRACKER_LINK_PR}}': os.environ.get('TRACKER_LINK_PR', 'Configure PR-to-ticket linking.'),
-    '{{TRACKER_CREATE_TICKET}}': os.environ.get('TRACKER_CREATE', 'Configure ticket creation.'),
-    '{{TRACKER_CREATE_BUG}}': os.environ.get('TRACKER_CREATE', 'Configure bug creation.'),
-    '{{TRACKER_UPDATE_FIELDS}}': 'Configure tracker field update command.',
-    '{{TRACKER_SET_DEPLOYED}}': 'Configure tracker deployed state transition.',
-    '{{NOTIFY_HALT}}': os.environ.get('NOTIFY_CMD', 'Log halt message.'),
-    '{{NOTIFY_HALT_FACTORY}}': os.environ.get('NOTIFY_CMD', 'Log halt message.'),
-    '{{NOTIFY_DEPLOY_SUCCESS}}': os.environ.get('NOTIFY_CMD', 'Log deploy success.').replace('halted', 'deployed').replace('Manual intervention needed', 'Deployment complete'),
-    '{{ERROR_QUERY_COMMAND}}': 'Configure error query command for your monitoring system.',
-    '{{ERROR_UPDATE_STATUS}}': 'Configure error status update command.',
-    '{{ERROR_DISMISS}}': 'Configure error dismiss command.',
-    '{{DEPLOY_COMMAND}}': os.environ.get('DEPLOY_VALIDATE', 'Configure deploy command.'),
-    '{{FACTORY_LOCAL_VALIDATION}}': os.environ.get('DEPLOY_VALIDATE', 'Configure local validation command.'),
-}
-
-for filepath in glob.glob(os.path.join(skills_dir, '**', '*.md'), recursive=True):
-    with open(filepath, 'r') as f:
-        content = f.read()
-    changed = False
-    for placeholder, value in replacements.items():
-        if placeholder in content:
-            content = content.replace(placeholder, value)
-            changed = True
-    if changed:
-        with open(filepath, 'w') as f:
-            f.write(content)
-PYEOF
 
 # ── Copy agents ──────────────────────────────────────────────────
 
@@ -655,40 +709,64 @@ for hook_file in "$FRAMEWORK_DIR/templates/hooks"/*.sh; do
     fi
 done
 
-# ── Replace placeholders in agents, commands, rules, hooks ───────
+# ── Replace ALL placeholders in skills, agents, commands, rules, hooks ───
 
-for dir in "$PROJECT_DIR/.claude/agents" "$PROJECT_DIR/.claude/commands" "$PROJECT_DIR/.claude/rules" "$PROJECT_DIR/.claude/hooks"; do
-    if [ -d "$dir" ]; then
-        find "$dir" -type f \( -name "*.md" -o -name "*.sh" \) -exec $SED_INPLACE \
-            -e "s|{{BASE_BRANCH}}|$BASE_BRANCH|g" \
-            -e "s|{{PROJECT_SHORT_NAME}}|$PROJECT_SHORT|g" \
-            -e "s|{{FORMAT_COMMAND}}|$FORMAT_CMD|g" \
-            -e "s|{{FORMAT_VERIFY_COMMAND}}|$FORMAT_VERIFY|g" \
-            -e "s|{{TEST_COMMAND}}|$TEST_CMD|g" \
-            -e "s|{{DEPLOY_VALIDATE_COMMAND}}|$DEPLOY_VALIDATE|g" \
-            -e "s|{{TYPE_CHECK_COMMAND}}|$TYPE_CHECK_CMD|g" \
-            -e "s|{{DEP_CHECK_COMMAND}}|$DEP_CHECK_CMD|g" \
-            -e "s|{{SECURITY_AUDIT_COMMAND}}|$SECURITY_AUDIT_CMD|g" \
-            -e "s|{{DEFAULT_MODEL}}|$DEFAULT_MODEL|g" \
-            {} + 2>/dev/null || true
-    fi
-done
+echo "Replacing placeholders..."
 
-# Export variables for Python replacement
+# Export all variables needed by the consolidated Python replacement
+export PROJECT_DIR BASE_BRANCH PROJECT_SHORT
+export FORMAT_CMD FORMAT_VERIFY TEST_CMD DEPLOY_VALIDATE
+export TYPE_CHECK_CMD DEP_CHECK_CMD SECURITY_AUDIT_CMD DEFAULT_MODEL
+export TRACKER_FETCH TRACKER_SET_PROGRESS TRACKER_SET_REVIEW
+export TRACKER_URL TRACKER_LINK_PR TRACKER_CREATE NOTIFY_CMD
 export ERROR_TRACKING
-export API_ROUTE_PATTERNS
-export COMPONENT_PATTERNS
-export TEST_PATTERNS
-export DATABASE_PATTERNS
-export SOURCE_PATTERNS
+export API_ROUTE_PATTERNS COMPONENT_PATTERNS TEST_PATTERNS
+export DATABASE_PATTERNS SOURCE_PATTERNS
 
-# Replace multi-line/complex placeholders in agents, commands, rules
-python3 << 'PYEOF2'
+python3 << 'REPLACE_ALL_EOF'
 import os, glob
 
 project_dir = os.environ.get('PROJECT_DIR', '.')
 
+# All placeholder replacements — simple and multi-line — in one map
 replacements = {
+    # Simple placeholders (previously handled by sed)
+    '{{BASE_BRANCH}}': os.environ.get('BASE_BRANCH', 'main'),
+    '{{PROJECT_SHORT_NAME}}': os.environ.get('PROJECT_SHORT', ''),
+    '{{FORMAT_COMMAND}}': os.environ.get('FORMAT_CMD', ''),
+    '{{FORMAT_VERIFY_COMMAND}}': os.environ.get('FORMAT_VERIFY', ''),
+    '{{TEST_COMMAND}}': os.environ.get('TEST_CMD', ''),
+    '{{DEPLOY_VALIDATE_COMMAND}}': os.environ.get('DEPLOY_VALIDATE', ''),
+    '{{TYPE_CHECK_COMMAND}}': os.environ.get('TYPE_CHECK_CMD', ''),
+    '{{DEP_CHECK_COMMAND}}': os.environ.get('DEP_CHECK_CMD', ''),
+    '{{SECURITY_AUDIT_COMMAND}}': os.environ.get('SECURITY_AUDIT_CMD', ''),
+    '{{DEFAULT_MODEL}}': os.environ.get('DEFAULT_MODEL', 'sonnet'),
+
+    # Tracker placeholders (previously handled by Python skills pass)
+    '{{TRACKER_FETCH_TICKET}}': os.environ.get('TRACKER_FETCH', 'Configure tracker fetch command.'),
+    '{{TRACKER_SET_IN_PROGRESS}}': os.environ.get('TRACKER_SET_PROGRESS', 'Configure tracker state transition.'),
+    '{{TRACKER_SET_IN_REVIEW}}': os.environ.get('TRACKER_SET_REVIEW', 'Configure tracker state transition.'),
+    '{{TRACKER_TICKET_URL}}': os.environ.get('TRACKER_URL', '{ticket_url}'),
+    '{{TRACKER_LINK_PR}}': os.environ.get('TRACKER_LINK_PR', 'Configure PR-to-ticket linking.'),
+    '{{TRACKER_CREATE_TICKET}}': os.environ.get('TRACKER_CREATE', 'Configure ticket creation.'),
+    '{{TRACKER_CREATE_BUG}}': os.environ.get('TRACKER_CREATE', 'Configure bug creation.'),
+    '{{TRACKER_UPDATE_FIELDS}}': 'Configure tracker field update command.',
+    '{{TRACKER_SET_DEPLOYED}}': 'Configure tracker deployed state transition.',
+
+    # Notification placeholders
+    '{{NOTIFY_HALT}}': os.environ.get('NOTIFY_CMD', 'Log halt message.'),
+    '{{NOTIFY_HALT_FACTORY}}': os.environ.get('NOTIFY_CMD', 'Log halt message.'),
+    '{{NOTIFY_MERGE_RESOLVE}}': os.environ.get('NOTIFY_CMD', 'Log merge resolution message.').replace('halted', 'merge-resolved').replace('Manual intervention needed', 'Merged result needs human verification'),
+    '{{NOTIFY_DEPLOY_SUCCESS}}': os.environ.get('NOTIFY_CMD', 'Log deploy success.').replace('halted', 'deployed').replace('Manual intervention needed', 'Deployment complete'),
+
+    # Error/deploy placeholders
+    '{{ERROR_QUERY_COMMAND}}': 'Configure error query command for your monitoring system.',
+    '{{ERROR_UPDATE_STATUS}}': 'Configure error status update command.',
+    '{{ERROR_DISMISS}}': 'Configure error dismiss command.',
+    '{{DEPLOY_COMMAND}}': os.environ.get('DEPLOY_VALIDATE', 'Configure deploy command.'),
+    '{{FACTORY_LOCAL_VALIDATION}}': os.environ.get('DEPLOY_VALIDATE', 'Configure local validation command.'),
+
+    # Pattern placeholders (previously handled by Python agents pass)
     '{{ERROR_TRACKING_PATTERN}}': os.environ.get('ERROR_TRACKING', '// Log the error with full context'),
     '{{API_ROUTE_PATTERNS}}': os.environ.get('API_ROUTE_PATTERNS', '"**/routes/**/*", "**/api/**/*"'),
     '{{COMPONENT_PATTERNS}}': os.environ.get('COMPONENT_PATTERNS', '"**/components/**/*"'),
@@ -697,7 +775,8 @@ replacements = {
     '{{SOURCE_PATTERNS}}': os.environ.get('SOURCE_PATTERNS', '"**/*.{ts,js,py,go,java,rb}"'),
 }
 
-for search_dir in ['agents', 'commands', 'rules', 'hooks']:
+# Process all directories in a single pass
+for search_dir in ['skills', 'agents', 'commands', 'rules', 'hooks']:
     dir_path = os.path.join(project_dir, '.claude', search_dir)
     if not os.path.isdir(dir_path):
         continue
@@ -708,22 +787,20 @@ for search_dir in ['agents', 'commands', 'rules', 'hooks']:
             continue
         with open(filepath, 'r') as f:
             content = f.read()
-        changed = False
+        original = content
         for placeholder, value in replacements.items():
-            if placeholder in content:
-                content = content.replace(placeholder, value)
-                changed = True
-        if changed:
+            content = content.replace(placeholder, value)
+        if content != original:
             with open(filepath, 'w') as f:
                 f.write(content)
-PYEOF2
+REPLACE_ALL_EOF
 
 # ── Copy settings ────────────────────────────────────────────────
 
 echo "Copying settings..."
 cp "$FRAMEWORK_DIR/templates/settings.local.json" "$PROJECT_DIR/.claude/settings.local.json"
 # Replace model placeholder in settings
-$SED_INPLACE "s|{{DEFAULT_MODEL}}|$DEFAULT_MODEL|g" "$PROJECT_DIR/.claude/settings.local.json" 2>/dev/null || true
+sed_inplace "s|{{DEFAULT_MODEL}}|$DEFAULT_MODEL|g" "$PROJECT_DIR/.claude/settings.local.json" 2>/dev/null || true
 
 # ── Copy MCP server config ───────────────────────────────────────
 
@@ -756,12 +833,13 @@ if [ ! -f "$PROJECT_DIR/CLAUDE.md" ]; then
     cp "$FRAMEWORK_DIR/templates/CLAUDE.md.template" "$PROJECT_DIR/CLAUDE.md"
 
     # Replace known placeholders
-    $SED_INPLACE \
+    sed_inplace \
         -e "s|{{BASE_BRANCH}}|$BASE_BRANCH|g" \
         -e "s|{{PROJECT_SHORT_NAME}}|$PROJECT_SHORT|g" \
         "$PROJECT_DIR/CLAUDE.md"
 
     # Replace tracker config, design system, and other placeholders
+    export FORMAT_CMD FORMAT_VERIFY TEST_CMD TYPE_CHECK_CMD DEPLOY_VALIDATE TRACKER_CONFIG
     export DESIGN_COLOR_RULES DESIGN_COMPONENT_IMPORTS DESIGN_ICON_USAGE DESIGN_CARD_PATTERNS DESIGN_DARK_MODE
     python3 << 'CLAUDE_MD_EOF'
 import os
@@ -978,10 +1056,10 @@ echo "Notify:     $NOTIFY_NAME"
 echo "Design:     $DESIGN_SYSTEM_NAME"
 echo ""
 echo "Files created:"
-echo "  .claude/skills/         — 16 workflow skills (incl. /team, /improve)"
+echo "  .claude/skills/         — 17 workflow skills (incl. /team, /improve, /scaffold-design-system)"
 echo "  .claude/agents/         — 12 AI agents (full team: architect to framework-improver)"
 echo "  .claude/commands/       — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)"
-echo "  .claude/rules/          — coding guardrails (api-routes, tests, database, config, error-handling)"
+echo "  .claude/rules/          — 9 coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components)"
 echo "  .claude/hooks/          — 5 lifecycle hooks (guardrails, pre-commit, post-edit-sync, session-start, session-stop)"
 echo "  .claude/settings.local.json — project permissions, hooks"
 echo "  .mcp.json               — MCP servers (Context7 documentation)"
