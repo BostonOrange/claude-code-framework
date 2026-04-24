@@ -9,6 +9,12 @@ on:
   pull_request:
     types: [closed]
 
+# Serialize cleanup per-PR so simultaneous close + merge events don't race
+# on destructive operations (vercel remove / kubectl delete / scratch org delete).
+concurrency:
+  group: factory-cleanup-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write
@@ -17,6 +23,7 @@ jobs:
   cleanup:
     name: Clean up ephemeral environment
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: contains(github.event.pull_request.labels.*.name, 'factory')
 
     steps:

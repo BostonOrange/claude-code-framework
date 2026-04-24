@@ -3,15 +3,20 @@
 # Triggers after Edit/Write operations to flag documentation that may need updating.
 # Configure in settings.json under hooks.PostToolUse
 
-FILE_PATH="$1"
+_LIB="$(dirname "$0")/_lib.sh"
+[ -f "$_LIB" ] || exit 0
+# shellcheck source=/dev/null
+. "$_LIB"
 
-# Skip if no file path provided
+FILE_PATH=$(read_tool_input_field file_path)
+[ $? -eq 2 ] && exit 0
+
+# Skip if no file path extracted
 [ -z "$FILE_PATH" ] && exit 0
 
-# Normalize path separators
+# Normalize path separators (Windows → POSIX)
 FILE_PATH="${FILE_PATH//\\//}"
 BASENAME=$(basename "$FILE_PATH")
-DIRNAME=$(dirname "$FILE_PATH")
 
 SUGGESTIONS=""
 

@@ -35,7 +35,7 @@ claude-code-framework/
 │   ├── agents/                  # 12 AI agent definitions
 │   ├── commands/                # 6 quick command definitions
 │   ├── rules/                   # 9 file-pattern guardrails
-│   ├── hooks/                   # 5 lifecycle scripts
+│   ├── hooks/                   # 6 lifecycle scripts
 │   └── statusline/              # Status bar config
 ├── skills/                      # 17 workflow skills + 1 template
 ├── workflows/                   # 4 GitHub Actions CI/CD templates

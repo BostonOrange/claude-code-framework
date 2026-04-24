@@ -22,38 +22,84 @@ Three separable layers:
 
 ## Quick Start
 
-### 1. Run Setup
+### 1. Clone the framework (once per machine)
+
+Clone this repo anywhere you like. The path is yours to choose — the examples below use `~/claude-code-framework` (macOS/Linux) and `$HOME\claude-code-framework` (Windows).
+
+```bash
+# macOS / Linux
+git clone https://github.com/<your-fork>/claude-code-framework.git ~/claude-code-framework
+
+# Windows PowerShell
+git clone https://github.com/<your-fork>/claude-code-framework.git $HOME\claude-code-framework
+```
+
+> **Do not run `setup.sh` inside the framework repo itself.** This repo is the framework; `setup.sh` installs it into a *target project*.
+
+### 2. Run setup in your target project
 
 ```bash
 # macOS / Linux
 cd your-project/
-bash ~/Developer/claude-code-framework/setup.sh
+bash ~/claude-code-framework/setup.sh
 
 # Windows PowerShell
-cd your-project\
-& ~\Developer\claude-code-framework\setup.ps1
+cd your-project
+& $HOME\claude-code-framework\setup.ps1
 ```
 
 The setup wizard asks:
-- Project type (Salesforce, Node.js, Python, Go, etc.)
-- Work item tracker (Azure DevOps, Jira, Linear, GitHub Issues)
-- CI/CD platform (GitHub Actions, GitLab CI, CircleCI)
-- Deployment target (Salesforce org, AWS, Vercel, Docker, etc.)
-- Notification system (Slack, Teams, Discord, none)
+- **Project type** (Salesforce, Node.js, React, Python, Go, Java, Rails, Generic)
+- **Work item tracker** (Azure DevOps, Jira, Linear, GitHub Issues, None)
+- **CI/CD platform** (GitHub Actions, GitLab CI, CircleCI, Jenkins, None)
+- **Base branch** (main, develop, master — or custom)
+- **Project short name** (used for worktree directories)
+- **Notification system** (Slack, Teams, Discord, None)
+- **Design system** (Material UI, Tailwind, Chakra, Ant Design, shadcn/ui, custom, or None)
 
 Then generates:
 - `.claude/skills/` — 17 workflow skills adapted to your stack (incl. `/team`, `/improve`)
 - `.claude/agents/` — 12 AI agents covering full team roles (all opus)
 - `.claude/commands/` — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)
 - `.claude/rules/` — 9 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components)
-- `.claude/hooks/` — 5 lifecycle hooks (guardrails, pre-commit, post-edit-sync, session-start, session-stop)
+- `.claude/hooks/` — 6 lifecycle hooks (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit)
 - `.claude/settings.local.json` — project permissions, hooks
 - `.mcp.json` — MCP servers (Context7 documentation)
 - `~/.claude/settings.json` — user-level AI factory permissions, team orchestration (safe-by-default)
 - `CLAUDE.md` — project instructions (run `/improve` to auto-fill from project state)
 - `.github/workflows/` — CI/CD templates (if GitHub Actions)
 
-### 2. Add Domain Knowledge
+### 3. Updating the framework in an existing project
+
+When a new version of the framework ships and you want to pull it into an existing target project:
+
+```bash
+# In the framework repo:
+git pull
+
+# In your target project:
+bash ~/claude-code-framework/setup.sh
+```
+
+**What gets overwritten:** everything under `.claude/` (skills, agents, commands, rules, hooks, settings), plus `.mcp.json`. Re-running setup reapplies the installer — it replaces these files rather than merging.
+
+**What is preserved:**
+- `CLAUDE.md` at the project root — setup refuses to overwrite if it already exists
+- `.env` — only created if missing
+- Your code, docs, git history — setup never touches anything outside `.claude/`, `.mcp.json`, or `.github/workflows/`
+- Files you added under `.claude/skills/{your-domain}/` — setup only copies framework skills, not your custom ones
+
+**Before updating:**
+1. Commit or stash any local changes (in case you customized a shipped file)
+2. If you customized a file under `.claude/`, diff it against `templates/` in the framework repo first:
+   ```bash
+   diff .claude/hooks/post-edit-sync.sh ~/claude-code-framework/templates/hooks/post-edit-sync.sh
+   ```
+3. After updating, run `/improve` — it will repopulate deferred placeholders (`{{PROJECT_DESCRIPTION}}`, `{{TECH_STACK_TABLE}}`, etc.) from current project state if they were stripped.
+
+**To roll back:** restore the previous commit of `.claude/` — the installer is idempotent, so the previous state re-applies cleanly if you re-run the older framework's setup script.
+
+### 4. Add Domain Knowledge
 
 Create domain skills with references:
 
@@ -66,7 +112,7 @@ mkdir -p .claude/skills/my-domain/references/
 /add-reference my-domain api-endpoints  # Document your API surface
 ```
 
-### 3. Start Using
+### 5. Start Using
 
 | You are a... | Start with | Purpose |
 |--------------|------------|---------|
@@ -107,7 +153,7 @@ mkdir -p .claude/skills/my-domain/references/
 | Agent | Model | Purpose |
 |-------|-------|---------|
 | `architect` | opus | System design review, architecture patterns, scalability assessment |
-| `code-reviewer` | opus | Reviews diff for bugs, security, performance, conventions. Read-only |
+| `code-reviewer` | opus | Reviews diff for bugs, security, performance, design principles, code smells, conventions. Read-only |
 | `security-auditor` | opus | OWASP audit: credentials, dependencies, auth, compliance |
 | `refactor-advisor` | opus | Duplication, complexity, extraction opportunities. Read-only |
 | `devops-engineer` | opus | CI/CD, containers, infrastructure, deployment readiness |
@@ -164,10 +210,11 @@ File-pattern-scoped rules that Claude follows automatically when editing matchin
 | Hook | When | What |
 |------|------|------|
 | `guardrails.sh` | PreToolUse (Bash) | Blocks dangerous ops: deploys, migrations, force push, destructive deletes |
-| `pre-commit.sh` | Before commits | Type check, lint, secret scan, large file guard |
 | `post-edit-sync.sh` | PostToolUse (Edit/Write) | Flags which docs need updating when files change |
-| `session-start.sh` | Session start | Stale branch warning, env check, dependency health |
-| `session-stop.sh` | Session stop | Audio notification (macOS, Linux, Windows) |
+| `session-start.sh` | SessionStart | Stale branch warning, env check, dependency health |
+| `session-stop.sh` | SessionEnd | Audio notification (macOS, Linux, Windows) |
+| `post-coding-review.sh` | SessionEnd | Nudges `/team review` when substantial source changes exist on branch |
+| `pre-commit.sh` | Git pre-commit (`.git/hooks/pre-commit`) | Type check, lint, secret scan (AWS keys / private keys / hardcoded passwords), large-file guard |
 
 ### Skill Chaining (Factory Pipeline)
 
@@ -209,6 +256,22 @@ File-pattern-scoped rules that Claude follows automatically when editing matchin
 ```
 
 > The `framework-improver` agent runs automatically in the background after **any session where files were modified** — not just `/develop` and `/factory`. This is enforced via CLAUDE.md instructions, so documentation and `.claude/` config always stay in sync with the actual project state. Changes are logged to `docs/ai-improvements.md`.
+
+## Self-Improvement System
+
+The framework has a closed loop that keeps it honest over time. It's not one thing — it's five mechanisms working together:
+
+| Layer | Component | When | What it does |
+|-------|-----------|------|--------------|
+| Advisory | `post-edit-sync.sh` (hook) | After every Edit/Write | Prints which doc surfaces may need updating based on what changed (e.g. "Agent 'code-reviewer' changed → verify README agents table") |
+| Advisory | `post-coding-review.sh` (hook) | SessionEnd, when >=3 source files or >=50 LOC changed vs base | Nudges `/team review` (code-reviewer + security-auditor + ui-ux-reviewer); cooldown per branch+SHA prevents repeat nudges |
+| Mutating | `framework-improver` (agent) | End of any session with changes — instructed by CLAUDE.md | Updates CLAUDE.md, `.claude/rules/`, settings, agents from project state; fills deferred placeholders (`{{PROJECT_DESCRIPTION}}` etc.) |
+| Verifying | `framework-qa` (agent, framework-repo-only) | End of any session with changes | Validates counts and tables across README, CLAUDE.md, docs are consistent with actual file inventory |
+| Deterministic | `tests/run-all.sh` (5 test suites) | CI + before PR | Hard gates for drift: `check-consistency` (counts), `check-agent-registry` (agent JSON ↔ frontmatter ↔ docs, 72 checks), `check-placeholders` (sh/ps1 parity), `check-guardrails` (55 hook patterns), `check-templates` (structural validity) |
+
+The advisory layers surface drift as it happens; the mutating layer fixes it; the verifying + deterministic layers prove it landed. Together they make it hard for documentation to drift from the actual state of the framework or your project.
+
+See `docs/contributing.md` for how to extend each layer when adding new skills, agents, rules, or hooks.
 
 ## Integration Configuration
 
@@ -312,6 +375,7 @@ Edit `.claude/skills/factory/SKILL.md` to add/remove pipeline stages.
 | `docs/sub-agent-orchestration.md` | How skills spawn parallel agents, pass context, run background tasks |
 | `docs/memory-patterns.md` | How skills read/write memory for smarter behavior across conversations |
 | `docs/troubleshooting.md` | Common issues: hooks, placeholders, Windows paths, MCP, agents |
+| `docs/contributing.md` | How to extend the framework — parity rule, adding skills/agents/rules/hooks, testing workflow |
 | `docs/examples/` | Example configs for Salesforce, Next.js, Python API projects |
 
 ## Files Reference
@@ -359,10 +423,11 @@ claude-code-framework/
 │   │   └── design-system.md
 │   ├── hooks/                   # Lifecycle scripts
 │   │   ├── guardrails.sh        # PreToolUse: block dangerous ops
-│   │   ├── pre-commit.sh
 │   │   ├── post-edit-sync.sh    # PostToolUse: flag docs needing sync
-│   │   ├── session-start.sh
-│   │   └── session-stop.sh
+│   │   ├── session-start.sh     # SessionStart: branch + env health checks
+│   │   ├── session-stop.sh      # SessionEnd: audio notification
+│   │   ├── post-coding-review.sh # SessionEnd: nudge /team review after coding
+│   │   └── pre-commit.sh        # Git pre-commit: secret scan + size guard
 │   └── statusline/              # Custom status bar
 ├── skills/
 │   ├── _template/               # Blueprint for new skills

@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/post-edit-sync.sh \"$FILE_PATH\""
+            "command": "bash .claude/hooks/post-edit-sync.sh"
           }
         ]
       }
@@ -54,12 +54,16 @@
         ]
       }
     ],
-    "SessionStop": [
+    "SessionEnd": [
       {
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/session-stop.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/post-coding-review.sh"
           }
         ]
       }

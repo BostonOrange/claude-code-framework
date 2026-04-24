@@ -123,6 +123,20 @@ echo "Running check..."
 
 Hooks are bash scripts placed in `.claude/hooks/`. They run at lifecycle events (pre-commit, session-start, session-stop).
 
+## The Agent Registry — `config/agents.json`
+
+The framework maintains a canonical registry of all distributable agents at `config/agents.json`. This is the **source of truth** for every agent description that appears in docs — the short "blurb" in tables, the "description" that matches the agent's frontmatter, the category (analysis / implementation / meta), and the model.
+
+**Why it exists.** Agent descriptions were previously hand-maintained in five places (README, CLAUDE.md.template, docs/teams.md, docs/agents-commands-rules.md, and the agent's own frontmatter) with drift happening on every edit. The registry consolidates the canonical values into one JSON file; the test `tests/check-agent-registry.sh` then enforces that every downstream location matches.
+
+**What the registry enforces (72 checks, run via `bash tests/run-all.sh`):**
+1. Every entry in `config/agents.json` has a matching `templates/agents/{name}.md` file.
+2. Each entry's `description` field is **byte-identical** to the frontmatter `description` in that file.
+3. Every agent file has a registry entry — no orphans allowed.
+4. Each agent is referenced by name in all four user-facing docs: `README.md`, `templates/CLAUDE.md.template`, `docs/teams.md`, and `docs/agents-commands-rules.md`.
+
+**Adding or updating an agent:** edit the frontmatter in `templates/agents/{name}.md` AND update the matching entry in `config/agents.json` in the same commit. Run `bash tests/check-agent-registry.sh` to confirm. See `docs/contributing.md` for the full procedure.
+
 ## Included Templates
 
 ### Agents (12)
@@ -134,7 +148,7 @@ Hooks are bash scripts placed in `.claude/hooks/`. They run at lifecycle events 
 | Agent | Tools | Model | Purpose |
 |-------|-------|-------|---------|
 | `architect` | Read, Glob, Grep, Bash | opus | System design, patterns, scalability |
-| `code-reviewer` | Read, Glob, Grep, Bash | opus | Reviews diff for bugs, security, performance |
+| `code-reviewer` | Read, Glob, Grep, Bash | opus | Reviews diff for bugs, security, performance, design, smells |
 | `security-auditor` | Read, Glob, Grep, Bash | opus | OWASP-categorized security audit |
 | `refactor-advisor` | Read, Glob, Grep, Bash | opus | Duplication, complexity, extraction |
 | `devops-engineer` | Read, Glob, Grep, Bash | opus | CI/CD, containers, infrastructure |
@@ -181,15 +195,16 @@ Hooks are bash scripts placed in `.claude/hooks/`. They run at lifecycle events 
 | `data-protection` | Source files | No PII in git, credentials, log redaction, third-party data |
 | `design-system` | UI components | Semantic tokens, spacing, typography, theme compliance |
 
-### Hooks (5)
+### Hooks (6)
 
 | Hook | Event | Purpose |
 |------|-------|---------|
 | `guardrails.sh` | PreToolUse (Bash) | Blocks dangerous ops: deploys, migrations, force push, destructive deletes |
-| `pre-commit.sh` | Pre-commit | Type check, lint, secret scan, file size guard |
 | `post-edit-sync.sh` | PostToolUse (Edit/Write) | Flags which docs need updating when files change |
-| `session-start.sh` | Session start | Stale branch warning, env check, dep health |
-| `session-stop.sh` | Session stop | Audio notification |
+| `session-start.sh` | SessionStart | Stale branch warning, env check, dep health |
+| `session-stop.sh` | SessionEnd | Audio notification |
+| `post-coding-review.sh` | SessionEnd | Nudges `/team review` when substantial source changes exist |
+| `pre-commit.sh` | Git pre-commit | Type/lint check (if configured), secret scan, large-file guard |
 
 ## Adding Custom Entries
 

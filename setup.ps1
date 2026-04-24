@@ -393,6 +393,13 @@ $TRACKER_SET_PROGRESS = Replace-TrackerPlaceholders $trackerConfig.set_progress
 $TRACKER_SET_REVIEW = Replace-TrackerPlaceholders $trackerConfig.set_review
 $TRACKER_URL = Replace-TrackerPlaceholders $trackerConfig.ticket_url
 $TRACKER_CONFIG = Replace-TrackerPlaceholders $trackerConfig.config
+# Pre-compute the remaining tracker-derived values as variables so config/placeholders.json
+# can reference them by name (matches the env-var convention used by setup.sh)
+$TRACKER_LINK_PR = Replace-TrackerPlaceholders $trackerConfig.link_pr
+$TRACKER_CREATE = Replace-TrackerPlaceholders $trackerConfig.create_ticket
+$TRACKER_CREATE_BUG = Replace-TrackerPlaceholders $trackerConfig.create_bug
+$TRACKER_UPDATE_FIELDS = Replace-TrackerPlaceholders $trackerConfig.update_fields
+$TRACKER_SET_DEPLOYED = Replace-TrackerPlaceholders $trackerConfig.set_deployed
 
 # -- Load notification commands from config/notifications.json --
 
@@ -408,46 +415,26 @@ $NOTIFY_MERGE_CMD = $notifyCfg.merge_resolve
 
 Write-Host "Configuring files for your project..."
 
-$replacements = @{
-    '{{BASE_BRANCH}}'              = $BASE_BRANCH
-    '{{PROJECT_SHORT_NAME}}'       = $PROJECT_SHORT
-    '{{FORMAT_COMMAND}}'           = $FORMAT_CMD
-    '{{FORMAT_VERIFY_COMMAND}}'    = $FORMAT_VERIFY
-    '{{TEST_COMMAND}}'             = $TEST_CMD
-    '{{DEPLOY_VALIDATE_COMMAND}}'  = $DEPLOY_VALIDATE
-    '{{TYPE_CHECK_COMMAND}}'       = $TYPE_CHECK_CMD
-    '{{DEP_CHECK_COMMAND}}'        = $DEP_CHECK_CMD
-    '{{SECURITY_AUDIT_COMMAND}}'   = $SECURITY_AUDIT_CMD
-    '{{ERROR_TRACKING_PATTERN}}'   = $ERROR_TRACKING
-    '{{DEFAULT_MODEL}}'            = $DEFAULT_MODEL
-    '{{API_ROUTE_PATTERNS}}'       = $API_ROUTE_PATTERNS
-    '{{COMPONENT_PATTERNS}}'       = $COMPONENT_PATTERNS
-    '{{TEST_PATTERNS}}'            = $TEST_PATTERNS
-    '{{DATABASE_PATTERNS}}'        = $DATABASE_PATTERNS
-    '{{SOURCE_PATTERNS}}'          = $SOURCE_PATTERNS
-    '{{FACTORY_LOCAL_VALIDATION}}' = $DEPLOY_VALIDATE
-    '{{TRACKER_FETCH_TICKET}}'     = $TRACKER_FETCH
-    '{{TRACKER_SET_IN_PROGRESS}}'  = $TRACKER_SET_PROGRESS
-    '{{TRACKER_SET_IN_REVIEW}}'    = $TRACKER_SET_REVIEW
-    '{{TRACKER_TICKET_URL}}'       = $TRACKER_URL
-    '{{TRACKER_LINK_PR}}'          = (Replace-TrackerPlaceholders $trackerConfig.link_pr)
-    '{{TRACKER_CREATE_TICKET}}'    = (Replace-TrackerPlaceholders $trackerConfig.create_ticket)
-    '{{TRACKER_CREATE_BUG}}'       = (Replace-TrackerPlaceholders $trackerConfig.create_bug)
-    '{{TRACKER_UPDATE_FIELDS}}'    = (Replace-TrackerPlaceholders $trackerConfig.update_fields)
-    '{{TRACKER_SET_DEPLOYED}}'     = (Replace-TrackerPlaceholders $trackerConfig.set_deployed)
-    '{{NOTIFY_HALT}}'              = $NOTIFY_CMD
-    '{{NOTIFY_HALT_FACTORY}}'      = $NOTIFY_CMD
-    '{{NOTIFY_DEPLOY_SUCCESS}}'    = $NOTIFY_DEPLOY_CMD
-    '{{NOTIFY_MERGE_RESOLVE}}'     = $NOTIFY_MERGE_CMD
-    '{{ERROR_QUERY_COMMAND}}'      = 'Configure error query command for your monitoring system.'
-    '{{ERROR_UPDATE_STATUS}}'      = 'Configure error status update command.'
-    '{{ERROR_DISMISS}}'            = 'Configure error dismiss command.'
-    '{{DEPLOY_COMMAND}}'           = $DEPLOY_VALIDATE
-    '{{DESIGN_COLOR_RULES}}'       = $DESIGN_COLOR_RULES
-    '{{DESIGN_COMPONENT_IMPORTS}}' = $DESIGN_COMPONENT_IMPORTS
-    '{{DESIGN_ICON_USAGE}}'        = $DESIGN_ICON_USAGE
-    '{{DESIGN_CARD_PATTERNS}}'     = $DESIGN_CARD_PATTERNS
-    '{{DESIGN_DARK_MODE}}'         = $DESIGN_DARK_MODE
+# Build placeholder map from config/placeholders.json (single source of truth shared with setup.sh).
+# For each entry, look up the named variable in this scope; fall back to the 'default' field.
+$placeholdersPath = Join-Path $FRAMEWORK_DIR "config/placeholders.json"
+$placeholdersCfg = Get-Content $placeholdersPath -Raw | ConvertFrom-Json
+$replacements = @{}
+foreach ($p in $placeholdersCfg.placeholders) {
+    $key = '{{' + $p.name + '}}'
+    $default = if ($null -ne $p.default) { $p.default } else { '' }
+    $value = $default
+    if ($p.env) {
+        # Look up the PS variable by name; treat unset / $null as "use default"
+        $psVar = Get-Variable -Name $p.env -ValueOnly -Scope Script -ErrorAction SilentlyContinue
+        if ($null -eq $psVar) {
+            $psVar = Get-Variable -Name $p.env -ValueOnly -ErrorAction SilentlyContinue
+        }
+        if ($null -ne $psVar) {
+            $value = $psVar
+        }
+    }
+    $replacements[$key] = $value
 }
 
 # Replace in skills, agents, commands, rules, hooks
@@ -545,6 +532,14 @@ if (-not (Test-Path "CLAUDE.md")) {
         $claudeContent = $claudeContent.Replace('{{DESIGN_ICON_USAGE}}', $DESIGN_ICON_USAGE)
         $claudeContent = $claudeContent.Replace('{{DESIGN_CARD_PATTERNS}}', $DESIGN_CARD_PATTERNS)
         $claudeContent = $claudeContent.Replace('{{DESIGN_DARK_MODE}}', $DESIGN_DARK_MODE)
+        # Project description placeholders - filled by /improve on first run
+        $claudeContent = $claudeContent.Replace('{{PROJECT_DESCRIPTION}}', '_Not yet documented. Run `/improve` on your first session to auto-populate this from README, package metadata, and code analysis — or edit manually._')
+        $claudeContent = $claudeContent.Replace('{{TECH_STACK_TABLE}}', "| Layer | Technology |`n|-------|-----------|`n| _TBD_ | _Run ``/improve`` to auto-detect_ |")
+        $claudeContent = $claudeContent.Replace('{{CODE_STRUCTURE}}', '# Run `/improve` to generate a directory tree from the actual project structure.')
+        $claudeContent = $claudeContent.Replace('{{CODING_STANDARDS}}', '_Documented in `.claude/rules/`. Run `/improve` to extract and summarize project-specific conventions here._')
+        $claudeContent = $claudeContent.Replace('{{ERROR_HANDLING_PATTERN}}', '_See `.claude/rules/error-handling.md` for framework-level rules. Run `/improve` to document project-specific error conventions._')
+        $claudeContent = $claudeContent.Replace('{{TESTING_STRATEGY}}', '_See `.claude/rules/tests.md` for framework-level rules. Run `/improve` to document project-specific testing strategy._')
+        $claudeContent = $claudeContent.Replace('{{INTEGRATIONS}}', '_External integrations were configured via the setup wizard. Run `/improve` to list and document them here._')
         Set-Content "CLAUDE.md" $claudeContent -Encoding UTF8 -NoNewline
 
         Write-Host "  Created CLAUDE.md (fill in project-specific sections marked with {{...}})"
@@ -591,91 +586,99 @@ if (-not $DryRun) {
 
 Write-Host "Setting up pre-commit hooks..."
 
-switch ($PROJECT_TYPE_NAME) {
-    { $_ -in "nodejs", "react" } {
-        $pkgJson = Join-Path $PROJECT_DIR "package.json"
-        if (Test-Path $pkgJson) {
-            $pkgContent = Get-Content $pkgJson -Raw -ErrorAction SilentlyContinue
-            if ($pkgContent -and -not $pkgContent.Contains('"husky"')) {
-                Write-Host "  Install pre-commit hooks with:"
-                Write-Host "    npx husky init"
-                Write-Host "    npm install --save-dev lint-staged"
-                Write-Host '    echo "npx lint-staged" > .husky/pre-commit'
-                Write-Host ""
-                Write-Host "  Add to package.json:"
-                Write-Host '    "lint-staged": { "*.{js,jsx,ts,tsx,json,css,md}": "prettier --write" }'
+# Driven by config/precommit.json — single source of truth shared with setup.sh
+$precommitCfgPath = Join-Path $FRAMEWORK_DIR "config/precommit.json"
+if (Test-Path $precommitCfgPath) {
+    $precommitCfg = Get-Content $precommitCfgPath -Raw | ConvertFrom-Json
+    $entry = $precommitCfg.$PROJECT_TYPE_NAME
+    if (-not $entry) { $entry = $precommitCfg.generic }
+
+    # Mode 1: always_messages
+    if ($entry.always_messages) {
+        foreach ($line in $entry.always_messages) {
+            if ($line.StartsWith(' ')) { Write-Host $line } else { Write-Host "  $line" }
+        }
+    }
+
+    # Mode 2: detect-based
+    if ($entry.detect) {
+        $detect = $entry.detect
+        $configured = $false
+        $skip = $false
+        if ($detect.mode -eq 'file_contains') {
+            $detectFile = Join-Path $PROJECT_DIR $detect.file
+            if (Test-Path $detectFile) {
+                $content = Get-Content $detectFile -Raw -ErrorAction SilentlyContinue
+                if ($content -and $content.Contains($detect.needle)) { $configured = $true }
             } else {
-                Write-Host "  husky already configured"
+                $skip = $true
+            }
+        } elseif ($detect.mode -eq 'command_missing') {
+            $configured = [bool](Get-Command $detect.command -ErrorAction SilentlyContinue)
+        }
+
+        if (-not $skip) {
+            if ($configured -and $entry.if_detected_message) {
+                Write-Host "  $($entry.if_detected_message)"
+            } elseif (-not $configured) {
+                foreach ($line in $entry.if_missing_messages) {
+                    if ($line.StartsWith(' ')) { Write-Host $line } else { Write-Host "  $line" }
+                }
             }
         }
     }
-    "python" {
-        if (-not (Get-Command pre-commit -ErrorAction SilentlyContinue)) {
-            Write-Host "  Install pre-commit hooks with:"
-            Write-Host "    pip install pre-commit"
-            Write-Host "    pre-commit install"
-        }
-        $precommitCfg = Join-Path $PROJECT_DIR ".pre-commit-config.yaml"
-        if (-not (Test-Path $precommitCfg)) {
+
+    # Mode 3: config file creation
+    if ($entry.config_file) {
+        $target = Join-Path $PROJECT_DIR $entry.config_file
+        if (-not (Test-Path $target)) {
             if (-not $DryRun) {
-                @"
-repos:
-  - repo: https://github.com/psf/black
-    rev: 24.4.2
-    hooks:
-      - id: black
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.7
-    hooks:
-      - id: ruff
-        args: [--fix]
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
-    hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
-      - id: check-yaml
-      - id: check-added-large-files
-"@ | Set-Content $precommitCfg -Encoding UTF8
-                Write-Host "  + Created .pre-commit-config.yaml"
-                Write-Host "  Run 'pre-commit install' to activate"
+                $body = ($entry.config_body_lines -join "`n") + "`n"
+                Set-Content $target $body -Encoding UTF8 -NoNewline
+                foreach ($line in $entry.config_created_messages) {
+                    if ($line.StartsWith(' ')) { Write-Host $line } else { Write-Host "  $line" }
+                }
             } else {
-                Write-Host "[DRY-RUN] Would create .pre-commit-config.yaml"
+                Write-Host "[DRY-RUN] Would create $($entry.config_file)"
             }
         }
     }
-    "go" {
-        Write-Host "  Go uses gofmt automatically. For pre-commit hooks:"
-        Write-Host "    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"
-        Write-Host "  Add to .git/hooks/pre-commit:"
-        Write-Host '    gofmt -l . | grep -q . && echo "Run gofmt" && exit 1'
+}
+
+# -- Install framework pre-commit hook (secret scan + size guard) --
+# Installs .claude/hooks/pre-commit.sh as .git/hooks/pre-commit.
+# This layer is independent of husky/pre-commit-framework — it adds
+# secret scanning and large-file detection. Skips if another pre-commit is already present.
+
+$gitHooksDir = Join-Path $PROJECT_DIR ".git/hooks"
+$hookTarget  = Join-Path $gitHooksDir "pre-commit"
+$hookSource  = Join-Path $PROJECT_DIR ".claude/hooks/pre-commit.sh"
+$sentinel    = "Claude Code Framework — Pre-commit Quality Gate"
+
+if (-not (Test-Path $gitHooksDir)) {
+    Write-Host "  Skipping framework pre-commit install (no .git directory)"
+} elseif (-not (Test-Path $hookSource)) {
+    Write-Host "  Skipping framework pre-commit install (hook source missing)"
+} elseif (-not (Test-Path $hookTarget)) {
+    if (-not $DryRun) {
+        Copy-Item $hookSource $hookTarget -Force
+        Write-Host "  + Installed framework pre-commit at .git/hooks/pre-commit (secret scan + size guard)"
+    } else {
+        Write-Host "[DRY-RUN] Would install framework pre-commit at .git/hooks/pre-commit"
     }
-    "java" {
-        Write-Host "  For Java, configure spotless in build.gradle:"
-        Write-Host '    plugins { id "com.diffplug.spotless" }'
-        Write-Host "  Then: ./gradlew spotlessApply"
+} elseif ((Get-Content $hookTarget -Raw -ErrorAction SilentlyContinue) -match [regex]::Escape($sentinel)) {
+    # Ours — only refresh if byte-identical. Preserves user edits.
+    $existingHash = (Get-FileHash $hookTarget -Algorithm SHA256).Hash
+    $sourceHash   = (Get-FileHash $hookSource -Algorithm SHA256).Hash
+    if ($existingHash -ne $sourceHash) {
+        Write-Host "  Framework pre-commit at .git/hooks/pre-commit has been modified from the shipped version."
+        Write-Host "  Keeping your version to preserve local edits."
+        Write-Host "  To refresh, delete .git/hooks/pre-commit and re-run setup."
     }
-    "salesforce" {
-        $pkgJson = Join-Path $PROJECT_DIR "package.json"
-        if (Test-Path $pkgJson) {
-            $pkgContent = Get-Content $pkgJson -Raw -ErrorAction SilentlyContinue
-            if ($pkgContent -and -not $pkgContent.Contains('"husky"')) {
-                Write-Host "  Install pre-commit hooks with:"
-                Write-Host "    npx husky init"
-                Write-Host "    npm install --save-dev lint-staged"
-                Write-Host '    echo "npx lint-staged" > .husky/pre-commit'
-            } else {
-                Write-Host "  husky already configured"
-            }
-        }
-    }
-    "rails" {
-        Write-Host "  For Ruby, use overcommit or lefthook:"
-        Write-Host "    gem install overcommit && overcommit --install"
-    }
-    default {
-        Write-Host "  Configure pre-commit hooks for your project manually"
-    }
+} else {
+    Write-Host "  Existing .git/hooks/pre-commit detected (likely husky or pre-commit framework)."
+    Write-Host "  To chain the framework's secret scan + size guard, add this to your existing hook:"
+    Write-Host "    bash .claude/hooks/pre-commit.sh || exit 1"
 }
 
 # -- Create .env template --
@@ -716,6 +719,16 @@ if (-not (Test-Path $envFile)) {
                 Add-Content $gitignoreFile "`n.env"
             }
         }
+
+        # Ensure .claude/state/ is gitignored (post-coding-review.sh writes cooldown state)
+        if (Test-Path $gitignoreFile) {
+            $gitignoreContent = Get-Content $gitignoreFile -Raw -ErrorAction SilentlyContinue
+            if ($gitignoreContent -and -not ($gitignoreContent -match '(?m)^\.claude/state/')) {
+                Add-Content $gitignoreFile "`n.claude/state/"
+            }
+        } elseif (Test-Path (Join-Path $PROJECT_DIR ".git")) {
+            Set-Content $gitignoreFile ".claude/state/`n" -Encoding UTF8
+        }
     } else {
         Write-Host "[DRY-RUN] Would create .env template and update .gitignore"
     }
@@ -743,7 +756,7 @@ Write-Host "  .claude/skills/         - 17 workflow skills (incl. /team, /improv
 Write-Host "  .claude/agents/         - 12 AI agents (full team: architect to framework-improver)"
 Write-Host "  .claude/commands/       - 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)"
 Write-Host "  .claude/rules/          - 9 coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components)"
-Write-Host "  .claude/hooks/          - 5 lifecycle hooks (guardrails, pre-commit, post-edit-sync, session-start, session-stop)"
+Write-Host "  .claude/hooks/          - 6 lifecycle hooks (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit)"
 Write-Host "  .claude/settings.local.json - project permissions, hooks"
 Write-Host "  .mcp.json               - MCP servers (Context7 documentation)"
 Write-Host "  ~/.claude/settings.json - user-level AI factory permissions (team orchestration enabled)"

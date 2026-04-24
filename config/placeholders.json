@@ -1,0 +1,59 @@
+{
+  "_description": "Canonical placeholder → env-var / default mapping. Consumed by setup.sh and setup.ps1. Every entry's 'name' (without braces) becomes {{NAME}} in templates. 'env' (optional) names the shell variable to source from; 'default' is used when env is missing or empty. Parity across setup.sh and setup.ps1 is enforced by tests/check-placeholders.sh.",
+  "placeholders": [
+    {"name": "BASE_BRANCH", "env": "BASE_BRANCH", "default": "main"},
+    {"name": "PROJECT_SHORT_NAME", "env": "PROJECT_SHORT", "default": ""},
+    {"name": "FORMAT_COMMAND", "env": "FORMAT_CMD", "default": ""},
+    {"name": "FORMAT_VERIFY_COMMAND", "env": "FORMAT_VERIFY", "default": ""},
+    {"name": "TEST_COMMAND", "env": "TEST_CMD", "default": ""},
+    {"name": "DEPLOY_VALIDATE_COMMAND", "env": "DEPLOY_VALIDATE", "default": ""},
+    {"name": "TYPE_CHECK_COMMAND", "env": "TYPE_CHECK_CMD", "default": ""},
+    {"name": "DEP_CHECK_COMMAND", "env": "DEP_CHECK_CMD", "default": ""},
+    {"name": "SECURITY_AUDIT_COMMAND", "env": "SECURITY_AUDIT_CMD", "default": ""},
+    {"name": "DEFAULT_MODEL", "env": "DEFAULT_MODEL", "default": "sonnet"},
+
+    {"name": "TRACKER_FETCH_TICKET", "env": "TRACKER_FETCH", "default": "Configure tracker fetch command."},
+    {"name": "TRACKER_SET_IN_PROGRESS", "env": "TRACKER_SET_PROGRESS", "default": "Configure tracker state transition."},
+    {"name": "TRACKER_SET_IN_REVIEW", "env": "TRACKER_SET_REVIEW", "default": "Configure tracker state transition."},
+    {"name": "TRACKER_TICKET_URL", "env": "TRACKER_URL", "default": "{ticket_url}"},
+    {"name": "TRACKER_LINK_PR", "env": "TRACKER_LINK_PR", "default": "Configure PR-to-ticket linking."},
+    {"name": "TRACKER_CREATE_TICKET", "env": "TRACKER_CREATE", "default": "Configure ticket creation."},
+    {"name": "TRACKER_CREATE_BUG", "env": "TRACKER_CREATE_BUG", "default": "Configure bug creation."},
+    {"name": "TRACKER_UPDATE_FIELDS", "env": "TRACKER_UPDATE_FIELDS", "default": "Configure tracker field update command."},
+    {"name": "TRACKER_SET_DEPLOYED", "env": "TRACKER_SET_DEPLOYED", "default": "Configure tracker deployed state transition."},
+
+    {"name": "NOTIFY_HALT", "env": "NOTIFY_CMD", "default": "Log halt message."},
+    {"name": "NOTIFY_HALT_FACTORY", "env": "NOTIFY_CMD", "default": "Log halt message."},
+    {"name": "NOTIFY_DEPLOY_SUCCESS", "env": "NOTIFY_DEPLOY_CMD", "default": "No notification system configured. Log deploy success."},
+    {"name": "NOTIFY_MERGE_RESOLVE", "env": "NOTIFY_MERGE_CMD", "default": "No notification system configured. Log merge resolution message."},
+
+    {"name": "ERROR_QUERY_COMMAND", "default": "Configure error query command for your monitoring system."},
+    {"name": "ERROR_UPDATE_STATUS", "default": "Configure error status update command."},
+    {"name": "ERROR_DISMISS", "default": "Configure error dismiss command."},
+    {"name": "DEPLOY_COMMAND", "env": "DEPLOY_VALIDATE", "default": "Configure deploy command."},
+    {"name": "FACTORY_LOCAL_VALIDATION", "env": "DEPLOY_VALIDATE", "default": "Configure local validation command."},
+
+    {"name": "ERROR_TRACKING_PATTERN", "env": "ERROR_TRACKING", "default": "// Log the error with full context"},
+    {"name": "API_ROUTE_PATTERNS", "env": "API_ROUTE_PATTERNS", "default": "\"**/routes/**/*\", \"**/api/**/*\""},
+    {"name": "COMPONENT_PATTERNS", "env": "COMPONENT_PATTERNS", "default": "\"**/components/**/*\""},
+    {"name": "TEST_PATTERNS", "env": "TEST_PATTERNS", "default": "\"**/*test*\", \"**/*spec*\""},
+    {"name": "DATABASE_PATTERNS", "env": "DATABASE_PATTERNS", "default": "\"**/models/**/*\", \"**/migrations/**/*\""},
+    {"name": "SOURCE_PATTERNS", "env": "SOURCE_PATTERNS", "default": "\"**/*.{ts,js,py,go,java,rb}\""},
+
+    {"name": "DESIGN_COLOR_RULES", "env": "DESIGN_COLOR_RULES", "default": "Not configured."},
+    {"name": "DESIGN_COMPONENT_IMPORTS", "env": "DESIGN_COMPONENT_IMPORTS", "default": "Not configured."},
+    {"name": "DESIGN_ICON_USAGE", "env": "DESIGN_ICON_USAGE", "default": "Not configured."},
+    {"name": "DESIGN_CARD_PATTERNS", "env": "DESIGN_CARD_PATTERNS", "default": "Not configured."},
+    {"name": "DESIGN_DARK_MODE", "env": "DESIGN_DARK_MODE", "default": "Not configured."}
+  ],
+  "claude_md_only": [
+    {"name": "TRACKER_CONFIG", "env": "TRACKER_CONFIG", "default": ""},
+    {"name": "PROJECT_DESCRIPTION", "default": "_Not yet documented. Run `/improve` on your first session to auto-populate this from README, package metadata, and code analysis — or edit manually._"},
+    {"name": "TECH_STACK_TABLE", "default": "| Layer | Technology |\n|-------|-----------|\n| _TBD_ | _Run `/improve` to auto-detect_ |"},
+    {"name": "CODE_STRUCTURE", "default": "# Run `/improve` to generate a directory tree from the actual project structure."},
+    {"name": "CODING_STANDARDS", "default": "_Documented in `.claude/rules/`. Run `/improve` to extract and summarize project-specific conventions here._"},
+    {"name": "ERROR_HANDLING_PATTERN", "default": "_See `.claude/rules/error-handling.md` for framework-level rules. Run `/improve` to document project-specific error conventions._"},
+    {"name": "TESTING_STRATEGY", "default": "_See `.claude/rules/tests.md` for framework-level rules. Run `/improve` to document project-specific testing strategy._"},
+    {"name": "INTEGRATIONS", "default": "_External integrations were configured via the setup wizard. Run `/improve` to list and document them here._"}
+  ]
+}

@@ -13,7 +13,7 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents â
 | Agent | Role | Model | Specialty |
 |-------|------|-------|-----------|
 | `architect` | System Design | opus | Architecture patterns, layer separation, scalability |
-| `code-reviewer` | Code Quality | opus | Bugs, conventions, error handling in diffs |
+| `code-reviewer` | Code Quality | opus | Bugs, conventions, error handling, design principles, code smells in diffs |
 | `security-auditor` | Security | opus | OWASP vulnerabilities, credentials, dependencies |
 | `refactor-advisor` | Code Structure | opus | Duplication, complexity, extraction opportunities |
 | `devops-engineer` | Operations | opus | CI/CD, containers, infrastructure, monitoring |

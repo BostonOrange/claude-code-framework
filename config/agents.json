@@ -1,0 +1,94 @@
+{
+  "_description": "Canonical agent registry. The 'description' field mirrors the full frontmatter description in templates/agents/{name}.md and is the source of truth. Short 'blurb' is what appears in README/CLAUDE.md tables. Update both places together, then run tests/check-agent-registry.sh.",
+  "categories": {
+    "analysis": "Read-only review agents — produce structured reports, do not modify code",
+    "implementation": "Can modify files (tests, documentation)",
+    "meta": "Operates on the framework itself"
+  },
+  "agents": [
+    {
+      "name": "architect",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "System design review, architecture patterns, scalability",
+      "description": "Reviews system design decisions, validates architecture patterns, and identifies structural risks before implementation"
+    },
+    {
+      "name": "code-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Review diffs for bugs, security, performance, design principles, code smells, conventions",
+      "description": "Reviews code changes for bugs, security issues, performance problems, design principles (pure functions, SRP), code smells, and convention violations before merge"
+    },
+    {
+      "name": "security-auditor",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "OWASP audit, credentials, dependencies, compliance",
+      "description": "Audits code for security vulnerabilities, credential exposure, PII leakage, auth bypass, CSRF, CORS, SSRF, dependency risks, and compliance issues"
+    },
+    {
+      "name": "refactor-advisor",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Duplication, complexity, extraction opportunities",
+      "description": "Analyzes code for duplication, complexity, and architectural improvements — reports only, does not modify code"
+    },
+    {
+      "name": "devops-engineer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "CI/CD, containers, infrastructure, monitoring",
+      "description": "Reviews CI/CD pipelines, infrastructure configuration, deployment strategies, and operational readiness"
+    },
+    {
+      "name": "ui-ux-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Accessibility, design consistency, responsiveness",
+      "description": "Reviews UI components for accessibility, design system compliance, visual consistency, responsive behavior, and user experience patterns"
+    },
+    {
+      "name": "performance-optimizer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Bundle size, queries, rendering, caching, memory",
+      "description": "Profiles application performance — bundle size, query efficiency, render optimization, memory usage, and caching opportunities"
+    },
+    {
+      "name": "api-designer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Endpoint design, schemas, versioning, DX",
+      "description": "Reviews API design for consistency, RESTful conventions, schema validation, versioning, and developer experience"
+    },
+    {
+      "name": "database-architect",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Schema, normalization, indexes, migration safety",
+      "description": "Reviews database schema design, migration strategy, query patterns, indexing, and data integrity constraints"
+    },
+    {
+      "name": "test-writer",
+      "category": "implementation",
+      "model": "opus",
+      "blurb": "Generate tests following project conventions and factories",
+      "description": "Generates test cases for changed code following project test conventions and data factories"
+    },
+    {
+      "name": "documentation-writer",
+      "category": "implementation",
+      "model": "opus",
+      "blurb": "API docs, READMEs, architecture docs, setup guides",
+      "description": "Generates and updates project documentation — API docs, architecture overviews, setup guides, and inline documentation"
+    },
+    {
+      "name": "framework-improver",
+      "category": "meta",
+      "model": "opus",
+      "blurb": "Self-improvement — update CLAUDE.md, rules, settings, agents",
+      "description": "Self-improvement agent — analyzes project patterns and updates CLAUDE.md, rules, settings, and agent configurations to improve AI effectiveness"
+    }
+  ]
+}

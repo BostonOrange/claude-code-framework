@@ -31,8 +31,8 @@ ACTUAL_COMMANDS=$(find "$FRAMEWORK_DIR/templates/commands" -maxdepth 1 -name "*.
 # Rules: count .md files in templates/rules/
 ACTUAL_RULES=$(find "$FRAMEWORK_DIR/templates/rules" -maxdepth 1 -name "*.md" -type f | wc -l | tr -d ' ')
 
-# Hooks: count .sh files in templates/hooks/
-ACTUAL_HOOKS=$(find "$FRAMEWORK_DIR/templates/hooks" -maxdepth 1 -name "*.sh" -type f | wc -l | tr -d ' ')
+# Hooks: count .sh files in templates/hooks/ — exclude _prefixed library files (convention: _lib.sh, _helpers.sh)
+ACTUAL_HOOKS=$(find "$FRAMEWORK_DIR/templates/hooks" -maxdepth 1 -name "*.sh" -type f -not -name "_*" | wc -l | tr -d ' ')
 
 # Workflows: count .yml files in workflows/
 ACTUAL_WORKFLOWS=$(find "$FRAMEWORK_DIR/workflows" -maxdepth 1 -name "*.yml" -type f | wc -l | tr -d ' ')

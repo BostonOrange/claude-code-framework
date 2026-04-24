@@ -51,12 +51,12 @@
 │  │ api-designer │  │  /team review│  │  design-system          │     │
 │  │ db-architect │  │  /team arch  │  │                         │     │
 │  │ test-writer  │  │  /team rel   │  │ Hooks:                  │     │
-│  │ doc-writer   │  │  /team full  │  │  pre-commit             │     │
-│  │ fw-improver  │  │  /team custom│  │  session-start          │     │
+│  │ doc-writer   │  │  /team full  │  │  guardrails             │     │
+│  │ fw-improver  │  │  /team custom│  │  post-edit-sync         │     │
+│  │              │  │              │  │  session-start          │     │
 │  │              │  │              │  │  session-stop           │     │
-│  │              │  │              │  │  guardrails             │     │
-│  │              │  │              │  │  post-edit-sync         │     │
-│  │              │  │              │  │                         │     │
+│  │              │  │              │  │  post-coding-review     │     │
+│  │              │  │              │  │  pre-commit             │     │
 │  │              │  │              │  │ Self-Improvement:       │     │
 │  │              │  │              │  │  /improve               │     │
 │  └──────────────┘  └──────────────┘  └─────────────────────────┘     │
@@ -320,10 +320,11 @@ your-project/
 │   │   └── design-system.md
 │   ├── hooks/                         # Lifecycle scripts
 │   │   ├── guardrails.sh              # PreToolUse: block dangerous ops
-│   │   ├── pre-commit.sh
 │   │   ├── post-edit-sync.sh          # PostToolUse: flag docs needing sync
-│   │   ├── session-start.sh
-│   │   └── session-stop.sh
+│   │   ├── session-start.sh           # SessionStart: branch + env health
+│   │   ├── session-stop.sh            # SessionEnd: audio notification
+│   │   ├── post-coding-review.sh      # SessionEnd: nudge /team review
+│   │   └── pre-commit.sh              # Git pre-commit: secret scan + size guard
 │   ├── skills/                        # Multi-phase workflows
 │   │   ├── develop/SKILL.md
 │   │   ├── validate/SKILL.md

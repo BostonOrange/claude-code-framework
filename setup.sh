@@ -161,8 +161,14 @@ if [ -n "$currentBranch" ] && [ "$currentBranch" != "$BASE_BRANCH" ]; then
         git branch -m "$currentBranch" "$BASE_BRANCH"
         echo "Renamed local branch '$currentBranch' to '$BASE_BRANCH'."
         if git remote get-url origin &>/dev/null; then
+            # Safe sequence: push the new branch first, flip default on the remote,
+            # then delete the old branch. Reversing the order can leave the repo
+            # with no default branch if the remote default was the old name.
+            git push -u origin "$BASE_BRANCH" 2>/dev/null || true
+            if command -v gh &>/dev/null; then
+                gh repo edit --default-branch "$BASE_BRANCH" 2>/dev/null || true
+            fi
             git push origin --delete "$currentBranch" 2>/dev/null || true
-            git push origin "$BASE_BRANCH" -u 2>/dev/null || true
             echo "Updated remote branch."
         fi
     fi
@@ -526,64 +532,25 @@ export DATABASE_PATTERNS SOURCE_PATTERNS
 export DESIGN_COLOR_RULES DESIGN_COMPONENT_IMPORTS DESIGN_ICON_USAGE
 export DESIGN_CARD_PATTERNS DESIGN_DARK_MODE
 
+export FRAMEWORK_DIR  # for the python block to find config/placeholders.json
 python3 << 'REPLACE_ALL_EOF'
-import os, glob
+import os, glob, json
 
 project_dir = os.environ.get('PROJECT_DIR', '.')
+framework_dir = os.environ.get('FRAMEWORK_DIR', '.')
 
-# All placeholder replacements — simple and multi-line — in one map
-replacements = {
-    # Simple placeholders (previously handled by sed)
-    '{{BASE_BRANCH}}': os.environ.get('BASE_BRANCH', 'main'),
-    '{{PROJECT_SHORT_NAME}}': os.environ.get('PROJECT_SHORT', ''),
-    '{{FORMAT_COMMAND}}': os.environ.get('FORMAT_CMD', ''),
-    '{{FORMAT_VERIFY_COMMAND}}': os.environ.get('FORMAT_VERIFY', ''),
-    '{{TEST_COMMAND}}': os.environ.get('TEST_CMD', ''),
-    '{{DEPLOY_VALIDATE_COMMAND}}': os.environ.get('DEPLOY_VALIDATE', ''),
-    '{{TYPE_CHECK_COMMAND}}': os.environ.get('TYPE_CHECK_CMD', ''),
-    '{{DEP_CHECK_COMMAND}}': os.environ.get('DEP_CHECK_CMD', ''),
-    '{{SECURITY_AUDIT_COMMAND}}': os.environ.get('SECURITY_AUDIT_CMD', ''),
-    '{{DEFAULT_MODEL}}': os.environ.get('DEFAULT_MODEL', 'sonnet'),
+# Load canonical placeholder map — shared with setup.ps1 via tests/check-placeholders.sh parity
+with open(os.path.join(framework_dir, 'config', 'placeholders.json')) as f:
+    cfg = json.load(f)
 
-    # Tracker placeholders (previously handled by Python skills pass)
-    '{{TRACKER_FETCH_TICKET}}': os.environ.get('TRACKER_FETCH', 'Configure tracker fetch command.'),
-    '{{TRACKER_SET_IN_PROGRESS}}': os.environ.get('TRACKER_SET_PROGRESS', 'Configure tracker state transition.'),
-    '{{TRACKER_SET_IN_REVIEW}}': os.environ.get('TRACKER_SET_REVIEW', 'Configure tracker state transition.'),
-    '{{TRACKER_TICKET_URL}}': os.environ.get('TRACKER_URL', '{ticket_url}'),
-    '{{TRACKER_LINK_PR}}': os.environ.get('TRACKER_LINK_PR', 'Configure PR-to-ticket linking.'),
-    '{{TRACKER_CREATE_TICKET}}': os.environ.get('TRACKER_CREATE', 'Configure ticket creation.'),
-    '{{TRACKER_CREATE_BUG}}': os.environ.get('TRACKER_CREATE_BUG', 'Configure bug creation.'),
-    '{{TRACKER_UPDATE_FIELDS}}': os.environ.get('TRACKER_UPDATE_FIELDS', 'Configure tracker field update command.'),
-    '{{TRACKER_SET_DEPLOYED}}': os.environ.get('TRACKER_SET_DEPLOYED', 'Configure tracker deployed state transition.'),
-
-    # Notification placeholders
-    '{{NOTIFY_HALT}}': os.environ.get('NOTIFY_CMD', 'Log halt message.'),
-    '{{NOTIFY_HALT_FACTORY}}': os.environ.get('NOTIFY_CMD', 'Log halt message.'),
-    '{{NOTIFY_DEPLOY_SUCCESS}}': os.environ.get('NOTIFY_DEPLOY_CMD', 'No notification system configured. Log deploy success.'),
-    '{{NOTIFY_MERGE_RESOLVE}}': os.environ.get('NOTIFY_MERGE_CMD', 'No notification system configured. Log merge resolution message.'),
-
-    # Error/deploy placeholders
-    '{{ERROR_QUERY_COMMAND}}': 'Configure error query command for your monitoring system.',
-    '{{ERROR_UPDATE_STATUS}}': 'Configure error status update command.',
-    '{{ERROR_DISMISS}}': 'Configure error dismiss command.',
-    '{{DEPLOY_COMMAND}}': os.environ.get('DEPLOY_VALIDATE', 'Configure deploy command.'),
-    '{{FACTORY_LOCAL_VALIDATION}}': os.environ.get('DEPLOY_VALIDATE', 'Configure local validation command.'),
-
-    # Pattern placeholders (previously handled by Python agents pass)
-    '{{ERROR_TRACKING_PATTERN}}': os.environ.get('ERROR_TRACKING', '// Log the error with full context'),
-    '{{API_ROUTE_PATTERNS}}': os.environ.get('API_ROUTE_PATTERNS', '"**/routes/**/*", "**/api/**/*"'),
-    '{{COMPONENT_PATTERNS}}': os.environ.get('COMPONENT_PATTERNS', '"**/components/**/*"'),
-    '{{TEST_PATTERNS}}': os.environ.get('TEST_PATTERNS', '"**/*test*", "**/*spec*"'),
-    '{{DATABASE_PATTERNS}}': os.environ.get('DATABASE_PATTERNS', '"**/models/**/*", "**/migrations/**/*"'),
-    '{{SOURCE_PATTERNS}}': os.environ.get('SOURCE_PATTERNS', '"**/*.{ts,js,py,go,java,rb}"'),
-
-    # Design system placeholders
-    '{{DESIGN_COLOR_RULES}}': os.environ.get('DESIGN_COLOR_RULES', 'Not configured.'),
-    '{{DESIGN_COMPONENT_IMPORTS}}': os.environ.get('DESIGN_COMPONENT_IMPORTS', 'Not configured.'),
-    '{{DESIGN_ICON_USAGE}}': os.environ.get('DESIGN_ICON_USAGE', 'Not configured.'),
-    '{{DESIGN_CARD_PATTERNS}}': os.environ.get('DESIGN_CARD_PATTERNS', 'Not configured.'),
-    '{{DESIGN_DARK_MODE}}': os.environ.get('DESIGN_DARK_MODE', 'Not configured.'),
-}
+replacements = {}
+for p in cfg['placeholders']:
+    env_name = p.get('env')
+    default = p.get('default', '')
+    # Match the prior `.get(env, default)` semantics exactly — env var wins if set,
+    # even if empty; otherwise default.
+    value = os.environ.get(env_name, default) if env_name else default
+    replacements['{{' + p['name'] + '}}'] = value
 
 # Process all directories in a single pass
 for search_dir in ['skills', 'agents', 'commands', 'rules', 'hooks']:
@@ -670,6 +637,14 @@ replacements = {
     '{{DESIGN_ICON_USAGE}}': os.environ.get('DESIGN_ICON_USAGE', 'Not configured.'),
     '{{DESIGN_CARD_PATTERNS}}': os.environ.get('DESIGN_CARD_PATTERNS', 'Not configured.'),
     '{{DESIGN_DARK_MODE}}': os.environ.get('DESIGN_DARK_MODE', 'Not configured.'),
+    # Project description placeholders — filled by /improve on first run
+    '{{PROJECT_DESCRIPTION}}': '_Not yet documented. Run `/improve` on your first session to auto-populate this from README, package metadata, and code analysis — or edit manually._',
+    '{{TECH_STACK_TABLE}}': '| Layer | Technology |\n|-------|-----------|\n| _TBD_ | _Run `/improve` to auto-detect_ |',
+    '{{CODE_STRUCTURE}}': '# Run `/improve` to generate a directory tree from the actual project structure.',
+    '{{CODING_STANDARDS}}': '_Documented in `.claude/rules/`. Run `/improve` to extract and summarize project-specific conventions here._',
+    '{{ERROR_HANDLING_PATTERN}}': '_See `.claude/rules/error-handling.md` for framework-level rules. Run `/improve` to document project-specific error conventions._',
+    '{{TESTING_STRATEGY}}': '_See `.claude/rules/tests.md` for framework-level rules. Run `/improve` to document project-specific testing strategy._',
+    '{{INTEGRATIONS}}': '_External integrations were configured via the setup wizard. Run `/improve` to list and document them here._',
 }
 
 for placeholder, value in replacements.items():
@@ -715,88 +690,111 @@ fi
 echo "Setting up pre-commit hooks..."
 
 setup_precommit() {
-    case $PROJECT_TYPE_NAME in
-        nodejs|react)
-            # Use husky + lint-staged for Node.js projects
-            if [ -f "$PROJECT_DIR/package.json" ]; then
-                if ! grep -q '"husky"' "$PROJECT_DIR/package.json" 2>/dev/null; then
-                    echo "  Install pre-commit hooks with:"
-                    echo "    npx husky init"
-                    echo "    npm install --save-dev lint-staged"
-                    echo '    echo "npx lint-staged" > .husky/pre-commit'
-                    echo ""
-                    echo "  Add to package.json:"
-                    echo '    "lint-staged": { "*.{js,jsx,ts,tsx,json,css,md}": "prettier --write" }'
-                else
-                    echo "  husky already configured"
-                fi
-            fi
-            ;;
-        python)
-            # Use pre-commit framework for Python
-            if ! command -v pre-commit &> /dev/null; then
-                echo "  Install pre-commit hooks with:"
-                echo "    pip install pre-commit"
-                echo "    pre-commit install"
-            fi
-            if [ ! -f "$PROJECT_DIR/.pre-commit-config.yaml" ]; then
-                cat > "$PROJECT_DIR/.pre-commit-config.yaml" << 'PRECOMMIT_EOF'
-repos:
-  - repo: https://github.com/psf/black
-    rev: 24.4.2
-    hooks:
-      - id: black
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.7
-    hooks:
-      - id: ruff
-        args: [--fix]
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
-    hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
-      - id: check-yaml
-      - id: check-added-large-files
+    # Driven by config/precommit.json — single source of truth shared with setup.ps1
+    export PROJECT_TYPE_NAME PROJECT_DIR
+    export PRECOMMIT_CONFIG="$FRAMEWORK_DIR/config/precommit.json"
+    python3 << 'PRECOMMIT_EOF'
+import json, os, subprocess, sys
+
+cfg_path = os.environ['PRECOMMIT_CONFIG']
+project_type = os.environ.get('PROJECT_TYPE_NAME', 'generic')
+project_dir = os.environ.get('PROJECT_DIR', '.')
+
+try:
+    with open(cfg_path) as f:
+        cfg = json.load(f)
+except Exception as e:
+    print(f"  Could not load {cfg_path}: {e}")
+    sys.exit(0)
+
+entry = cfg.get(project_type) or cfg.get('generic', {})
+
+# Mode 1: always print a fixed message (go, java, rails, generic)
+for line in entry.get('always_messages', []):
+    print(f"  {line}" if not line.startswith(' ') else line)
+
+# Mode 2: detect-based
+detect = entry.get('detect')
+if detect:
+    mode = detect.get('mode')
+    configured = False
+    if mode == 'file_contains':
+        file_path = os.path.join(project_dir, detect['file'])
+        if os.path.exists(file_path):
+            try:
+                with open(file_path) as f:
+                    configured = detect['needle'] in f.read()
+            except Exception:
+                pass
+        else:
+            # File missing — skip printing anything (project isn't set up with this tool)
+            sys.exit(0)
+    elif mode == 'command_missing':
+        rc = subprocess.call(['which', detect['command']], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        configured = (rc == 0)
+
+    if configured and entry.get('if_detected_message'):
+        print(f"  {entry['if_detected_message']}")
+    elif not configured:
+        for line in entry.get('if_missing_messages', []):
+            print(f"  {line}" if not line.startswith(' ') else line)
+
+# Mode 3: config file creation (python)
+cfg_file = entry.get('config_file')
+if cfg_file:
+    target = os.path.join(project_dir, cfg_file)
+    if not os.path.exists(target):
+        body = '\n'.join(entry.get('config_body_lines', []))
+        try:
+            with open(target, 'w') as f:
+                f.write(body + '\n')
+            for line in entry.get('config_created_messages', []):
+                print(f"  {line}" if not line.startswith(' ') else line)
+        except Exception as e:
+            print(f"  Could not write {target}: {e}")
 PRECOMMIT_EOF
-                echo "  + Created .pre-commit-config.yaml"
-                echo "  Run 'pre-commit install' to activate"
-            fi
-            ;;
-        go)
-            echo "  Go uses gofmt automatically. For pre-commit hooks:"
-            echo "    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"
-            echo "  Add to .git/hooks/pre-commit:"
-            echo '    gofmt -l . | grep -q . && echo "Run gofmt" && exit 1'
-            ;;
-        java)
-            echo "  For Java, configure spotless in build.gradle:"
-            echo '    plugins { id "com.diffplug.spotless" }'
-            echo "  Then: ./gradlew spotlessApply"
-            ;;
-        salesforce)
-            if [ -f "$PROJECT_DIR/package.json" ]; then
-                if ! grep -q '"husky"' "$PROJECT_DIR/package.json" 2>/dev/null; then
-                    echo "  Install pre-commit hooks with:"
-                    echo "    npx husky init"
-                    echo "    npm install --save-dev lint-staged"
-                    echo '    echo "npx lint-staged" > .husky/pre-commit'
-                else
-                    echo "  husky already configured"
-                fi
-            fi
-            ;;
-        rails)
-            echo "  For Ruby, use overcommit or lefthook:"
-            echo "    gem install overcommit && overcommit --install"
-            ;;
-        *)
-            echo "  Configure pre-commit hooks for your project manually"
-            ;;
-    esac
 }
 
 setup_precommit
+
+# ── Install framework pre-commit hook (secret scan + size guard) ──
+# Installs .claude/hooks/pre-commit.sh as .git/hooks/pre-commit.
+# This layer is independent of husky/pre-commit-framework — it adds
+# secret scanning and large-file detection that language-specific tools
+# don't cover by default. Skips if another pre-commit is already present.
+
+install_framework_precommit() {
+    local git_hooks_dir="$PROJECT_DIR/.git/hooks"
+    local hook_target="$git_hooks_dir/pre-commit"
+    local hook_source="$PROJECT_DIR/.claude/hooks/pre-commit.sh"
+    local sentinel="Claude Code Framework — Pre-commit Quality Gate"
+
+    # Must be inside a git repo
+    [ -d "$git_hooks_dir" ] || { echo "  Skipping framework pre-commit install (no .git directory)"; return 0; }
+    [ -f "$hook_source" ] || { echo "  Skipping framework pre-commit install (hook source missing)"; return 0; }
+
+    if [ ! -e "$hook_target" ]; then
+        cp "$hook_source" "$hook_target"
+        chmod +x "$hook_target"
+        echo "  + Installed framework pre-commit at .git/hooks/pre-commit (secret scan + size guard)"
+    elif grep -q "$sentinel" "$hook_target" 2>/dev/null; then
+        # Ours — only refresh if byte-identical-or-older version is installed.
+        # Preserves user edits (e.g., custom checks added below the shipped body).
+        if cmp -s "$hook_target" "$hook_source"; then
+            :  # Identical; no-op
+        else
+            echo "  Framework pre-commit at .git/hooks/pre-commit has been modified from the shipped version."
+            echo "  Keeping your version to preserve local edits."
+            echo "  To refresh, delete .git/hooks/pre-commit and re-run setup."
+        fi
+    else
+        echo "  Existing .git/hooks/pre-commit detected (likely husky or pre-commit framework)."
+        echo "  To chain the framework's secret scan + size guard, add this to your existing hook:"
+        echo "    bash .claude/hooks/pre-commit.sh || exit 1"
+    fi
+}
+
+install_framework_precommit
 
 # ── Create .env template ────────────────────────────────────────
 
@@ -855,6 +853,16 @@ ENV_NOTIFY_EOF
     fi
 fi
 
+# Ensure .claude/state/ is gitignored — post-coding-review.sh writes cooldown state here
+if [ -f "$PROJECT_DIR/.gitignore" ]; then
+    if ! grep -q "^\.claude/state/$" "$PROJECT_DIR/.gitignore" && ! grep -q "^\.claude/state/\*$" "$PROJECT_DIR/.gitignore"; then
+        echo ".claude/state/" >> "$PROJECT_DIR/.gitignore"
+    fi
+elif [ -d "$PROJECT_DIR/.git" ]; then
+    # No gitignore yet — create one with the state entry
+    echo ".claude/state/" > "$PROJECT_DIR/.gitignore"
+fi
+
 # ═══════════════════════════════════════════════════════════════
 # Summary
 # ═══════════════════════════════════════════════════════════════
@@ -877,7 +885,7 @@ echo "  .claude/skills/         — 17 workflow skills (incl. /team, /improve, /
 echo "  .claude/agents/         — 12 AI agents (full team: architect to framework-improver)"
 echo "  .claude/commands/       — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)"
 echo "  .claude/rules/          — 9 coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components)"
-echo "  .claude/hooks/          — 5 lifecycle hooks (guardrails, pre-commit, post-edit-sync, session-start, session-stop)"
+echo "  .claude/hooks/          — 6 lifecycle hooks (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit)"
 echo "  .claude/settings.local.json — project permissions, hooks"
 echo "  .mcp.json               — MCP servers (Context7 documentation)"
 echo "  ~/.claude/settings.json — user-level AI factory permissions (team orchestration enabled)"

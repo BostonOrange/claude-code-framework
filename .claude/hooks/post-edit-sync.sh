@@ -1,8 +1,18 @@
 #!/bin/bash
 # Framework Repo — Post-Edit Sync Hook
 # Flags documentation that needs updating when framework files change.
+#
+# Claude Code sends tool input as JSON on stdin. Extract tool_input.file_path
+# using jq if available, else python3.
 
-FILE_PATH="$1"
+_LIB="$(dirname "$0")/_lib.sh"
+[ -f "$_LIB" ] || exit 0
+# shellcheck source=/dev/null
+. "$_LIB"
+
+FILE_PATH=$(read_tool_input_field file_path)
+[ $? -eq 2 ] && exit 0
+
 [ -z "$FILE_PATH" ] && exit 0
 FILE_PATH="${FILE_PATH//\\//}"
 BASENAME=$(basename "$FILE_PATH")

@@ -1,0 +1,112 @@
+{
+  "_description": "Per-project-type pre-commit tooling instructions. Consumed by setup.sh and setup.ps1 to render language-specific guidance after the framework's own pre-commit.sh is installed. Detection modes: 'file_contains' checks if a file exists and grep-matches; 'command_missing' checks if a CLI is absent.",
+  "nodejs": {
+    "detect": {
+      "mode": "file_contains",
+      "file": "package.json",
+      "needle": "\"husky\""
+    },
+    "if_detected_message": "husky already configured",
+    "if_missing_messages": [
+      "Install pre-commit hooks with:",
+      "  npx husky init",
+      "  npm install --save-dev lint-staged",
+      "  echo \"npx lint-staged\" > .husky/pre-commit",
+      "",
+      "Add to package.json:",
+      "  \"lint-staged\": { \"*.{js,jsx,ts,tsx,json,css,md}\": \"prettier --write\" }"
+    ]
+  },
+  "react": {
+    "detect": {
+      "mode": "file_contains",
+      "file": "package.json",
+      "needle": "\"husky\""
+    },
+    "if_detected_message": "husky already configured",
+    "if_missing_messages": [
+      "Install pre-commit hooks with:",
+      "  npx husky init",
+      "  npm install --save-dev lint-staged",
+      "  echo \"npx lint-staged\" > .husky/pre-commit",
+      "",
+      "Add to package.json:",
+      "  \"lint-staged\": { \"*.{js,jsx,ts,tsx,json,css,md}\": \"prettier --write\" }"
+    ]
+  },
+  "salesforce": {
+    "detect": {
+      "mode": "file_contains",
+      "file": "package.json",
+      "needle": "\"husky\""
+    },
+    "if_detected_message": "husky already configured",
+    "if_missing_messages": [
+      "Install pre-commit hooks with:",
+      "  npx husky init",
+      "  npm install --save-dev lint-staged",
+      "  echo \"npx lint-staged\" > .husky/pre-commit"
+    ]
+  },
+  "python": {
+    "detect": {
+      "mode": "command_missing",
+      "command": "pre-commit"
+    },
+    "if_missing_messages": [
+      "Install pre-commit hooks with:",
+      "  pip install pre-commit",
+      "  pre-commit install"
+    ],
+    "config_file": ".pre-commit-config.yaml",
+    "config_body_lines": [
+      "repos:",
+      "  - repo: https://github.com/psf/black",
+      "    rev: 24.4.2",
+      "    hooks:",
+      "      - id: black",
+      "  - repo: https://github.com/astral-sh/ruff-pre-commit",
+      "    rev: v0.4.7",
+      "    hooks:",
+      "      - id: ruff",
+      "        args: [--fix]",
+      "  - repo: https://github.com/pre-commit/pre-commit-hooks",
+      "    rev: v4.6.0",
+      "    hooks:",
+      "      - id: trailing-whitespace",
+      "      - id: end-of-file-fixer",
+      "      - id: check-yaml",
+      "      - id: check-added-large-files"
+    ],
+    "config_created_messages": [
+      "+ Created .pre-commit-config.yaml",
+      "Run 'pre-commit install' to activate"
+    ]
+  },
+  "go": {
+    "always_messages": [
+      "Go uses gofmt automatically. For pre-commit hooks:",
+      "  go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest",
+      "Add to .git/hooks/pre-commit:",
+      "  gofmt -l . | grep -q . && echo \"Run gofmt\" && exit 1"
+    ]
+  },
+  "java": {
+    "always_messages": [
+      "For Java, configure spotless in build.gradle:",
+      "  plugins { id \"com.diffplug.spotless\" }",
+      "Then: ./gradlew spotlessApply"
+    ]
+  },
+  "rails": {
+    "always_messages": [
+      "For Ruby, use overcommit or lefthook:",
+      "  gem install overcommit && overcommit --install"
+    ]
+  },
+  "generic": {
+    "always_messages": [
+      "Configure pre-commit hooks for your project manually"
+    ]
+  }
+}

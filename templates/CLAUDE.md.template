@@ -84,7 +84,7 @@ Spawn pre-configured teams of specialized agents for parallel analysis:
 | Agent | Purpose | Model |
 |-------|---------|-------|
 | `architect` | System design review, architecture patterns, scalability | opus |
-| `code-reviewer` | Review diffs for bugs, security, performance, conventions | opus |
+| `code-reviewer` | Review diffs for bugs, security, performance, design principles, code smells, conventions | opus |
 | `security-auditor` | OWASP audit, credentials, dependencies, compliance | opus |
 | `refactor-advisor` | Duplication, complexity, extraction opportunities | opus |
 | `devops-engineer` | CI/CD, containers, infrastructure, monitoring | opus |

@@ -199,10 +199,13 @@ jobs:
 
           echo "$MESSAGE"
 
-          # Uncomment for your notification system:
-          # curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
-          #   -H "Content-Type: application/json" \
-          #   -d "{\"text\":\"${MESSAGE}\"}"
+          # Uncomment for your notification system. Use jq to safely JSON-encode
+          # the message — PR titles and manual_steps are attacker-controlled and
+          # direct string interpolation into the JSON body is a shell/JSON injection.
+          # echo "$MESSAGE" | jq -Rs '{text: .}' | \
+          #   curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+          #     -H "Content-Type: application/json" \
+          #     --data-binary @-
 
       - name: Write job summary
         env:

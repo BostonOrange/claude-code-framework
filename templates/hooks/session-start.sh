@@ -5,12 +5,15 @@
 # ── Stale Branch Warning ────────────────────────────────────────
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
 if [ -n "$CURRENT_BRANCH" ] && [ "$CURRENT_BRANCH" != "{{BASE_BRANCH}}" ]; then
-    # Fetch latest (silently)
-    git fetch origin {{BASE_BRANCH}} --quiet 2>/dev/null || true
+    # Only fetch if there's an `origin` remote configured (skip on air-gapped/offline clones)
+    if git remote get-url origin >/dev/null 2>&1; then
+        # Fetch with a short timeout so offline / slow networks don't stall session start
+        git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=3 fetch origin {{BASE_BRANCH}} --quiet 2>/dev/null || true
 
-    BEHIND=$(git rev-list --count HEAD..origin/{{BASE_BRANCH}} 2>/dev/null || echo 0)
-    if [ "$BEHIND" -gt 10 ]; then
-        echo "WARNING: Branch '$CURRENT_BRANCH' is $BEHIND commits behind {{BASE_BRANCH}}. Consider rebasing."
+        BEHIND=$(git rev-list --count HEAD..origin/{{BASE_BRANCH}} 2>/dev/null || echo 0)
+        if [ "$BEHIND" -gt 10 ]; then
+            echo "WARNING: Branch '$CURRENT_BRANCH' is $BEHIND commits behind {{BASE_BRANCH}}. Consider rebasing."
+        fi
     fi
 fi
 

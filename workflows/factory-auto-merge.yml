@@ -7,6 +7,13 @@ on:
   pull_request_review:
     types: [submitted]
 
+# Serialize auto-merge attempts per-PR so multiple rapid approvals don't race.
+# We don't cancel in-flight merges — let the first one complete; subsequent
+# triggers will no-op if the PR is already merged.
+concurrency:
+  group: factory-auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
 jobs:
   auto-merge:
     if: |
@@ -14,6 +21,7 @@ jobs:
       github.event.review.state == 'approved' &&
       contains(github.event.pull_request.labels.*.name, 'factory')
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
       pull-requests: write
@@ -35,7 +43,9 @@ jobs:
 
               const pending = checks.check_runs.filter(c => c.status !== 'completed');
               if (pending.length === 0) {
-                const failed = checks.check_runs.filter(c => c.conclusion !== 'success' && c.conclusion !== 'skipped');
+                // Treat 'neutral' as acceptable — common for paths-filtered jobs
+                const passingConclusions = ['success', 'skipped', 'neutral'];
+                const failed = checks.check_runs.filter(c => !passingConclusions.includes(c.conclusion));
                 if (failed.length > 0) {
                   core.setFailed(`Checks failed: ${failed.map(c => c.name).join(', ')}`);
                   return;
