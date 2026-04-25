@@ -32,7 +32,7 @@ claude-code-framework/
 │   ├── settings.json            # User-level permissions (~/.claude/)
 │   ├── settings.local.json      # Project-level permissions
 │   ├── mcp.json                 # MCP server config (→ .mcp.json)
-│   ├── agents/                  # 30 AI agent definitions
+│   ├── agents/                  # 35 AI agent definitions
 │   ├── commands/                # 6 quick command definitions
 │   ├── rules/                   # 9 file-pattern guardrails
 │   ├── hooks/                   # 6 lifecycle scripts
@@ -132,6 +132,11 @@ Spawn pre-configured teams for parallel analysis of the framework:
 | `frontend-architecture-reviewer` | FE structure: composition, state, hooks, data flow, render-perf (cites `frontend-architecture` rule) | opus |
 | `architecture-reviewer` | Layering: dependency direction, cross-module reach, circular deps, god modules (cites `architecture-layering` rule) | opus |
 | `api-layering-reviewer` | API structure: controller/service/repo separation, validation placement, error contract (cites `api-layering` rule) | opus |
+| `crypto-reviewer` | OWASP A02: weak hashes, password storage, RNG, encryption modes/IV, JWT, TLS (cites `crypto` rule) | opus |
+| `solid-reviewer` | OCP/LSP/ISP/DIP (cites `solid` rule); SRP is purity-reviewer's domain | opus |
+| `concurrency-reviewer` | Race conditions, TOCTOU, async/lock discipline, mutable shared state, background workers (cites `concurrency` rule) | opus |
+| `observability-reviewer` | OWASP A09: structured logging, log levels, metrics, tracing, audit logs, alerting (cites `observability` rule) | opus |
+| `supply-chain-reviewer` | OWASP A06+A08: lockfiles, pinning, CVE reachability, signing, dev/prod separation, CI integrity (cites `supply-chain` rule) | opus |
 | `requirements-clarifier` | Planning specialist: ambiguity hunt, open questions, missing AC | opus |
 | `scope-decomposer` | Planning specialist: atomic steps, sequencing, parallelism groups | opus |
 | `risk-assessor` | Planning specialist: rollback paths, blast radius, migration risk + mitigations | opus |

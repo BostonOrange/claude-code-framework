@@ -156,7 +156,12 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `frontend-architecture-reviewer` | Read, Glob, Grep, Bash | opus | FE structure — composition, state, hooks, data flow, render-perf (cites `frontend-architecture`) |
 | `architecture-reviewer` | Read, Glob, Grep, Bash | opus | Layering — dependency direction, cross-module reach, circular deps, god modules (cites `architecture-layering`) |
 | `api-layering-reviewer` | Read, Glob, Grep, Bash | opus | API structure — controller/service/repo separation, validation placement, error contract (cites `api-layering`) |
-| `security-auditor` | Read, Glob, Grep, Bash | opus | OWASP-categorized security audit |
+| `crypto-reviewer` | Read, Glob, Grep, Bash | opus | OWASP A02 — weak hashes, password storage, RNG, encryption modes, JWT, TLS, key derivation (cites `crypto`) |
+| `solid-reviewer` | Read, Glob, Grep, Bash | opus | OCP/LSP/ISP/DIP (cites `solid`); SRP is `purity-reviewer`'s domain |
+| `concurrency-reviewer` | Read, Glob, Grep, Bash | opus | Races, TOCTOU, async/lock discipline, mutable shared state, background workers (cites `concurrency`) |
+| `observability-reviewer` | Read, Glob, Grep, Bash | opus | OWASP A09 — structured logging, metrics, tracing, audit logs, alerting (cites `observability`) |
+| `supply-chain-reviewer` | Read, Glob, Grep, Bash | opus | OWASP A06+A08 — lockfiles, pinning, CVE reachability, signing, CI pipeline integrity (cites `supply-chain`) |
+| `security-auditor` | Read, Glob, Grep, Bash | opus | OWASP-categorized security audit; cites `secrets-management` for storage findings |
 | `refactor-advisor` | Read, Glob, Grep, Bash | opus | Cross-cutting refactor opportunities (broader than `dry-reviewer`) |
 | `devops-engineer` | Read, Glob, Grep, Bash | opus | CI/CD, containers, infrastructure |
 | `ui-ux-reviewer` | Read, Glob, Grep, Bash | opus | Accessibility, design, responsiveness |
@@ -204,7 +209,7 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `/changelog` | Generate changelog from commits |
 | `/dep-check` | Check for outdated dependencies |
 
-### Rules (16)
+### Rules (22)
 
 | Rule | Patterns | Key Standards |
 |------|----------|---------------|
@@ -224,6 +229,12 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `frontend-architecture` | UI components | Component composition, state, hook discipline, data flow, render-perf architecture (cited by `frontend-architecture-reviewer`) |
 | `architecture-layering` | Source files | Layer dependency direction, cross-module reach, circular deps, god modules (cited by `architecture-reviewer`) |
 | `api-layering` | API handlers | Controller/service/repo separation, validation placement, error contract, idempotency (cited by `api-layering-reviewer`) |
+| `crypto` | Source files | Hash algorithms, password storage, RNG, encryption modes/IV, JWT, TLS, key derivation, constant-time compare (cited by `crypto-reviewer`; OWASP A02) |
+| `solid` | Source files | OCP/LSP/ISP/DIP (cited by `solid-reviewer`); SRP is `purity`'s domain |
+| `concurrency` | Source files | Race conditions, TOCTOU, async discipline, locks, mutable shared state, background workers, channels (cited by `concurrency-reviewer`) |
+| `observability` | Source files | Structured logging, log levels, metrics, tracing, audit logs, alerting, correlation (cited by `observability-reviewer`; OWASP A09) |
+| `supply-chain` | Manifests / Dockerfiles / CI workflows | Lockfile hygiene, pinning, CVE reachability, signing, dev/prod separation, deserialization, pipeline integrity (cited by `supply-chain-reviewer`; OWASP A06+A08) |
+| `secrets-management` | Source files | Storage, loading, rotation, scanning, in-code discipline, service identity (cited by `security-auditor`) |
 
 ### Hooks (6)
 

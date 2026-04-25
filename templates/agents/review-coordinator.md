@@ -35,6 +35,11 @@ Apply this risk tier classifier:
 | If diff contains... | Add agent |
 |---------------------|-----------|
 | Touched files in security-relevant paths (see below) | `security-auditor` |
+| Crypto primitives (hash/encrypt/sign/JWT/TLS/RNG/password handling) | `crypto-reviewer` |
+| Dependency manifests, lockfiles, Dockerfiles, CI workflows | `supply-chain-reviewer` |
+| New endpoints / handlers / background jobs / log statements / metrics | `observability-reviewer` |
+| Async / concurrent code, locks, channels, background work, shared state | `concurrency-reviewer` |
+| Type hierarchies, interfaces, dispatch on type code, dependency wiring | `solid-reviewer` |
 | Frontend files (`.tsx`, `.jsx`, `.vue`, `.svelte`, `.html`, component dirs) | `ui-ux-reviewer` + `frontend-architecture-reviewer` |
 | Cross-module changes touching ≥3 modules / new module boundaries / new public APIs | `architecture-reviewer` |
 | API route files matching `{{API_ROUTE_PATTERNS}}` | `api-designer` + `api-layering-reviewer` |
@@ -125,6 +130,15 @@ Concatenate all sub-agent JSONL output. Then:
    | `architecture-reviewer` (cross-module reach) + `purity-reviewer` (class SRP) | `architecture-reviewer` for cross-module, `purity-reviewer` for within-module — different scopes, keep both |
    | `api-layering-reviewer` (controller too thick) + `complexity-reviewer` (controller fn long) | `api-layering-reviewer` (the layering rule explains *why* it's too thick; refactor target is different) |
    | `api-designer` (API surface design) + `api-layering-reviewer` (controller/service/repo) | Keep both — different concerns (surface vs layering) |
+   | `security-auditor` (weak hash) + `crypto-reviewer` (weak hash) | `crypto-reviewer` (more specific rule citation) |
+   | `security-auditor` (vulnerable dep) + `supply-chain-reviewer` (vulnerable dep) | `supply-chain-reviewer` (specialist) |
+   | `security-auditor` (missing audit log) + `observability-reviewer` (missing audit log) | `observability-reviewer` (cites the more specific rule); preserve A09 framing in description |
+   | `code-reviewer` (race condition) + `concurrency-reviewer` (race condition) | `concurrency-reviewer` |
+   | `code-reviewer` (long if-else chain) + `solid-reviewer` (OCP) + `complexity-reviewer` (cyclomatic) | `complexity-reviewer` if the issue is fundamentally a metric threshold; `solid-reviewer` if the issue is fundamentally a growing-with-types dispatch problem; never all three |
+   | `purity-reviewer` (SRP) + `solid-reviewer` (any SOLID) | `purity-reviewer` for class-level SRP (S of SOLID); `solid-reviewer` only for OCP/LSP/ISP/DIP |
+   | `architecture-reviewer` (DIP at module boundary) + `solid-reviewer` (DIP within module) | Keep both — different scopes (architecture-reviewer = cross-module; solid-reviewer = within-module) |
+   | `crypto-reviewer` (hardcoded crypto key) + `security-auditor` (hardcoded secret) | `security-auditor` cites `secrets-management` (storage); `crypto-reviewer` only cites if it's about the *use* of the key (derivation, algorithm) |
+   | `observability-reviewer` (PII in log) + `security-auditor` (PII leak) | `security-auditor` (cites `data-protection`); `observability-reviewer` defers if the finding is fundamentally about data exposure |
 
    When a specialist's finding wins, drop the broader one. Never keep both.
 

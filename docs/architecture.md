@@ -288,7 +288,7 @@ your-project/
 ├── .mcp.json                          # MCP servers (Context7 docs)
 ├── .claude/
 │   ├── settings.local.json            # Permissions & model config
-│   ├── agents/                        # 30 AI teammate definitions
+│   ├── agents/                        # 35 AI teammate definitions
 │   │   ├── architect.md               # System design, patterns
 │   │   ├── code-reviewer.md           # Bugs, security in diffs (broad sweep)
 │   │   ├── code-smell-reviewer.md     # Smells specialist — cites `code-smells`
@@ -298,6 +298,11 @@ your-project/
 │   │   ├── frontend-architecture-reviewer.md  # FE structure — cites `frontend-architecture`
 │   │   ├── architecture-reviewer.md           # Layering — cites `architecture-layering`
 │   │   ├── api-layering-reviewer.md           # API structure — cites `api-layering`
+│   │   ├── crypto-reviewer.md                 # OWASP A02 — cites `crypto`
+│   │   ├── solid-reviewer.md                  # OCP/LSP/ISP/DIP — cites `solid`
+│   │   ├── concurrency-reviewer.md            # Races, async, locks — cites `concurrency`
+│   │   ├── observability-reviewer.md          # OWASP A09 — cites `observability`
+│   │   ├── supply-chain-reviewer.md           # OWASP A06+A08 — cites `supply-chain`
 │   │   ├── security-auditor.md        # OWASP audit
 │   │   ├── refactor-advisor.md        # Cross-cutting refactor (broader than dry-reviewer)
 │   │   ├── devops-engineer.md         # CI/CD, infrastructure
@@ -342,7 +347,13 @@ your-project/
 │   │   ├── complexity.md              # Cited by complexity-reviewer
 │   │   ├── frontend-architecture.md   # Cited by frontend-architecture-reviewer
 │   │   ├── architecture-layering.md   # Cited by architecture-reviewer
-│   │   └── api-layering.md            # Cited by api-layering-reviewer
+│   │   ├── api-layering.md            # Cited by api-layering-reviewer
+│   │   ├── crypto.md                  # Cited by crypto-reviewer (OWASP A02)
+│   │   ├── solid.md                   # Cited by solid-reviewer
+│   │   ├── concurrency.md             # Cited by concurrency-reviewer
+│   │   ├── observability.md           # Cited by observability-reviewer (OWASP A09)
+│   │   ├── supply-chain.md            # Cited by supply-chain-reviewer (OWASP A06+A08)
+│   │   └── secrets-management.md      # Cited by security-auditor
 │   ├── hooks/                         # Lifecycle scripts
 │   │   ├── guardrails.sh              # PreToolUse: block dangerous ops
 │   │   ├── post-edit-sync.sh          # PostToolUse: flag docs needing sync

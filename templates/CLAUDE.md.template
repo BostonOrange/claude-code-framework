@@ -97,6 +97,11 @@ Spawn pre-configured teams of specialized agents for parallel analysis:
 | `frontend-architecture-reviewer` | Frontend structure: composition, state, hooks, data flow, render-perf architecture (cites `frontend-architecture` rule) | opus |
 | `architecture-reviewer` | Layering: dependency direction, cross-module reach, circular deps, god modules (cites `architecture-layering` rule) | opus |
 | `api-layering-reviewer` | API structure: controller/service/repo separation, validation placement, error contract (cites `api-layering` rule) | opus |
+| `crypto-reviewer` | OWASP A02: weak hashes, password storage, RNG, encryption modes/IV, JWT, TLS, key derivation (cites `crypto` rule) | opus |
+| `solid-reviewer` | OCP/LSP/ISP/DIP (cites `solid` rule); SRP is purity-reviewer's domain | opus |
+| `concurrency-reviewer` | Race conditions, TOCTOU, async/lock discipline, mutable shared state, background workers, channels (cites `concurrency` rule) | opus |
+| `observability-reviewer` | OWASP A09: structured logging, log levels, metrics, tracing, audit logs, alerting, correlation (cites `observability` rule) | opus |
+| `supply-chain-reviewer` | OWASP A06+A08: lockfiles, version pinning, CVE reachability, signing, dev/prod separation, CI pipeline integrity (cites `supply-chain` rule) | opus |
 | `security-auditor` | OWASP audit, credentials, dependencies, compliance | opus |
 | `refactor-advisor` | Duplication, complexity, extraction opportunities (broader than `dry-reviewer`) | opus |
 | `devops-engineer` | CI/CD, containers, infrastructure, monitoring | opus |

@@ -71,6 +71,41 @@
       "description": "Reviews API code for controller/service/repository separation, validation layer placement, error contract consistency, idempotency, and versioning discipline. Cites the `api-layering` rule. Distinct from `api-designer` (designs API surface) and `api-routes` rule (per-route concerns)"
     },
     {
+      "name": "crypto-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Crypto failures: weak hashes, password storage, RNG, encryption modes, JWT, TLS, key derivation, constant-time compare (cites `crypto`). OWASP A02",
+      "description": "Reviews changed code for cryptographic failures — weak hashes, password storage, RNG misuse, encryption mode/IV mistakes, JWT pitfalls, TLS config, key derivation, constant-time comparison. Cites the `crypto` rule. Covers OWASP A02:2021"
+    },
+    {
+      "name": "solid-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "SOLID: Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion (cites `solid`). SRP is purity-reviewer's domain",
+      "description": "Reviews changed code for SOLID principle violations — Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion. Cites the `solid` rule. SRP (the S of SOLID) is owned by purity-reviewer"
+    },
+    {
+      "name": "concurrency-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Race conditions, TOCTOU, async discipline, lock discipline, mutable shared state, background-work safety, channels (cites `concurrency`)",
+      "description": "Reviews changed code for race conditions, TOCTOU bugs, async discipline, lock discipline, mutable shared state, background-work safety, and channel/queue discipline. Cites the `concurrency` rule"
+    },
+    {
+      "name": "observability-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Structured logging, log levels, metrics, tracing, audit logs, alerting, correlation (cites `observability`). OWASP A09",
+      "description": "Reviews changed code for structured logging discipline, log levels, metrics coverage, tracing propagation, audit logs, alerting, and correlation. Cites the `observability` rule. Covers OWASP A09:2021"
+    },
+    {
+      "name": "supply-chain-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Dependencies, lockfiles, Dockerfiles, CI workflows: pinning, CVEs, signing, dev/prod separation, deserialization, pipeline integrity (cites `supply-chain`). OWASP A06+A08",
+      "description": "Reviews changed dependency manifests, lockfiles, Dockerfiles, and CI workflow files for OWASP A06 (vulnerable components) and A08 (integrity failures). Covers lockfile hygiene, version pinning, CVE reachability, package signing, dev/prod separation, deserialization risks, CI pipeline integrity, build reproducibility, license compliance. Cites the `supply-chain` rule"
+    },
+    {
       "name": "security-auditor",
       "category": "analysis",
       "model": "opus",

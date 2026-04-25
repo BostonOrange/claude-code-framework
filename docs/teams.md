@@ -21,7 +21,12 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents â
 | `frontend-architecture-reviewer` | FE Structure | opus | Composition, state, hooks, data flow, render-perf architecture (cites `frontend-architecture`) |
 | `architecture-reviewer` | Layering | opus | Dependency direction, cross-module reach, circular deps, god modules (cites `architecture-layering`) |
 | `api-layering-reviewer` | API Layering | opus | Controller/service/repo separation, validation placement, error contract (cites `api-layering`) |
-| `security-auditor` | Security | opus | OWASP vulnerabilities, credentials, dependencies |
+| `crypto-reviewer` | Cryptography (OWASP A02) | opus | Weak hashes, password storage, RNG, encryption modes/IV, JWT, TLS, key derivation, constant-time compare (cites `crypto`) |
+| `solid-reviewer` | SOLID Principles | opus | OCP/LSP/ISP/DIP (cites `solid`); SRP is `purity-reviewer`'s domain |
+| `concurrency-reviewer` | Concurrency | opus | Races, TOCTOU, async discipline, locks, mutable shared state, background workers (cites `concurrency`) |
+| `observability-reviewer` | Observability (OWASP A09) | opus | Structured logging, log levels, metrics, tracing, audit logs, alerting, correlation (cites `observability`) |
+| `supply-chain-reviewer` | Supply Chain (OWASP A06+A08) | opus | Lockfiles, pinning, CVE reachability, signing, dev/prod separation, CI pipeline integrity (cites `supply-chain`) |
+| `security-auditor` | Security (broad) | opus | OWASP audit, credentials, dependencies; cites `secrets-management` for storage findings |
 | `refactor-advisor` | Code Structure (broad) | opus | Cross-cutting refactor opportunities â€” broader than `dry-reviewer` |
 | `devops-engineer` | Operations | opus | CI/CD, containers, infrastructure, monitoring |
 | `ui-ux-reviewer` | Design Quality | opus | Accessibility, consistency, responsive, UX patterns |

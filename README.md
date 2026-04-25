@@ -59,9 +59,9 @@ The setup wizard asks:
 
 Then generates:
 - `.claude/skills/` — 20 workflow skills adapted to your stack (incl. `/team`, `/improve`, `/plan`, `/build`, `/iterative-review`)
-- `.claude/agents/` — 30 AI agents covering full team + 7 review specialists + 4 planning specialists + 4 build specialists + 3 coordinators (all opus)
+- `.claude/agents/` — 35 AI agents covering full team + 12 review specialists + 4 planning specialists + 4 build specialists + 3 coordinators (all opus)
 - `.claude/commands/` — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)
-- `.claude/rules/` — 16 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components, code-smells, dry, purity, complexity, frontend-architecture, architecture-layering, api-layering)
+- `.claude/rules/` — 22 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components, code-smells, dry, purity, complexity, frontend-architecture, architecture-layering, api-layering, crypto, solid, concurrency, observability, supply-chain, secrets-management)
 - `.claude/hooks/` — 6 lifecycle hooks (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit)
 - `.claude/settings.local.json` — project permissions, hooks
 - `.mcp.json` — MCP servers (Context7 documentation)
@@ -151,7 +151,7 @@ mkdir -p .claude/skills/my-domain/references/
 | `/mock-endpoint` | Mock external API integrations |
 | `/scaffold-design-system` | Scaffold design system tokens, components, and theme config |
 
-### AI Agents (30 specialized teammates)
+### AI Agents (35 specialized teammates)
 
 | Agent | Model | Purpose |
 |-------|-------|---------|
@@ -164,6 +164,11 @@ mkdir -p .claude/skills/my-domain/references/
 | `frontend-architecture-reviewer` | opus | Frontend structure: component composition, state management, hooks, data flow, render-perf architecture. Cites `frontend-architecture` rule. Read-only |
 | `architecture-reviewer` | opus | Layering: dependency direction, cross-module reach, circular deps, god modules, public-API leaks. Cites `architecture-layering` rule. Read-only |
 | `api-layering-reviewer` | opus | API structure: controller/service/repo separation, validation placement, error contract, idempotency. Cites `api-layering` rule. Read-only |
+| `crypto-reviewer` | opus | OWASP A02 specialist: weak hashes, password storage, RNG, encryption modes/IV, JWT, TLS, key derivation, constant-time compare. Cites `crypto`. Read-only |
+| `solid-reviewer` | opus | OCP/LSP/ISP/DIP specialist (S is `purity`'s domain). Cites `solid`. Read-only |
+| `concurrency-reviewer` | opus | Race conditions, TOCTOU, async/await discipline, lock discipline, mutable shared state, background-work safety, channels. Cites `concurrency`. Read-only |
+| `observability-reviewer` | opus | OWASP A09 specialist: structured logging, log levels, metrics, tracing, audit logs, alerting, correlation. Cites `observability`. Read-only |
+| `supply-chain-reviewer` | opus | OWASP A06+A08 specialist: lockfiles, version pinning, CVE reachability, signing, dev/prod separation, deserialization, CI pipeline integrity. Cites `supply-chain`. Read-only |
 | `security-auditor` | opus | OWASP audit: credentials, dependencies, auth, compliance |
 | `refactor-advisor` | opus | Duplication, complexity, extraction opportunities. Read-only |
 | `devops-engineer` | opus | CI/CD, containers, infrastructure, deployment readiness |
@@ -234,6 +239,12 @@ File-pattern-scoped rules that Claude follows automatically when editing matchin
 | `frontend-architecture` | UI components | Component composition, state management, hook discipline, data flow, render-perf architecture (cited by `frontend-architecture-reviewer`) |
 | `architecture-layering` | Source files | Layer dependency direction, cross-module reach, circular deps, god modules (cited by `architecture-reviewer`) |
 | `api-layering` | API handlers | Controller/service/repo separation, validation placement, error contract, idempotency (cited by `api-layering-reviewer`) |
+| `crypto` | Source files | Hashes, password storage, RNG, encryption modes/IV, JWT, TLS, key derivation, constant-time compare (cited by `crypto-reviewer`; OWASP A02) |
+| `solid` | Source files | Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion (cited by `solid-reviewer`) |
+| `concurrency` | Source files | Race conditions, TOCTOU, async discipline, locks, mutable shared state, background workers, channels (cited by `concurrency-reviewer`) |
+| `observability` | Source files | Structured logging, log levels, metrics, tracing, audit logs, alerting, correlation (cited by `observability-reviewer`; OWASP A09) |
+| `supply-chain` | Manifests/Dockerfiles/CI workflows | Lockfile hygiene, pinning, CVE reachability, signing, dev/prod separation, deserialization, pipeline integrity (cited by `supply-chain-reviewer`; OWASP A06+A08) |
+| `secrets-management` | Source files | Storage, loading, rotation, scanning, in-code discipline, service identity (cited by `security-auditor`) |
 
 ### Hooks (lifecycle quality gates)
 
@@ -421,7 +432,7 @@ claude-code-framework/
 │   ├── settings.json            # User-level AI factory permissions
 │   ├── settings.local.json      # Project-level permissions & model config
 │   ├── mcp.json                 # MCP server config (copied to .mcp.json)
-│   ├── agents/                  # 30 AI agent definitions
+│   ├── agents/                  # 35 AI agent definitions
 │   │   ├── architect.md         # System design, patterns, scalability
 │   │   ├── code-reviewer.md     # Bugs, security, performance in diffs (broad sweep)
 │   │   ├── code-smell-reviewer.md   # Smells specialist — cites `code-smells` rule
@@ -431,6 +442,11 @@ claude-code-framework/
 │   │   ├── frontend-architecture-reviewer.md  # FE structure — cites `frontend-architecture` rule
 │   │   ├── architecture-reviewer.md           # Layering/dependency direction — cites `architecture-layering` rule
 │   │   ├── api-layering-reviewer.md           # Controller/service/repo — cites `api-layering` rule
+│   │   ├── crypto-reviewer.md                 # OWASP A02 — cites `crypto` rule
+│   │   ├── solid-reviewer.md                  # OCP/LSP/ISP/DIP — cites `solid` rule
+│   │   ├── concurrency-reviewer.md            # Races, async, locks — cites `concurrency` rule
+│   │   ├── observability-reviewer.md          # OWASP A09 — cites `observability` rule
+│   │   ├── supply-chain-reviewer.md           # OWASP A06+A08 — cites `supply-chain` rule
 │   │   ├── security-auditor.md  # OWASP audit, credentials, deps
 │   │   ├── refactor-advisor.md  # Duplication, complexity, structure
 │   │   ├── devops-engineer.md   # CI/CD, containers, infrastructure
@@ -475,7 +491,13 @@ claude-code-framework/
 │   │   ├── complexity.md                 # Cited by `complexity-reviewer`
 │   │   ├── frontend-architecture.md      # Cited by `frontend-architecture-reviewer`
 │   │   ├── architecture-layering.md      # Cited by `architecture-reviewer`
-│   │   └── api-layering.md               # Cited by `api-layering-reviewer`
+│   │   ├── api-layering.md               # Cited by `api-layering-reviewer`
+│   │   ├── crypto.md                     # Cited by `crypto-reviewer` (OWASP A02)
+│   │   ├── solid.md                      # Cited by `solid-reviewer`
+│   │   ├── concurrency.md                # Cited by `concurrency-reviewer`
+│   │   ├── observability.md              # Cited by `observability-reviewer` (OWASP A09)
+│   │   ├── supply-chain.md               # Cited by `supply-chain-reviewer` (OWASP A06+A08)
+│   │   └── secrets-management.md         # Cited by `security-auditor`
 │   ├── hooks/                   # Lifecycle scripts
 │   │   ├── guardrails.sh        # PreToolUse: block dangerous ops
 │   │   ├── post-edit-sync.sh    # PostToolUse: flag docs needing sync
