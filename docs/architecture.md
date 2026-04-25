@@ -288,11 +288,15 @@ your-project/
 ├── .mcp.json                          # MCP servers (Context7 docs)
 ├── .claude/
 │   ├── settings.local.json            # Permissions & model config
-│   ├── agents/                        # 13 AI teammate definitions
+│   ├── agents/                        # 17 AI teammate definitions
 │   │   ├── architect.md               # System design, patterns
-│   │   ├── code-reviewer.md           # Bugs, security in diffs
+│   │   ├── code-reviewer.md           # Bugs, security in diffs (broad sweep)
+│   │   ├── code-smell-reviewer.md     # Smells specialist — cites `code-smells`
+│   │   ├── dry-reviewer.md            # Duplication specialist — cites `dry`
+│   │   ├── purity-reviewer.md         # Pure-function specialist — cites `purity`
+│   │   ├── complexity-reviewer.md     # Complexity specialist — cites `complexity`
 │   │   ├── security-auditor.md        # OWASP audit
-│   │   ├── refactor-advisor.md        # Duplication, complexity
+│   │   ├── refactor-advisor.md        # Cross-cutting refactor (broader than dry-reviewer)
 │   │   ├── devops-engineer.md         # CI/CD, infrastructure
 │   │   ├── ui-ux-reviewer.md          # Accessibility, design
 │   │   ├── performance-optimizer.md   # Bundle, queries, caching
@@ -318,7 +322,11 @@ your-project/
 │   │   ├── error-handling.md
 │   │   ├── auth-security.md
 │   │   ├── data-protection.md
-│   │   └── design-system.md
+│   │   ├── design-system.md
+│   │   ├── code-smells.md             # Cited by code-smell-reviewer
+│   │   ├── dry.md                     # Cited by dry-reviewer
+│   │   ├── purity.md                  # Cited by purity-reviewer
+│   │   └── complexity.md              # Cited by complexity-reviewer
 │   ├── hooks/                         # Lifecycle scripts
 │   │   ├── guardrails.sh              # PreToolUse: block dangerous ops
 │   │   ├── post-edit-sync.sh          # PostToolUse: flag docs needing sync

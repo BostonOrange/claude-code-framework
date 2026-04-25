@@ -21,6 +21,34 @@
       "description": "Reviews code changes for bugs, security issues, performance problems, design principles (pure functions, SRP), code smells, and convention violations before merge"
     },
     {
+      "name": "code-smell-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Code smells: long methods, magic numbers, primitive obsession, dead code (cites `code-smells` rule)",
+      "description": "Reviews changed code for classic code smells — long methods, magic numbers, primitive obsession, data clumps, feature envy, dead code, comments-as-deodorant, speculative generality. Cites the `code-smells` rule"
+    },
+    {
+      "name": "dry-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Duplication and extraction opportunities (cites `dry` rule)",
+      "description": "Reviews changed code for true duplication — repeated knowledge, repeated logic, repeated structural patterns appearing 3+ times. Cites the `dry` rule. Distinct from refactor-advisor (broader) and code-smell-reviewer (other smells)"
+    },
+    {
+      "name": "purity-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Pure functions, side effects, query/command separation, SRP (cites `purity` rule)",
+      "description": "Reviews changed code for impure functions, hidden side effects, query/command separation violations, input mutation, hidden state reads, and SRP violations at function and class level. Cites the `purity` rule"
+    },
+    {
+      "name": "complexity-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Function length, cyclomatic complexity, nesting, parameters (cites `complexity` rule)",
+      "description": "Reviews changed code for excessive function length, cyclomatic complexity, nesting depth, parameter count, and branch density. Cites the `complexity` rule"
+    },
+    {
       "name": "security-auditor",
       "category": "analysis",
       "model": "opus",

@@ -148,9 +148,13 @@ The framework maintains a canonical registry of all distributable agents at `con
 | Agent | Tools | Model | Purpose |
 |-------|-------|-------|---------|
 | `architect` | Read, Glob, Grep, Bash | opus | System design, patterns, scalability |
-| `code-reviewer` | Read, Glob, Grep, Bash | opus | Reviews diff for bugs, security, performance, design, smells |
+| `code-reviewer` | Read, Glob, Grep, Bash | opus | Reviews diff for bugs, security, performance, design, smells (broad sweep) |
+| `code-smell-reviewer` | Read, Glob, Grep, Bash | opus | Code smells specialist — long methods, magic numbers, primitive obsession, dead code (cites `code-smells`) |
+| `dry-reviewer` | Read, Glob, Grep, Bash | opus | Duplication specialist — 3+ repeated logic, structural patterns (cites `dry`) |
+| `purity-reviewer` | Read, Glob, Grep, Bash | opus | Pure-function specialist — side effects, query/command separation, hidden state, SRP (cites `purity`) |
+| `complexity-reviewer` | Read, Glob, Grep, Bash | opus | Complexity specialist — function length, cyclomatic complexity, nesting, params (cites `complexity`) |
 | `security-auditor` | Read, Glob, Grep, Bash | opus | OWASP-categorized security audit |
-| `refactor-advisor` | Read, Glob, Grep, Bash | opus | Duplication, complexity, extraction |
+| `refactor-advisor` | Read, Glob, Grep, Bash | opus | Cross-cutting refactor opportunities (broader than `dry-reviewer`) |
 | `devops-engineer` | Read, Glob, Grep, Bash | opus | CI/CD, containers, infrastructure |
 | `ui-ux-reviewer` | Read, Glob, Grep, Bash | opus | Accessibility, design, responsiveness |
 | `performance-optimizer` | Read, Glob, Grep, Bash | opus | Bundle, queries, rendering, caching |
@@ -182,7 +186,7 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `/changelog` | Generate changelog from commits |
 | `/dep-check` | Check for outdated dependencies |
 
-### Rules (9)
+### Rules (13)
 
 | Rule | Patterns | Key Standards |
 |------|----------|---------------|
@@ -195,6 +199,10 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `auth-security` | Source files | Fail-closed auth, CSRF, RBAC, session security, SSRF |
 | `data-protection` | Source files | No PII in git, credentials, log redaction, third-party data |
 | `design-system` | UI components | Semantic tokens, spacing, typography, theme compliance |
+| `code-smells` | Source files | Long methods, magic numbers, primitive obsession, dead code, data clumps, feature envy (cited by `code-smell-reviewer`) |
+| `dry` | Source files | True duplication threshold (3+ sites), what to extract / what NOT (cited by `dry-reviewer`) |
+| `purity` | Source files | Pure-function discipline, query/command separation, hidden state, input mutation, SRP (cited by `purity-reviewer`) |
+| `complexity` | Source files | Function length, cyclomatic complexity, nesting, parameter count thresholds (cited by `complexity-reviewer`) |
 
 ### Hooks (6)
 

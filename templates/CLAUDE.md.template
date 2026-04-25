@@ -70,12 +70,14 @@ Spawn pre-configured teams of specialized agents for parallel analysis:
 | Team | Command | Agents | When to Use |
 |------|---------|--------|-------------|
 | **Review** | `/team review` | code-reviewer, security-auditor, ui-ux-reviewer | Before merging PRs |
+| **Review-deep** | `/team review-deep` | code-reviewer, security-auditor, code-smell-reviewer, dry-reviewer, purity-reviewer, complexity-reviewer | Before merging non-trivial PRs |
 | **Architecture** | `/team architecture` | architect, api-designer, database-architect | Design phase, health checks |
 | **Release** | `/team release` | security-auditor, devops-engineer, performance-optimizer | Before releases |
 | **Quality** | `/team quality` | code-reviewer, test-writer, performance-optimizer | After implementation |
+| **Quality-deep** | `/team quality-deep` | code-smell-reviewer, dry-reviewer, purity-reviewer, complexity-reviewer | Targeted code-quality sweep |
 | **Design** | `/team design` | ui-ux-reviewer, performance-optimizer, refactor-advisor | UI/UX consistency, design system compliance |
 | **Documentation** | `/team documentation` | documentation-writer, api-designer | After API changes |
-| **Full** | `/team full` | All 12 agents | Major milestones |
+| **Full** | `/team full` | All 16 reviewer/implementation agents | Major milestones |
 | **Custom** | `/team custom a b c` | Any combination | Targeted analysis |
 
 ## Agents Available
@@ -85,9 +87,13 @@ Spawn pre-configured teams of specialized agents for parallel analysis:
 | Agent | Purpose | Model |
 |-------|---------|-------|
 | `architect` | System design review, architecture patterns, scalability | opus |
-| `code-reviewer` | Review diffs for bugs, security, performance, design principles, code smells, conventions | opus |
+| `code-reviewer` | Review diffs for bugs, security, performance, design principles, code smells, conventions (broad sweep) | opus |
+| `code-smell-reviewer` | Code smells specialist: long methods, magic numbers, primitive obsession, data clumps, feature envy, dead code (cites `code-smells` rule) | opus |
+| `dry-reviewer` | Duplication specialist: 3+ repeated logic, structural patterns (cites `dry` rule) | opus |
+| `purity-reviewer` | Pure-function specialist: side effects, query/command separation, hidden state, SRP (cites `purity` rule) | opus |
+| `complexity-reviewer` | Complexity specialist: function length, cyclomatic complexity, nesting, parameter count (cites `complexity` rule) | opus |
 | `security-auditor` | OWASP audit, credentials, dependencies, compliance | opus |
-| `refactor-advisor` | Duplication, complexity, extraction opportunities | opus |
+| `refactor-advisor` | Duplication, complexity, extraction opportunities (broader than `dry-reviewer`) | opus |
 | `devops-engineer` | CI/CD, containers, infrastructure, monitoring | opus |
 | `ui-ux-reviewer` | Accessibility, design consistency, responsiveness | opus |
 | `performance-optimizer` | Bundle size, queries, rendering, caching, memory | opus |

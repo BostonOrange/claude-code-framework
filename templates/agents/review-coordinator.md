@@ -26,9 +26,23 @@ Apply this risk tier classifier:
 
 | Tier | Criteria | Agents to spawn |
 |------|----------|-----------------|
-| `trivial` | ≤10 lines changed AND ≤2 files AND no security-relevant paths | code-reviewer only |
-| `lite` | ≤100 lines AND ≤10 files AND no security-relevant paths | code-reviewer + relevant domain reviewer |
-| `full` | >100 lines OR >10 files OR touches security-relevant paths | code-reviewer + security-auditor + ui-ux-reviewer + performance-optimizer (or domain-appropriate set) |
+| `trivial` | ≤10 lines changed AND ≤2 files AND no security-relevant paths | `code-reviewer` only |
+| `lite` | ≤100 lines AND ≤10 files AND no security-relevant paths | `code-reviewer` + `code-smell-reviewer` + `complexity-reviewer` + relevant domain reviewer |
+| `full` | >100 lines OR >10 files OR touches security-relevant paths | `code-reviewer` + `security-auditor` + `code-smell-reviewer` + `dry-reviewer` + `purity-reviewer` + `complexity-reviewer` + (optionally) `ui-ux-reviewer` / `performance-optimizer` / `database-architect` / `api-designer` per the diff content |
+
+**Specialist routing** — within `lite` and `full`, decide based on diff content:
+
+| If diff contains... | Add agent |
+|---------------------|-----------|
+| Touched files in security-relevant paths (see below) | `security-auditor` |
+| Frontend files (`.tsx`, `.jsx`, `.vue`, `.svelte`, `.html`, component dirs) | `ui-ux-reviewer` |
+| API route files matching `{{API_ROUTE_PATTERNS}}` | `api-designer` |
+| DB migration / schema / model files matching `{{DATABASE_PATTERNS}}` | `database-architect` |
+| Performance-sensitive: hot loops, bundle config, query builders, cache code | `performance-optimizer` |
+| New tests or test changes | `test-writer` (read-only review of test quality) |
+| Public API / docs changes | `documentation-writer` |
+
+The four code-quality specialists (`code-smell-reviewer`, `dry-reviewer`, `purity-reviewer`, `complexity-reviewer`) run on every `lite` and `full` review — they're the "different perspectives" pass on the same code. Each is narrow; their findings rarely overlap, but when they do, **dedup is your job in Step 5**.
 
 **Security-relevant paths** (always force `full` tier when changed): files matching `auth`, `session`, `crypto`, `password`, `token`, `secret`, `permission`, `role`, `migration`, `*.env*`, `Dockerfile`, CI workflows, dependency manifests (`package.json`, `requirements.txt`, `go.mod`, etc.).
 
@@ -94,12 +108,26 @@ If absent, this is iteration 1 (initial review). Otherwise this is iteration `N+
 Concatenate all sub-agent JSONL output. Then:
 
 1. **Dedup by `id`** — if two agents report the same `file:line:rule_id`, keep the one with the most specific `description` and the highest severity.
-2. **Cross-iteration matching** — for each finding from this iteration, look up its `id` in the prior iteration's findings:
+2. **Cross-specialist overlap resolution** — specialists sometimes flag the same code from different angles. Resolve by **specificity priority**:
+
+   | Same finding flagged by | Keep |
+   |-------------------------|------|
+   | `code-reviewer` + a specialist on the specialist's domain | The specialist (more specific rule citation) |
+   | `code-smell-reviewer` (Long Method) + `complexity-reviewer` (function length) | `complexity-reviewer` (numeric threshold is more actionable) |
+   | `code-smell-reviewer` (Long Parameter List) + `complexity-reviewer` (param count) | `complexity-reviewer` |
+   | `code-smell-reviewer` (Magic Numbers) + `code-reviewer` (constants) | `code-smell-reviewer` |
+   | `dry-reviewer` (extraction) + `refactor-advisor` (extraction) | `dry-reviewer` (more specific rule) |
+   | `purity-reviewer` (SRP function-level) + `code-reviewer` (SRP) | `purity-reviewer` |
+   | `security-auditor` + `code-reviewer` on the same security finding | `security-auditor` |
+
+   When a specialist's finding wins, drop the broader one. Never keep both.
+
+3. **Cross-iteration matching** — for each finding from this iteration, look up its `id` in the prior iteration's findings:
    - Present in prior, absent now → mark `status: fixed`, surface in "Resolved since last iteration"
    - Present in both, severity unchanged → carry forward; this is unfixed
    - Absent in prior, present now → new finding
    - Listed in `user_decisions[id].status == "wont_fix"` → drop unless severity is `critical`
-3. **False-positive filter** — drop findings that match any of these patterns:
+4. **False-positive filter** — drop findings that match any of these patterns:
    - Severity `critical` but the description contains hedging language ("could potentially", "might allow", "in theory") — those are speculative, downgrade to `suggestion` or drop
    - Findings about generated/vendored code (`node_modules/`, `vendor/`, `dist/`, `build/`, `.min.js`)
    - Findings whose remediation is "consider", "may want to", or any other non-imperative — drop nits without an actionable fix

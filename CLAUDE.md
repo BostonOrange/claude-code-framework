@@ -32,7 +32,7 @@ claude-code-framework/
 │   ├── settings.json            # User-level permissions (~/.claude/)
 │   ├── settings.local.json      # Project-level permissions
 │   ├── mcp.json                 # MCP server config (→ .mcp.json)
-│   ├── agents/                  # 13 AI agent definitions
+│   ├── agents/                  # 17 AI agent definitions
 │   ├── commands/                # 6 quick command definitions
 │   ├── rules/                   # 9 file-pattern guardrails
 │   ├── hooks/                   # 6 lifecycle scripts
@@ -115,7 +115,11 @@ Spawn pre-configured teams for parallel analysis of the framework:
 | Agent | Purpose | Model |
 |-------|---------|-------|
 | `architect` | System design, patterns, scalability | opus |
-| `code-reviewer` | Bugs, security, performance in diffs | opus |
+| `code-reviewer` | Bugs, security, performance in diffs (broad sweep) | opus |
+| `code-smell-reviewer` | Code smells: long methods, magic numbers, primitive obsession, dead code (cites `code-smells` rule) | opus |
+| `dry-reviewer` | Duplication: 3+ repeated logic (cites `dry` rule) | opus |
+| `purity-reviewer` | Pure functions, side effects, query/command separation, SRP (cites `purity` rule) | opus |
+| `complexity-reviewer` | Function length, cyclomatic complexity, nesting, parameter count (cites `complexity` rule) | opus |
 | `security-auditor` | OWASP audit, credentials, dependencies | opus |
 | `refactor-advisor` | Duplication, complexity, extraction | opus |
 | `devops-engineer` | CI/CD, containers, infrastructure | opus |

@@ -13,9 +13,13 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents â
 | Agent | Role | Model | Specialty |
 |-------|------|-------|-----------|
 | `architect` | System Design | opus | Architecture patterns, layer separation, scalability |
-| `code-reviewer` | Code Quality | opus | Bugs, conventions, error handling, design principles, code smells in diffs |
+| `code-reviewer` | Code Quality (broad) | opus | Bugs, conventions, error handling, design principles, code smells in diffs |
+| `code-smell-reviewer` | Code Smells | opus | Long methods, magic numbers, primitive obsession, dead code, data clumps, feature envy (cites `code-smells`) |
+| `dry-reviewer` | Duplication | opus | True duplication at 3+ sites, extraction targets (cites `dry`) |
+| `purity-reviewer` | Purity & SRP | opus | Pure functions, side effects, query/command separation, hidden state, function-level SRP (cites `purity`) |
+| `complexity-reviewer` | Complexity | opus | Function length, cyclomatic complexity, nesting, parameter count (cites `complexity`) |
 | `security-auditor` | Security | opus | OWASP vulnerabilities, credentials, dependencies |
-| `refactor-advisor` | Code Structure | opus | Duplication, complexity, extraction opportunities |
+| `refactor-advisor` | Code Structure (broad) | opus | Cross-cutting refactor opportunities â€” broader than `dry-reviewer` |
 | `devops-engineer` | Operations | opus | CI/CD, containers, infrastructure, monitoring |
 | `ui-ux-reviewer` | Design Quality | opus | Accessibility, consistency, responsive, UX patterns |
 | `performance-optimizer` | Performance | opus | Bundle size, queries, rendering, caching, memory |
@@ -43,6 +47,11 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents â
 **When:** Before merging PRs, after major feature implementation
 **Output:** Combined review with bugs, security issues, and UX findings
 
+### `/team review-deep` â€” Deep Code Review Team
+**Agents:** code-reviewer + security-auditor + code-smell-reviewer + dry-reviewer + purity-reviewer + complexity-reviewer
+**When:** Before merging non-trivial PRs (multiple files, business logic changes)
+**Output:** Broad sweep + 4 narrow code-quality perspectives, each citing its rule. Use `/iterative-review` for full coordinator-driven dedup + state.
+
 ### `/team architecture` â€” Architecture Review Team
 **Agents:** architect + api-designer + database-architect
 **When:** Before starting new features, during design phase, quarterly health checks
@@ -58,6 +67,11 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents â
 **When:** After implementation, before PR creation
 **Output:** Code review + generated tests + performance analysis
 
+### `/team quality-deep` â€” Code-Quality Specialists
+**Agents:** code-smell-reviewer + dry-reviewer + purity-reviewer + complexity-reviewer
+**When:** When you want a focused code-quality sweep with rule citations and no security/UI noise
+**Output:** Four narrow perspectives in parallel â€” each cites its rule (`code-smells`, `dry`, `purity`, `complexity`). Findings are easy to triage because each is single-concern.
+
 ### `/team design` â€” Design Review Team
 **Agents:** ui-ux-reviewer + performance-optimizer + refactor-advisor
 **When:** After UI changes, design system updates, component refactoring
@@ -69,7 +83,7 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents â
 **Output:** Updated docs + API design review
 
 ### `/team full` â€” Full Team Review
-**Agents:** All 12 agents
+**Agents:** All 16 reviewer/implementation agents (excludes meta-agents `framework-improver` and `review-coordinator`)
 **When:** Major milestones, quarterly reviews, new project onboarding
 **Output:** Comprehensive analysis across all dimensions
 

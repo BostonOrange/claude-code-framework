@@ -59,9 +59,9 @@ The setup wizard asks:
 
 Then generates:
 - `.claude/skills/` — 18 workflow skills adapted to your stack (incl. `/team`, `/improve`, `/iterative-review`)
-- `.claude/agents/` — 13 AI agents covering full team roles (all opus)
+- `.claude/agents/` — 17 AI agents covering full team roles + 4 code-quality specialists (all opus)
 - `.claude/commands/` — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)
-- `.claude/rules/` — 9 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components)
+- `.claude/rules/` — 13 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components, code-smells, dry, purity, complexity)
 - `.claude/hooks/` — 6 lifecycle hooks (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit)
 - `.claude/settings.local.json` — project permissions, hooks
 - `.mcp.json` — MCP servers (Context7 documentation)
@@ -149,12 +149,16 @@ mkdir -p .claude/skills/my-domain/references/
 | `/mock-endpoint` | Mock external API integrations |
 | `/scaffold-design-system` | Scaffold design system tokens, components, and theme config |
 
-### AI Agents (13 specialized teammates)
+### AI Agents (17 specialized teammates)
 
 | Agent | Model | Purpose |
 |-------|-------|---------|
 | `architect` | opus | System design review, architecture patterns, scalability assessment |
 | `code-reviewer` | opus | Reviews diff for bugs, security, performance, design principles, code smells, conventions. Read-only |
+| `code-smell-reviewer` | opus | Code smells specialist: long methods, magic numbers, primitive obsession, dead code. Cites `code-smells` rule. Read-only |
+| `dry-reviewer` | opus | Duplication specialist: 3+ repeated logic, structural patterns. Cites `dry` rule. Read-only |
+| `purity-reviewer` | opus | Pure-function specialist: side effects, query/command separation, SRP, hidden state. Cites `purity` rule. Read-only |
+| `complexity-reviewer` | opus | Complexity specialist: function length, cyclomatic complexity, nesting, parameter count. Cites `complexity` rule. Read-only |
 | `security-auditor` | opus | OWASP audit: credentials, dependencies, auth, compliance |
 | `refactor-advisor` | opus | Duplication, complexity, extraction opportunities. Read-only |
 | `devops-engineer` | opus | CI/CD, containers, infrastructure, deployment readiness |
@@ -177,7 +181,9 @@ mkdir -p .claude/skills/my-domain/references/
 | Quality | `/team quality` | code-reviewer + test-writer + performance-optimizer |
 | Documentation | `/team documentation` | documentation-writer + api-designer |
 | Design | `/team design` | ui-ux-reviewer + performance-optimizer + refactor-advisor |
-| Full | `/team full` | All 12 reviewer/implementation agents (excludes `review-coordinator` and `framework-improver` — those are meta-agents invoked by skills, not team members) |
+| Review-deep | `/team review-deep` | code-reviewer + security-auditor + 4 code-quality specialists (smell, dry, purity, complexity) |
+| Quality-deep | `/team quality-deep` | The 4 code-quality specialists in parallel (code-smell-reviewer + dry-reviewer + purity-reviewer + complexity-reviewer) |
+| Full | `/team full` | All 16 reviewer/implementation agents (excludes meta-agents `review-coordinator` and `framework-improver`) |
 | Custom | `/team custom a b` | Any combination |
 
 ### Commands (one-word automations)
@@ -206,6 +212,10 @@ File-pattern-scoped rules that Claude follows automatically when editing matchin
 | `auth-security` | Source files | Fail-closed auth, CSRF, RBAC enforcement, session security, redirects |
 | `data-protection` | Source files | No PII in git, no credentials on disk, log redaction, third-party data |
 | `design-system` | UI components | Semantic tokens, spacing scale, consistent typography, theme compliance |
+| `code-smells` | Source files | Long methods, magic numbers, primitive obsession, data clumps, feature envy, dead code (cited by `code-smell-reviewer`) |
+| `dry` | Source files | True duplication threshold (3+ sites), what to extract / what NOT to extract (cited by `dry-reviewer`) |
+| `purity` | Source files | Pure-function discipline, query/command separation, hidden state, input mutation, SRP (cited by `purity-reviewer`) |
+| `complexity` | Source files | Function length, cyclomatic complexity, nesting, parameter count thresholds (cited by `complexity-reviewer`) |
 
 ### Hooks (lifecycle quality gates)
 
@@ -393,9 +403,13 @@ claude-code-framework/
 │   ├── settings.json            # User-level AI factory permissions
 │   ├── settings.local.json      # Project-level permissions & model config
 │   ├── mcp.json                 # MCP server config (copied to .mcp.json)
-│   ├── agents/                  # 13 AI agent definitions
+│   ├── agents/                  # 17 AI agent definitions
 │   │   ├── architect.md         # System design, patterns, scalability
-│   │   ├── code-reviewer.md     # Bugs, security, performance in diffs
+│   │   ├── code-reviewer.md     # Bugs, security, performance in diffs (broad sweep)
+│   │   ├── code-smell-reviewer.md   # Smells specialist — cites `code-smells` rule
+│   │   ├── dry-reviewer.md          # Duplication specialist — cites `dry` rule
+│   │   ├── purity-reviewer.md       # Pure-function specialist — cites `purity` rule
+│   │   ├── complexity-reviewer.md   # Complexity specialist — cites `complexity` rule
 │   │   ├── security-auditor.md  # OWASP audit, credentials, deps
 │   │   ├── refactor-advisor.md  # Duplication, complexity, structure
 │   │   ├── devops-engineer.md   # CI/CD, containers, infrastructure
@@ -423,7 +437,11 @@ claude-code-framework/
 │   │   ├── error-handling.md
 │   │   ├── auth-security.md
 │   │   ├── data-protection.md
-│   │   └── design-system.md
+│   │   ├── design-system.md
+│   │   ├── code-smells.md           # Cited by `code-smell-reviewer`
+│   │   ├── dry.md                   # Cited by `dry-reviewer`
+│   │   ├── purity.md                # Cited by `purity-reviewer`
+│   │   └── complexity.md            # Cited by `complexity-reviewer`
 │   ├── hooks/                   # Lifecycle scripts
 │   │   ├── guardrails.sh        # PreToolUse: block dangerous ops
 │   │   ├── post-edit-sync.sh    # PostToolUse: flag docs needing sync
