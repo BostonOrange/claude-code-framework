@@ -45,22 +45,106 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 - Literal HTTP status in dedicated status-handling code where the meaning is contextual
 - Test data values
 
-## Primitive Obsession
+## Primitive Obsession (a.k.a. Strong Typing as Design)
 
-**Detect:** Raw `string`/`number` parameters or fields where a named type or wrapper would clarify intent — especially for IDs, units, currencies, emails, dates-as-strings.
+The smell is reactive: raw `string`/`number` parameters or fields where a named type would clarify intent. The positive framing — **encode invariants in types** — is the same idea pointed at the design.
 
-**Fix:** Introduce a branded type, value object, or struct.
+**The principle:** make invalid states unrepresentable. If a type can only be constructed when valid, the rest of the codebase doesn't have to re-validate or guess.
 
-**Examples:**
+**Detect:**
+- Raw `string` for IDs, emails, URLs, file paths, currencies, country codes, status codes
+- Raw `number` for currencies (cents vs dollars), units (km vs mi), counts (positive only), percentages (0-1 vs 0-100)
+- Raw `boolean` for tri-state values (`true` / `false` / `not-set`)
+- Validation logic scattered across the codebase that all checks the same property (`if (!isValidEmail(s))` repeated)
+- Functions whose comments document what the parameters mean instead of types ("expects a non-empty array", "must be > 0")
+- Mutually-exclusive boolean flags that should be a discriminated union (cited by `solid` rule's OCP — defer)
+
+**Fix — pick the right tool for the language:**
+
+### Branded / nominal types (TypeScript, F#, Haskell)
+Cheap, no runtime cost. Construction must go through a checked entry point.
+
 ```ts
 // Bad
 function transfer(fromId: string, toId: string, amount: number): void
 
-// Good
+// Good — branded types prevent passing the wrong string
 type AccountId = string & { __brand: "AccountId" };
 type Cents = number & { __brand: "Cents" };
 function transfer(fromId: AccountId, toId: AccountId, amount: Cents): void
 ```
+
+### Smart constructors / parse-don't-validate
+
+Define a type whose only constructor checks the invariant. Once you have the value, downstream code trusts it.
+
+```ts
+// Bad — every caller validates again
+function send(emailStr: string) {
+  if (!isValidEmail(emailStr)) throw new Error("invalid");
+  // ...
+}
+
+// Good — Email type is unforgeable; parse at the boundary, trust thereafter
+class Email {
+  private constructor(public readonly value: string) {}
+  static parse(s: string): Email | null {
+    return /^[^@]+@[^@]+$/.test(s) ? new Email(s) : null;
+  }
+}
+function send(email: Email) { /* email is valid by construction */ }
+```
+
+The pattern: **parse at the boundary** (controllers, deserializers, user input) **into a strict type; pass that strict type through the rest of the system**. This eliminates "does this string have format X?" checks scattered through the codebase.
+
+### Refined / constrained types
+
+For numeric and collection invariants:
+
+| Use | Instead of |
+|-----|------------|
+| `NonEmptyList<T>` | `T[]` with runtime "must be non-empty" check |
+| `PositiveInt` | `number` with `assert n > 0` everywhere |
+| `Percentage` (0..1 OR 0..100, pick one) | `number` |
+| `Cents` | `number` (avoids float currency bugs) |
+| `Duration` (ms) | `number` (no unit ambiguity) |
+| `Url` | `string` |
+| `Iso8601Date` | `string` |
+
+Languages without first-class refinement types (most): use a class / record with a private constructor + smart factory; or branded types where a parse function gates construction.
+
+### Value objects
+
+For domain concepts with structural identity (two `Money` values are equal iff their amount and currency match), use a value object — class with read-only fields, structural `equals`, no hidden state.
+
+```python
+@dataclass(frozen=True)
+class Money:
+    amount: int  # cents
+    currency: str
+    def __post_init__(self):
+        if self.currency not in {"USD", "EUR", "GBP"}: raise ValueError(...)
+```
+
+### Discriminated unions for closed sets
+
+For status / kind / state, use a discriminated union (cited by `solid` rule OCP) — the type system enforces exhaustive handling:
+
+```ts
+type OrderState =
+  | { kind: "draft" }
+  | { kind: "submitted"; submittedAt: Date }
+  | { kind: "shipped"; trackingNumber: string }
+  | { kind: "delivered"; deliveredAt: Date };
+```
+
+This is preferred over raw string status fields with documentation listing the valid values.
+
+**Detect (cross-language patterns):**
+- Functions with `assert(x > 0)` / `assert(arr.length > 0)` at the top → push the invariant into the type
+- Date strings passed around with comments like "ISO 8601 expected" → introduce a `Iso8601Date` type with a parse function
+- `0` used as a sentinel "no value" → use `Option<T>` / `T | null` / `Optional[T]` and let the type system enforce checking
+- Optional fields modeled as `T | null` AND a sibling boolean flag → eliminate the redundancy with one or the other
 
 **Don't flag:**
 - Genuinely unconstrained strings (free-form labels, descriptions)

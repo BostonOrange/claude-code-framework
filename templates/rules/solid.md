@@ -19,16 +19,64 @@ A module should be **open for extension, closed for modification**. New behavior
 - Switch on enum / type / kind that's repeated across multiple files — same shape, scattered
 - "If/else ladder anti-pattern" where each branch encodes type-specific behavior
 - Modules that gain new conditional branches every release
+- Non-exhaustive conditional dispatch (default branch silently handles unknown types) — adding a new type doesn't fail; it falls through silently
 
-**Fix:**
-- Introduce polymorphism / strategy: each type owns its behavior; the dispatcher just calls
-- Or: a registry / table lookup keyed by type, with handlers as values
-- Discriminated unions + exhaustive matching (TypeScript, Rust, Scala) — the compiler tells you when a new variant needs handling
+**Fix — preferred order:**
+
+1. **Discriminated unions + exhaustive matching** (TS, Rust, Kotlin sealed classes, Scala sealed traits, Python `match`, Swift enum, F# DU). The type system makes "I forgot to handle a variant" a compile error.
+
+```ts
+// Bad — type-keyed conditional chain. Adding a new type silently breaks.
+function area(shape: Shape): number {
+  if (shape.kind === "circle") return Math.PI * shape.radius ** 2;
+  if (shape.kind === "rectangle") return shape.w * shape.h;
+  return 0;  // unknown shape silently returns 0
+}
+
+// Good — discriminated union + exhaustive match.
+type Shape =
+  | { kind: "circle"; radius: number }
+  | { kind: "rectangle"; w: number; h: number }
+  | { kind: "triangle"; base: number; height: number };
+
+function area(shape: Shape): number {
+  switch (shape.kind) {
+    case "circle":    return Math.PI * shape.radius ** 2;
+    case "rectangle": return shape.w * shape.h;
+    case "triangle":  return 0.5 * shape.base * shape.height;
+    // No default — TS errors if we miss a variant.
+  }
+}
+```
+
+The compiler is the OCP enforcement: when someone adds `{ kind: "ellipse" }` to `Shape`, every `switch (shape.kind)` in the codebase fails to compile until handled.
+
+2. **Polymorphism / strategy** — each type owns its behavior; the dispatcher just calls. Use when behavior is large and the type set has stable instances (one method per behavior, not one match per behavior).
+
+3. **Registry / table lookup** — `const handlers = { circle: areaOfCircle, rectangle: areaOfRectangle, ... }`. Use when handlers are uniform-shaped functions and you want runtime composition.
 
 **Don't flag:**
 - A single switch over a closed enum — closed means it doesn't grow; the switch is a feature
 - Two-branch conditionals on a binary (boolean) — polymorphism would be over-engineered
 - Conditional logic on data values, not types (`if amount > 1000` is not OCP-relevant)
+- Languages without discriminated unions where exhaustive checking isn't possible — flag the type-keyed dispatch but accept that the fix is polymorphism or registry, not ADT
+
+## Pattern Matching as a Positive Pattern
+
+Pattern matching with exhaustiveness checking is the strongest form of OCP enforcement available in the language. When the language supports it, prefer it over manual `if`/`switch` chains:
+
+| Language | Exhaustive matching mechanism |
+|----------|------------------------------|
+| TypeScript | Discriminated unions + `switch` (with `exhaustiveCheck` helper or compiler `--noFallthroughCasesInSwitch`) or `ts-pattern` library |
+| Rust | `enum` + `match` (exhaustive by default) |
+| Kotlin | `sealed class` + `when` expression (exhaustive when used as expression) |
+| Scala | `sealed trait` + `match` |
+| Swift | `enum` + `switch` (exhaustive by default) |
+| F# / OCaml | Discriminated unions + `match` (exhaustive by default) |
+| Python (3.10+) | `match`/`case` (not exhaustive by default; pair with `assert_never` from `typing`) |
+| Java (17+) | sealed interfaces + pattern `switch` |
+
+The benefit isn't matching itself — it's the compiler telling you everywhere a new variant needs handling. This **converts an OCP violation from runtime risk into compile-time error**.
 
 ## LSP — Liskov Substitution Principle
 
