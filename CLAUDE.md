@@ -32,12 +32,12 @@ claude-code-framework/
 │   ├── settings.json            # User-level permissions (~/.claude/)
 │   ├── settings.local.json      # Project-level permissions
 │   ├── mcp.json                 # MCP server config (→ .mcp.json)
-│   ├── agents/                  # 17 AI agent definitions
+│   ├── agents/                  # 30 AI agent definitions
 │   ├── commands/                # 6 quick command definitions
 │   ├── rules/                   # 9 file-pattern guardrails
 │   ├── hooks/                   # 6 lifecycle scripts
 │   └── statusline/              # Status bar config
-├── skills/                      # 18 workflow skills + 1 template
+├── skills/                      # 20 workflow skills + 1 template
 ├── workflows/                   # 4 GitHub Actions CI/CD templates
 ├── memory/                      # Memory system templates
 └── docs/                        # Framework documentation
@@ -129,8 +129,21 @@ Spawn pre-configured teams for parallel analysis of the framework:
 | `database-architect` | Schema, indexes, migrations | opus |
 | `test-writer` | Test generation following conventions | opus |
 | `documentation-writer` | API docs, READMEs, guides | opus |
+| `frontend-architecture-reviewer` | FE structure: composition, state, hooks, data flow, render-perf (cites `frontend-architecture` rule) | opus |
+| `architecture-reviewer` | Layering: dependency direction, cross-module reach, circular deps, god modules (cites `architecture-layering` rule) | opus |
+| `api-layering-reviewer` | API structure: controller/service/repo separation, validation placement, error contract (cites `api-layering` rule) | opus |
+| `requirements-clarifier` | Planning specialist: ambiguity hunt, open questions, missing AC | opus |
+| `scope-decomposer` | Planning specialist: atomic steps, sequencing, parallelism groups | opus |
+| `risk-assessor` | Planning specialist: rollback paths, blast radius, migration risk + mitigations | opus |
+| `test-strategy-planner` | Planning specialist: test levels per planned step | opus |
+| `scaffold-implementer` | Build phase 1: skeleton (file structure, types, signatures, stubs) | opus |
+| `happy-path-implementer` | Build phase 2: core successful flow (defers errors and edges) | opus |
+| `edge-case-implementer` | Build phase 3: validation, errors, edge data (binds error-handling, auth-security, data-protection) | opus |
+| `refactor-pass-implementer` | Build phase 6 (final): actively applies code-smells/dry/purity/complexity rules | opus |
 | `framework-improver` | Self-improvement of .claude/ config | opus |
 | `review-coordinator` | Synthesizes parallel reviewer output (dedupe, filter, risk-tier classify, cross-iteration state) | opus |
+| `planner-coordinator` | Orchestrates planning specialists, classifies scope, synthesizes one plan | opus |
+| `build-coordinator` | Orchestrates build phases sequentially (scaffold → happy-path → edge-case → tests → docs → refactor) | opus |
 
 > `framework-qa` is available in this repo's own `.claude/agents/` but is not a distributable template agent.
 

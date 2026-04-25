@@ -153,6 +153,9 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `dry-reviewer` | Read, Glob, Grep, Bash | opus | Duplication specialist — 3+ repeated logic, structural patterns (cites `dry`) |
 | `purity-reviewer` | Read, Glob, Grep, Bash | opus | Pure-function specialist — side effects, query/command separation, hidden state, SRP (cites `purity`) |
 | `complexity-reviewer` | Read, Glob, Grep, Bash | opus | Complexity specialist — function length, cyclomatic complexity, nesting, params (cites `complexity`) |
+| `frontend-architecture-reviewer` | Read, Glob, Grep, Bash | opus | FE structure — composition, state, hooks, data flow, render-perf (cites `frontend-architecture`) |
+| `architecture-reviewer` | Read, Glob, Grep, Bash | opus | Layering — dependency direction, cross-module reach, circular deps, god modules (cites `architecture-layering`) |
+| `api-layering-reviewer` | Read, Glob, Grep, Bash | opus | API structure — controller/service/repo separation, validation placement, error contract (cites `api-layering`) |
 | `security-auditor` | Read, Glob, Grep, Bash | opus | OWASP-categorized security audit |
 | `refactor-advisor` | Read, Glob, Grep, Bash | opus | Cross-cutting refactor opportunities (broader than `dry-reviewer`) |
 | `devops-engineer` | Read, Glob, Grep, Bash | opus | CI/CD, containers, infrastructure |
@@ -161,19 +164,34 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `api-designer` | Read, Glob, Grep, Bash | opus | Endpoint design, schemas, versioning |
 | `database-architect` | Read, Glob, Grep, Bash | opus | Schema, indexes, migrations, queries |
 
+**Planning Agents (read-only — used by `/plan`)**
+
+| Agent | Tools | Model | Purpose |
+|-------|-------|-------|---------|
+| `requirements-clarifier` | Read, Glob, Grep, Bash | opus | Hunts ambiguity in story before planning starts |
+| `scope-decomposer` | Read, Glob, Grep, Bash | opus | Breaks story into atomic, sequenced steps with parallelism groups |
+| `risk-assessor` | Read, Glob, Grep, Bash | opus | Identifies rollback paths, blast radius, breaking-change & migration risk |
+| `test-strategy-planner` | Read, Glob, Grep, Bash | opus | Decides test levels per planned step |
+
 **Implementation Agents (read/write)**
 
 | Agent | Tools | Model | Purpose |
 |-------|-------|-------|---------|
-| `test-writer` | Read, Glob, Grep, Edit, Write, Bash | opus | Generates tests for changed code |
-| `documentation-writer` | Read, Glob, Grep, Edit, Write, Bash | opus | API docs, READMEs, architecture docs |
+| `scaffold-implementer` | Read, Glob, Grep, Edit, Write, Bash | opus | Build phase 1 — file structure, types, signatures, stubs (no logic) |
+| `happy-path-implementer` | Read, Glob, Grep, Edit, Write, Bash | opus | Build phase 2 — core successful flow logic |
+| `edge-case-implementer` | Read, Glob, Grep, Edit, Write, Bash | opus | Build phase 3 — validation, errors, edge data |
+| `refactor-pass-implementer` | Read, Glob, Grep, Edit, Write, Bash | opus | Build phase 6 (final) — apply code-quality rules actively |
+| `test-writer` | Read, Glob, Grep, Edit, Write, Bash | opus | Generates tests for changed code (build phase 4) |
+| `documentation-writer` | Read, Glob, Grep, Edit, Write, Bash | opus | API docs, READMEs, architecture docs (build phase 5) |
 
-**Meta Agents (modify framework or orchestrate other agents)**
+**Meta Agents (orchestrate other agents)**
 
 | Agent | Tools | Model | Purpose |
 |-------|-------|-------|---------|
 | `framework-improver` | Read, Glob, Grep, Edit, Write, Bash | opus | Updates CLAUDE.md, rules, settings, agents |
-| `review-coordinator` | Read, Glob, Grep, Bash, Agent | opus | Synthesizes parallel reviewer output — dedupes, filters, classifies risk tier, persists state across iterations |
+| `planner-coordinator` | Read, Glob, Grep, Bash, Agent | opus | Orchestrates planning specialists (invoked by `/plan`) |
+| `build-coordinator` | Read, Glob, Grep, Bash, Agent | opus | Orchestrates build phases sequentially (invoked by `/build`) |
+| `review-coordinator` | Read, Glob, Grep, Bash, Agent | opus | Synthesizes parallel reviewer output (invoked by `/iterative-review`) |
 
 ### Commands (6)
 
@@ -186,7 +204,7 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `/changelog` | Generate changelog from commits |
 | `/dep-check` | Check for outdated dependencies |
 
-### Rules (13)
+### Rules (16)
 
 | Rule | Patterns | Key Standards |
 |------|----------|---------------|
@@ -203,6 +221,9 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `dry` | Source files | True duplication threshold (3+ sites), what to extract / what NOT (cited by `dry-reviewer`) |
 | `purity` | Source files | Pure-function discipline, query/command separation, hidden state, input mutation, SRP (cited by `purity-reviewer`) |
 | `complexity` | Source files | Function length, cyclomatic complexity, nesting, parameter count thresholds (cited by `complexity-reviewer`) |
+| `frontend-architecture` | UI components | Component composition, state, hook discipline, data flow, render-perf architecture (cited by `frontend-architecture-reviewer`) |
+| `architecture-layering` | Source files | Layer dependency direction, cross-module reach, circular deps, god modules (cited by `architecture-reviewer`) |
+| `api-layering` | API handlers | Controller/service/repo separation, validation placement, error contract, idempotency (cited by `api-layering-reviewer`) |
 
 ### Hooks (6)
 

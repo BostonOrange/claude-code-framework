@@ -2,8 +2,9 @@
   "_description": "Canonical agent registry. The 'description' field mirrors the full frontmatter description in templates/agents/{name}.md and is the source of truth. Short 'blurb' is what appears in README/CLAUDE.md tables. Update both places together, then run tests/check-agent-registry.sh.",
   "categories": {
     "analysis": "Read-only review agents — produce structured reports, do not modify code",
-    "implementation": "Can modify files (tests, documentation)",
-    "meta": "Operates on the framework itself"
+    "planning": "Read-only planning specialists — analyze a story and produce structured plan inputs (questions, work breakdown, risks, test strategy)",
+    "implementation": "Can modify files (build phases, tests, documentation, refactor pass)",
+    "meta": "Operates on the framework itself OR orchestrates other agents (coordinators)"
   },
   "agents": [
     {
@@ -47,6 +48,27 @@
       "model": "opus",
       "blurb": "Function length, cyclomatic complexity, nesting, parameters (cites `complexity` rule)",
       "description": "Reviews changed code for excessive function length, cyclomatic complexity, nesting depth, parameter count, and branch density. Cites the `complexity` rule"
+    },
+    {
+      "name": "frontend-architecture-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Component composition, state management, hook discipline, data flow, render-perf architecture (cites `frontend-architecture` rule)",
+      "description": "Reviews changed frontend code for component composition, state management, hook discipline, data flow, render performance, module boundaries, and SSR/hydration concerns. Cites the `frontend-architecture` rule. Distinct from ui-ux-reviewer (visual/a11y/design system)"
+    },
+    {
+      "name": "architecture-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Layer dependency direction, cross-module reach, circular deps, god modules, public-API leaks (cites `architecture-layering` rule)",
+      "description": "Reviews changed code for layer-dependency violations, cross-module reach, circular dependencies, god modules, public-API leaks, and structural patterns. Cites the `architecture-layering` rule. Distinct from `architect` (which plans) — this agent reviews code against architectural rules"
+    },
+    {
+      "name": "api-layering-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Controller/service/repository separation, validation placement, error contract, idempotency (cites `api-layering` rule)",
+      "description": "Reviews API code for controller/service/repository separation, validation layer placement, error contract consistency, idempotency, and versioning discipline. Cites the `api-layering` rule. Distinct from `api-designer` (designs API surface) and `api-routes` rule (per-route concerns)"
     },
     {
       "name": "security-auditor",
@@ -112,6 +134,62 @@
       "description": "Generates and updates project documentation — API docs, architecture overviews, setup guides, and inline documentation"
     },
     {
+      "name": "requirements-clarifier",
+      "category": "planning",
+      "model": "opus",
+      "blurb": "Hunts ambiguity in story before planning — surfaces open questions, undefined terms, missing AC, conflicting requirements",
+      "description": "Hunts ambiguity in a story or task description before planning starts. Surfaces open questions, undefined terms, missing acceptance criteria, conflicting requirements, and assumed-but-unstated constraints"
+    },
+    {
+      "name": "scope-decomposer",
+      "category": "planning",
+      "model": "opus",
+      "blurb": "Breaks a story into atomic, sequenced steps with parallelism groups and dependencies",
+      "description": "Breaks a story or task into atomic, independently-testable steps with explicit sequencing and dependencies. Identifies what can run in parallel and what must happen in order"
+    },
+    {
+      "name": "risk-assessor",
+      "category": "planning",
+      "model": "opus",
+      "blurb": "Identifies rollback paths, blast radius, breaking-change and migration risk; proposes mitigations",
+      "description": "Identifies rollback paths, blast radius, breaking-change risk, data-migration danger, and operational risk for a planned change. Output feeds into the plan so risky steps get extra scrutiny"
+    },
+    {
+      "name": "test-strategy-planner",
+      "category": "planning",
+      "model": "opus",
+      "blurb": "Decides what tests at what level (unit / integration / e2e / contract / property) per planned step",
+      "description": "Decides what tests at what level (unit / integration / e2e / contract / property) for a planned change. Output feeds into the plan so the build phase generates the right tests"
+    },
+    {
+      "name": "scaffold-implementer",
+      "category": "implementation",
+      "model": "opus",
+      "blurb": "Build phase 1 — file structure, types, signatures, stubs (no logic)",
+      "description": "Build phase 1 specialist — creates the file structure, types/interfaces, function signatures, and empty stubs for a planned change. Does not implement logic; produces the skeleton the next phases fill in. Constrained by all relevant `.claude/rules/`"
+    },
+    {
+      "name": "happy-path-implementer",
+      "category": "implementation",
+      "model": "opus",
+      "blurb": "Build phase 2 — core successful flow logic (defers errors and edges)",
+      "description": "Build phase 2 specialist — fills in the core successful flow for stubs created by scaffold-implementer. Implements the \"everything works\" version. Defers error handling, edge cases, and validation to the edge-case-implementer phase. Constrained by all relevant `.claude/rules/`"
+    },
+    {
+      "name": "edge-case-implementer",
+      "category": "implementation",
+      "model": "opus",
+      "blurb": "Build phase 3 — input validation, error handling, edge data, defensive code",
+      "description": "Build phase 3 specialist — adds input validation, error handling, edge-case handling, and defensive code to the happy-path implementation. Tightly bound to the `error-handling`, `auth-security`, and `data-protection` rules. Constrained by all relevant `.claude/rules/`"
+    },
+    {
+      "name": "refactor-pass-implementer",
+      "category": "implementation",
+      "model": "opus",
+      "blurb": "Build phase 6 (final) — actively applies code-smells/dry/purity/complexity rules; preempts review findings",
+      "description": "Build phase 5 specialist (final pass before review) — actively applies code-quality rules to the just-implemented code: simplifies, extracts, dedupes, reduces complexity. Tightly bound to `code-smells`, `dry`, `purity`, `complexity` rules. Goal is that the review-coordinator finds little to flag"
+    },
+    {
       "name": "framework-improver",
       "category": "meta",
       "model": "opus",
@@ -124,6 +202,20 @@
       "model": "opus",
       "blurb": "Synthesizes parallel reviewer output — dedupes, filters, persists state across iterations",
       "description": "Synthesizes findings from parallel reviewer agents into one consolidated report — dedupes, filters false positives, applies cross-iteration state, classifies the diff into a risk tier, and decides which sub-agents to spawn"
+    },
+    {
+      "name": "planner-coordinator",
+      "category": "meta",
+      "model": "opus",
+      "blurb": "Orchestrates planning specialists — classifies scope, spawns parallel waves, synthesizes one plan",
+      "description": "Orchestrates planning specialists (requirements-clarifier, scope-decomposer, risk-assessor, test-strategy-planner, plus architect/api-designer/database-architect when relevant) and synthesizes their outputs into a single implementation plan"
+    },
+    {
+      "name": "build-coordinator",
+      "category": "meta",
+      "model": "opus",
+      "blurb": "Orchestrates build phases sequentially — scaffold → happy-path → edge-case → tests → docs → refactor",
+      "description": "Orchestrates build phases sequentially — scaffold → happy-path → edge-case → tests → docs → refactor — using the plan from planner-coordinator. Each phase is one specialist; the coordinator manages sequencing, state, and resumption"
     }
   ]
 }

@@ -54,6 +54,8 @@
 | `/deploy` | Orchestrate deployments |
 | `/merge-resolve` | AI-powered merge conflict resolution |
 | `/team` | Spawn agent teams for parallel analysis |
+| `/plan` | Multi-agent planning — planner-coordinator + planning specialists; produces `.claude/state/plan-<branch>.md` |
+| `/build` | Multi-agent implementation — build-coordinator + build specialists; executes the plan in sequenced phases |
 | `/iterative-review` | Plan → code → review → re-code loop with persistent state across iterations |
 | `/improve` | Self-improvement — update CLAUDE.md, rules, settings from project state |
 | `/ai-update` | Branch + PR for AI process changes |
@@ -92,6 +94,9 @@ Spawn pre-configured teams of specialized agents for parallel analysis:
 | `dry-reviewer` | Duplication specialist: 3+ repeated logic, structural patterns (cites `dry` rule) | opus |
 | `purity-reviewer` | Pure-function specialist: side effects, query/command separation, hidden state, SRP (cites `purity` rule) | opus |
 | `complexity-reviewer` | Complexity specialist: function length, cyclomatic complexity, nesting, parameter count (cites `complexity` rule) | opus |
+| `frontend-architecture-reviewer` | Frontend structure: composition, state, hooks, data flow, render-perf architecture (cites `frontend-architecture` rule) | opus |
+| `architecture-reviewer` | Layering: dependency direction, cross-module reach, circular deps, god modules (cites `architecture-layering` rule) | opus |
+| `api-layering-reviewer` | API structure: controller/service/repo separation, validation placement, error contract (cites `api-layering` rule) | opus |
 | `security-auditor` | OWASP audit, credentials, dependencies, compliance | opus |
 | `refactor-advisor` | Duplication, complexity, extraction opportunities (broader than `dry-reviewer`) | opus |
 | `devops-engineer` | CI/CD, containers, infrastructure, monitoring | opus |
@@ -100,18 +105,33 @@ Spawn pre-configured teams of specialized agents for parallel analysis:
 | `api-designer` | Endpoint design, schemas, versioning, DX | opus |
 | `database-architect` | Schema, normalization, indexes, migration safety | opus |
 
+### Planning Agents (read-only — used by `/plan`)
+
+| Agent | Purpose | Model |
+|-------|---------|-------|
+| `requirements-clarifier` | Hunts ambiguity in story before planning starts (open questions, undefined terms, missing AC) | opus |
+| `scope-decomposer` | Breaks story into atomic, sequenced steps with parallelism groups and dependencies | opus |
+| `risk-assessor` | Identifies rollback paths, blast radius, breaking-change and migration risk; proposes mitigations | opus |
+| `test-strategy-planner` | Decides what tests at what level (unit/integration/e2e/contract) per planned step | opus |
+
 ### Implementation Agents (can modify code)
 
 | Agent | Purpose | Model |
 |-------|---------|-------|
+| `scaffold-implementer` | Build phase 1: file structure, types, signatures, stubs — no logic | opus |
+| `happy-path-implementer` | Build phase 2: core successful flow logic | opus |
+| `edge-case-implementer` | Build phase 3: input validation, error handling, edge data (binds `error-handling`, `auth-security`, `data-protection`) | opus |
+| `refactor-pass-implementer` | Build phase 6 (final): actively applies `code-smells`/`dry`/`purity`/`complexity` rules; preempts review findings | opus |
 | `test-writer` | Generate tests following project conventions and factories | opus |
 | `documentation-writer` | API docs, READMEs, architecture docs, setup guides | opus |
 
-### Meta Agents (modify framework or orchestrate other agents)
+### Meta Agents (orchestrate other agents)
 
 | Agent | Purpose | Model |
 |-------|---------|-------|
 | `framework-improver` | Self-improvement — update CLAUDE.md, rules, settings, agents | opus |
+| `planner-coordinator` | Orchestrates planning specialists; classifies scope; synthesizes one plan (invoked by `/plan`) | opus |
+| `build-coordinator` | Orchestrates build phases sequentially: scaffold → happy-path → edge-case → tests → docs → refactor (invoked by `/build`) | opus |
 | `review-coordinator` | Synthesizes parallel reviewer output — dedupes, filters, classifies risk tier, persists state across iterations (invoked by `/iterative-review`) | opus |
 
 ## Work Item Tracker

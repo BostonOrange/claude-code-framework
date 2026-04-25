@@ -18,6 +18,9 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents â
 | `dry-reviewer` | Duplication | opus | True duplication at 3+ sites, extraction targets (cites `dry`) |
 | `purity-reviewer` | Purity & SRP | opus | Pure functions, side effects, query/command separation, hidden state, function-level SRP (cites `purity`) |
 | `complexity-reviewer` | Complexity | opus | Function length, cyclomatic complexity, nesting, parameter count (cites `complexity`) |
+| `frontend-architecture-reviewer` | FE Structure | opus | Composition, state, hooks, data flow, render-perf architecture (cites `frontend-architecture`) |
+| `architecture-reviewer` | Layering | opus | Dependency direction, cross-module reach, circular deps, god modules (cites `architecture-layering`) |
+| `api-layering-reviewer` | API Layering | opus | Controller/service/repo separation, validation placement, error contract (cites `api-layering`) |
 | `security-auditor` | Security | opus | OWASP vulnerabilities, credentials, dependencies |
 | `refactor-advisor` | Code Structure (broad) | opus | Cross-cutting refactor opportunities â€” broader than `dry-reviewer` |
 | `devops-engineer` | Operations | opus | CI/CD, containers, infrastructure, monitoring |
@@ -26,18 +29,33 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents â
 | `api-designer` | API Quality | opus | REST conventions, schemas, versioning, DX |
 | `database-architect` | Data Design | opus | Schema, normalization, indexes, migration safety |
 
+### Planning Agents (read-only â€” used by `/plan`)
+
+| Agent | Role | Model | Specialty |
+|-------|------|-------|-----------|
+| `requirements-clarifier` | Ambiguity Hunt | opus | Open questions, undefined terms, missing AC, conflicting requirements |
+| `scope-decomposer` | Work Breakdown | opus | Atomic steps, sequencing, parallelism groups, dependencies |
+| `risk-assessor` | Risk Surfacing | opus | Rollback paths, blast radius, breaking-change & migration risk; mitigations |
+| `test-strategy-planner` | Test Strategy | opus | Test levels per planned step (unit/integration/e2e/contract/property) |
+
 ### Implementation Agents (can modify code)
 
 | Agent | Role | Model | Specialty |
 |-------|------|-------|-----------|
-| `test-writer` | Test Generation | opus | Unit/integration tests following project patterns |
-| `documentation-writer` | Documentation | opus | API docs, READMEs, architecture docs, guides |
+| `scaffold-implementer` | Build Phase 1 | opus | File structure, types, signatures, stubs (no logic) |
+| `happy-path-implementer` | Build Phase 2 | opus | Core successful flow logic; defers errors and edges |
+| `edge-case-implementer` | Build Phase 3 | opus | Validation, error handling, edge data; binds error-handling/auth-security/data-protection |
+| `refactor-pass-implementer` | Build Phase 6 (final) | opus | Actively applies code-smells/dry/purity/complexity rules; preempts review findings |
+| `test-writer` | Test Generation | opus | Unit/integration tests following project patterns (used in build phase 4) |
+| `documentation-writer` | Documentation | opus | API docs, READMEs, architecture docs, guides (used in build phase 5) |
 
-### Meta Agents (modify framework or orchestrate other agents)
+### Meta Agents (orchestrate other agents)
 
 | Agent | Role | Model | Specialty |
 |-------|------|-------|-----------|
 | `framework-improver` | Self-Improvement | opus | Updates CLAUDE.md, rules, settings, agents |
+| `planner-coordinator` | Planning Orchestration | opus | Spawns planning specialists in parallel waves; synthesizes one plan (invoked by `/plan`) |
+| `build-coordinator` | Build Orchestration | opus | Sequences build phases; spawns specialist per phase; runs safety gates (invoked by `/build`) |
 | `review-coordinator` | Review Orchestration | opus | Synthesizes parallel reviewer findings, classifies risk tier, persists state across iterations (invoked by `/iterative-review`) |
 
 ## Pre-Configured Teams

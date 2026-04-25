@@ -35,8 +35,9 @@ Apply this risk tier classifier:
 | If diff contains... | Add agent |
 |---------------------|-----------|
 | Touched files in security-relevant paths (see below) | `security-auditor` |
-| Frontend files (`.tsx`, `.jsx`, `.vue`, `.svelte`, `.html`, component dirs) | `ui-ux-reviewer` |
-| API route files matching `{{API_ROUTE_PATTERNS}}` | `api-designer` |
+| Frontend files (`.tsx`, `.jsx`, `.vue`, `.svelte`, `.html`, component dirs) | `ui-ux-reviewer` + `frontend-architecture-reviewer` |
+| Cross-module changes touching ≥3 modules / new module boundaries / new public APIs | `architecture-reviewer` |
+| API route files matching `{{API_ROUTE_PATTERNS}}` | `api-designer` + `api-layering-reviewer` |
 | DB migration / schema / model files matching `{{DATABASE_PATTERNS}}` | `database-architect` |
 | Performance-sensitive: hot loops, bundle config, query builders, cache code | `performance-optimizer` |
 | New tests or test changes | `test-writer` (read-only review of test quality) |
@@ -119,6 +120,11 @@ Concatenate all sub-agent JSONL output. Then:
    | `dry-reviewer` (extraction) + `refactor-advisor` (extraction) | `dry-reviewer` (more specific rule) |
    | `purity-reviewer` (SRP function-level) + `code-reviewer` (SRP) | `purity-reviewer` |
    | `security-auditor` + `code-reviewer` on the same security finding | `security-auditor` |
+   | `ui-ux-reviewer` (component too big) + `frontend-architecture-reviewer` (composition) | `frontend-architecture-reviewer` (structural is more specific than visual) |
+   | `ui-ux-reviewer` (a11y / design) + `frontend-architecture-reviewer` (anything) | `ui-ux-reviewer` for visual/a11y, `frontend-architecture-reviewer` for structure — keep both since concerns differ |
+   | `architecture-reviewer` (cross-module reach) + `purity-reviewer` (class SRP) | `architecture-reviewer` for cross-module, `purity-reviewer` for within-module — different scopes, keep both |
+   | `api-layering-reviewer` (controller too thick) + `complexity-reviewer` (controller fn long) | `api-layering-reviewer` (the layering rule explains *why* it's too thick; refactor target is different) |
+   | `api-designer` (API surface design) + `api-layering-reviewer` (controller/service/repo) | Keep both — different concerns (surface vs layering) |
 
    When a specialist's finding wins, drop the broader one. Never keep both.
 

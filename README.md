@@ -58,10 +58,10 @@ The setup wizard asks:
 - **Design system** (Material UI, Tailwind, Chakra, Ant Design, shadcn/ui, custom, or None)
 
 Then generates:
-- `.claude/skills/` — 18 workflow skills adapted to your stack (incl. `/team`, `/improve`, `/iterative-review`)
-- `.claude/agents/` — 17 AI agents covering full team roles + 4 code-quality specialists (all opus)
+- `.claude/skills/` — 20 workflow skills adapted to your stack (incl. `/team`, `/improve`, `/plan`, `/build`, `/iterative-review`)
+- `.claude/agents/` — 30 AI agents covering full team + 7 review specialists + 4 planning specialists + 4 build specialists + 3 coordinators (all opus)
 - `.claude/commands/` — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)
-- `.claude/rules/` — 13 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components, code-smells, dry, purity, complexity)
+- `.claude/rules/` — 16 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components, code-smells, dry, purity, complexity, frontend-architecture, architecture-layering, api-layering)
 - `.claude/hooks/` — 6 lifecycle hooks (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit)
 - `.claude/settings.local.json` — project permissions, hooks
 - `.mcp.json` — MCP servers (Context7 documentation)
@@ -139,6 +139,8 @@ mkdir -p .claude/skills/my-domain/references/
 | `/merge-resolve` | AI-powered merge conflict resolution — reads both features' story docs to understand intent, resolves per file type |
 | `/error-analyze` | Triage errors from monitoring, create tickets |
 | `/team` | Spawn agent teams for parallel analysis (review, architecture, release, quality, design, documentation, full) |
+| `/plan` | Multi-agent planning — spawns planner-coordinator + planning specialists, produces `.claude/state/plan-<branch>.md` |
+| `/build` | Multi-agent implementation — spawns build-coordinator + build specialists, executes the plan in sequenced phases |
 | `/iterative-review` | Plan → code → review → re-code loop with persistent state across iterations (uses `review-coordinator`) |
 | `/improve` | Self-improvement — update CLAUDE.md, rules, settings from project analysis |
 | `/ai-update` | Branch + PR for AI process file changes |
@@ -149,7 +151,7 @@ mkdir -p .claude/skills/my-domain/references/
 | `/mock-endpoint` | Mock external API integrations |
 | `/scaffold-design-system` | Scaffold design system tokens, components, and theme config |
 
-### AI Agents (17 specialized teammates)
+### AI Agents (30 specialized teammates)
 
 | Agent | Model | Purpose |
 |-------|-------|---------|
@@ -159,6 +161,9 @@ mkdir -p .claude/skills/my-domain/references/
 | `dry-reviewer` | opus | Duplication specialist: 3+ repeated logic, structural patterns. Cites `dry` rule. Read-only |
 | `purity-reviewer` | opus | Pure-function specialist: side effects, query/command separation, SRP, hidden state. Cites `purity` rule. Read-only |
 | `complexity-reviewer` | opus | Complexity specialist: function length, cyclomatic complexity, nesting, parameter count. Cites `complexity` rule. Read-only |
+| `frontend-architecture-reviewer` | opus | Frontend structure: component composition, state management, hooks, data flow, render-perf architecture. Cites `frontend-architecture` rule. Read-only |
+| `architecture-reviewer` | opus | Layering: dependency direction, cross-module reach, circular deps, god modules, public-API leaks. Cites `architecture-layering` rule. Read-only |
+| `api-layering-reviewer` | opus | API structure: controller/service/repo separation, validation placement, error contract, idempotency. Cites `api-layering` rule. Read-only |
 | `security-auditor` | opus | OWASP audit: credentials, dependencies, auth, compliance |
 | `refactor-advisor` | opus | Duplication, complexity, extraction opportunities. Read-only |
 | `devops-engineer` | opus | CI/CD, containers, infrastructure, deployment readiness |
@@ -169,7 +174,17 @@ mkdir -p .claude/skills/my-domain/references/
 | `test-writer` | opus | Generates tests following project conventions. Read/Write |
 | `documentation-writer` | opus | API docs, READMEs, architecture docs. Read/Write |
 | `framework-improver` | opus | Self-improvement: updates CLAUDE.md, rules, settings. Read/Write |
-| `review-coordinator` | opus | Synthesizes parallel reviewer output: dedupes, filters, classifies risk tier, persists state across iterations. Read-only |
+| `requirements-clarifier` | opus | Planning specialist: hunts ambiguity in story before planning starts (open questions, undefined terms, missing AC). Read-only |
+| `scope-decomposer` | opus | Planning specialist: breaks story into atomic, sequenced steps with parallelism groups and dependencies. Read-only |
+| `risk-assessor` | opus | Planning specialist: identifies rollback paths, blast radius, breaking-change and migration risk; proposes mitigations. Read-only |
+| `test-strategy-planner` | opus | Planning specialist: decides what tests at what level (unit/integration/e2e/contract) per planned step. Read-only |
+| `scaffold-implementer` | opus | Build phase 1: file structure, types, signatures, stubs (no logic). Read/Write, constrained by all relevant rules |
+| `happy-path-implementer` | opus | Build phase 2: core successful flow logic (defers errors and edges). Read/Write, constrained by all relevant rules |
+| `edge-case-implementer` | opus | Build phase 3: input validation, error handling, edge data, defensive code. Read/Write, tightly bound to error-handling, auth-security, data-protection |
+| `refactor-pass-implementer` | opus | Build phase 6 (final): actively applies code-smells/dry/purity/complexity rules; preempts review findings. Read/Write |
+| `review-coordinator` | opus | Meta: synthesizes parallel reviewer output, dedupes, filters, classifies risk tier, persists state across iterations |
+| `planner-coordinator` | opus | Meta: orchestrates planning specialists, classifies scope, spawns parallel waves, synthesizes one plan |
+| `build-coordinator` | opus | Meta: orchestrates build phases sequentially (scaffold → happy-path → edge-case → tests → docs → refactor) |
 
 ### Agent Teams (pre-configured groups)
 
@@ -216,6 +231,9 @@ File-pattern-scoped rules that Claude follows automatically when editing matchin
 | `dry` | Source files | True duplication threshold (3+ sites), what to extract / what NOT to extract (cited by `dry-reviewer`) |
 | `purity` | Source files | Pure-function discipline, query/command separation, hidden state, input mutation, SRP (cited by `purity-reviewer`) |
 | `complexity` | Source files | Function length, cyclomatic complexity, nesting, parameter count thresholds (cited by `complexity-reviewer`) |
+| `frontend-architecture` | UI components | Component composition, state management, hook discipline, data flow, render-perf architecture (cited by `frontend-architecture-reviewer`) |
+| `architecture-layering` | Source files | Layer dependency direction, cross-module reach, circular deps, god modules (cited by `architecture-reviewer`) |
+| `api-layering` | API handlers | Controller/service/repo separation, validation placement, error contract, idempotency (cited by `api-layering-reviewer`) |
 
 ### Hooks (lifecycle quality gates)
 
@@ -403,13 +421,16 @@ claude-code-framework/
 │   ├── settings.json            # User-level AI factory permissions
 │   ├── settings.local.json      # Project-level permissions & model config
 │   ├── mcp.json                 # MCP server config (copied to .mcp.json)
-│   ├── agents/                  # 17 AI agent definitions
+│   ├── agents/                  # 30 AI agent definitions
 │   │   ├── architect.md         # System design, patterns, scalability
 │   │   ├── code-reviewer.md     # Bugs, security, performance in diffs (broad sweep)
 │   │   ├── code-smell-reviewer.md   # Smells specialist — cites `code-smells` rule
 │   │   ├── dry-reviewer.md          # Duplication specialist — cites `dry` rule
 │   │   ├── purity-reviewer.md       # Pure-function specialist — cites `purity` rule
 │   │   ├── complexity-reviewer.md   # Complexity specialist — cites `complexity` rule
+│   │   ├── frontend-architecture-reviewer.md  # FE structure — cites `frontend-architecture` rule
+│   │   ├── architecture-reviewer.md           # Layering/dependency direction — cites `architecture-layering` rule
+│   │   ├── api-layering-reviewer.md           # Controller/service/repo — cites `api-layering` rule
 │   │   ├── security-auditor.md  # OWASP audit, credentials, deps
 │   │   ├── refactor-advisor.md  # Duplication, complexity, structure
 │   │   ├── devops-engineer.md   # CI/CD, containers, infrastructure
@@ -419,8 +440,18 @@ claude-code-framework/
 │   │   ├── database-architect.md # Schema, indexes, migrations
 │   │   ├── test-writer.md       # Test generation
 │   │   ├── documentation-writer.md  # API docs, guides
-│   │   ├── framework-improver.md # Self-improvement meta-agent
-│   │   └── review-coordinator.md # Synthesizes parallel reviewer findings, persists state
+│   │   ├── requirements-clarifier.md          # Planning: ambiguity, open questions
+│   │   ├── scope-decomposer.md                # Planning: atomic steps, sequencing
+│   │   ├── risk-assessor.md                   # Planning: rollback, blast radius, migration risk
+│   │   ├── test-strategy-planner.md           # Planning: test levels per step
+│   │   ├── scaffold-implementer.md            # Build phase 1: skeleton
+│   │   ├── happy-path-implementer.md          # Build phase 2: core logic
+│   │   ├── edge-case-implementer.md           # Build phase 3: validation, errors, edges
+│   │   ├── refactor-pass-implementer.md       # Build phase 6: apply quality rules
+│   │   ├── framework-improver.md              # Meta: self-improvement
+│   │   ├── review-coordinator.md              # Meta: synthesizes reviewer findings, persists state
+│   │   ├── planner-coordinator.md             # Meta: orchestrates planning specialists
+│   │   └── build-coordinator.md               # Meta: orchestrates build phases
 │   ├── commands/                # One-word automations
 │   │   ├── quick-test.md
 │   │   ├── lint-fix.md
@@ -438,10 +469,13 @@ claude-code-framework/
 │   │   ├── auth-security.md
 │   │   ├── data-protection.md
 │   │   ├── design-system.md
-│   │   ├── code-smells.md           # Cited by `code-smell-reviewer`
-│   │   ├── dry.md                   # Cited by `dry-reviewer`
-│   │   ├── purity.md                # Cited by `purity-reviewer`
-│   │   └── complexity.md            # Cited by `complexity-reviewer`
+│   │   ├── code-smells.md                # Cited by `code-smell-reviewer`
+│   │   ├── dry.md                        # Cited by `dry-reviewer`
+│   │   ├── purity.md                     # Cited by `purity-reviewer`
+│   │   ├── complexity.md                 # Cited by `complexity-reviewer`
+│   │   ├── frontend-architecture.md      # Cited by `frontend-architecture-reviewer`
+│   │   ├── architecture-layering.md      # Cited by `architecture-reviewer`
+│   │   └── api-layering.md               # Cited by `api-layering-reviewer`
 │   ├── hooks/                   # Lifecycle scripts
 │   │   ├── guardrails.sh        # PreToolUse: block dangerous ops
 │   │   ├── post-edit-sync.sh    # PostToolUse: flag docs needing sync
@@ -453,6 +487,8 @@ claude-code-framework/
 ├── skills/
 │   ├── _template/               # Blueprint for new skills
 │   ├── develop/                 # Development cycle (memory-aware)
+│   ├── plan/                    # Multi-agent planning (planner-coordinator)
+│   ├── build/                   # Multi-agent implementation (build-coordinator)
 │   ├── iterative-review/        # Plan → code → review → re-code loop with state
 │   ├── validate/                # Code validation
 │   ├── draft-story/             # Story creation
