@@ -1,4 +1,5 @@
 ---
+id: components
 patterns:
   - {{COMPONENT_PATTERNS}}
 ---

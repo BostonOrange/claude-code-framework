@@ -99,7 +99,9 @@ Check if changed code has adequate test coverage:
 
 ### Step 8: Report
 
-Produce a structured report:
+Produce a structured report. **When invoked by the `review-coordinator`, emit findings as JSONL per `docs/finding-schema.md` instead of the markdown format below** — one JSON object per line, no other output.
+
+For standalone runs, use the markdown format:
 
 ```
 ## Code Review Report
@@ -129,3 +131,22 @@ Produce a structured report:
 ```
 
 If no issues found, report: "No issues found. APPROVE."
+
+## What NOT to Flag
+
+Telling you what *not* to flag matters more than what to flag — noise is what kills review credibility. Suppress these:
+
+- **Theoretical risks that require unlikely preconditions.** "An attacker who has already compromised the host could…" is not a finding.
+- **Defense-in-depth suggestions when the primary defense is adequate.** If input is validated at the boundary, a downstream "you could also escape it here" is noise.
+- **Issues in unchanged code.** Unless the diff makes pre-existing code newly reachable, newly dangerous, or newly performance-critical, leave it alone.
+- **Style preferences.** Unless a project rule (`.claude/rules/<id>.md`) explicitly mandates a style, don't flag it.
+- **Speculative refactors with no concrete improvement.** "Could be more elegant" is not a finding.
+- **Findings about generated, vendored, or build output.** Skip `node_modules/`, `vendor/`, `dist/`, `build/`, `.min.*`, lockfiles.
+- **Hedged criticals.** If you write "could potentially", "might allow", "in theory" in a `CRITICAL` finding, downgrade or drop it. Critical = concretely demonstrable from the diff.
+- **Duplicate findings across categories.** A SQL injection is `security`, not `security` AND `quality`. Pick the most specific category.
+
+When in doubt: **drop the finding**. One missed nit is cheaper than one ignored review.
+
+## Rule Citation
+
+When a finding maps to a rule in `.claude/rules/<id>.md`, cite the rule's `id` (its frontmatter field). Example: a fail-open auth pattern cites `auth-security`. If no rule exists for the finding, propose adding one in a `### Note` section — do not invent rule IDs.

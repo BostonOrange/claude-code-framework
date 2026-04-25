@@ -288,7 +288,7 @@ your-project/
 ├── .mcp.json                          # MCP servers (Context7 docs)
 ├── .claude/
 │   ├── settings.local.json            # Permissions & model config
-│   ├── agents/                        # 12 AI teammate definitions
+│   ├── agents/                        # 13 AI teammate definitions
 │   │   ├── architect.md               # System design, patterns
 │   │   ├── code-reviewer.md           # Bugs, security in diffs
 │   │   ├── security-auditor.md        # OWASP audit
@@ -300,7 +300,8 @@ your-project/
 │   │   ├── database-architect.md      # Schema, indexes, migrations
 │   │   ├── test-writer.md             # Test generation
 │   │   ├── documentation-writer.md    # API docs, guides
-│   │   └── framework-improver.md      # Self-improvement
+│   │   ├── framework-improver.md      # Self-improvement
+│   │   └── review-coordinator.md      # Synthesizes parallel reviewer output, persists state
 │   ├── commands/                      # One-word automations
 │   │   ├── quick-test.md
 │   │   ├── lint-fix.md

@@ -29,11 +29,12 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents â
 | `test-writer` | Test Generation | opus | Unit/integration tests following project patterns |
 | `documentation-writer` | Documentation | opus | API docs, READMEs, architecture docs, guides |
 
-### Meta Agents (modify framework)
+### Meta Agents (modify framework or orchestrate other agents)
 
 | Agent | Role | Model | Specialty |
 |-------|------|-------|-----------|
 | `framework-improver` | Self-Improvement | opus | Updates CLAUDE.md, rules, settings, agents |
+| `review-coordinator` | Review Orchestration | opus | Synthesizes parallel reviewer findings, classifies risk tier, persists state across iterations (invoked by `/iterative-review`) |
 
 ## Pre-Configured Teams
 

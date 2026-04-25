@@ -1,4 +1,5 @@
 ---
+id: error-handling
 patterns:
   - {{SOURCE_PATTERNS}}
 ---

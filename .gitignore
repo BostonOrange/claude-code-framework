@@ -27,3 +27,6 @@ __pycache__/
 # Temp files
 /tmp/
 *.tmp
+
+# Local hook state (per-machine, not project content)
+.claude/state/

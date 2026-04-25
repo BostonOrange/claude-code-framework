@@ -58,8 +58,8 @@ The setup wizard asks:
 - **Design system** (Material UI, Tailwind, Chakra, Ant Design, shadcn/ui, custom, or None)
 
 Then generates:
-- `.claude/skills/` — 17 workflow skills adapted to your stack (incl. `/team`, `/improve`)
-- `.claude/agents/` — 12 AI agents covering full team roles (all opus)
+- `.claude/skills/` — 18 workflow skills adapted to your stack (incl. `/team`, `/improve`, `/iterative-review`)
+- `.claude/agents/` — 13 AI agents covering full team roles (all opus)
 - `.claude/commands/` — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)
 - `.claude/rules/` — 9 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components)
 - `.claude/hooks/` — 6 lifecycle hooks (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit)
@@ -139,6 +139,7 @@ mkdir -p .claude/skills/my-domain/references/
 | `/merge-resolve` | AI-powered merge conflict resolution — reads both features' story docs to understand intent, resolves per file type |
 | `/error-analyze` | Triage errors from monitoring, create tickets |
 | `/team` | Spawn agent teams for parallel analysis (review, architecture, release, quality, design, documentation, full) |
+| `/iterative-review` | Plan → code → review → re-code loop with persistent state across iterations (uses `review-coordinator`) |
 | `/improve` | Self-improvement — update CLAUDE.md, rules, settings from project analysis |
 | `/ai-update` | Branch + PR for AI process file changes |
 | `/add-reference` | Add/update domain knowledge references |
@@ -148,7 +149,7 @@ mkdir -p .claude/skills/my-domain/references/
 | `/mock-endpoint` | Mock external API integrations |
 | `/scaffold-design-system` | Scaffold design system tokens, components, and theme config |
 
-### AI Agents (12 specialized teammates)
+### AI Agents (13 specialized teammates)
 
 | Agent | Model | Purpose |
 |-------|-------|---------|
@@ -164,6 +165,7 @@ mkdir -p .claude/skills/my-domain/references/
 | `test-writer` | opus | Generates tests following project conventions. Read/Write |
 | `documentation-writer` | opus | API docs, READMEs, architecture docs. Read/Write |
 | `framework-improver` | opus | Self-improvement: updates CLAUDE.md, rules, settings. Read/Write |
+| `review-coordinator` | opus | Synthesizes parallel reviewer output: dedupes, filters, classifies risk tier, persists state across iterations. Read-only |
 
 ### Agent Teams (pre-configured groups)
 
@@ -175,7 +177,7 @@ mkdir -p .claude/skills/my-domain/references/
 | Quality | `/team quality` | code-reviewer + test-writer + performance-optimizer |
 | Documentation | `/team documentation` | documentation-writer + api-designer |
 | Design | `/team design` | ui-ux-reviewer + performance-optimizer + refactor-advisor |
-| Full | `/team full` | All 12 agents |
+| Full | `/team full` | All 12 reviewer/implementation agents (excludes `review-coordinator` and `framework-improver` — those are meta-agents invoked by skills, not team members) |
 | Custom | `/team custom a b` | Any combination |
 
 ### Commands (one-word automations)
@@ -391,7 +393,7 @@ claude-code-framework/
 │   ├── settings.json            # User-level AI factory permissions
 │   ├── settings.local.json      # Project-level permissions & model config
 │   ├── mcp.json                 # MCP server config (copied to .mcp.json)
-│   ├── agents/                  # 12 AI agent definitions
+│   ├── agents/                  # 13 AI agent definitions
 │   │   ├── architect.md         # System design, patterns, scalability
 │   │   ├── code-reviewer.md     # Bugs, security, performance in diffs
 │   │   ├── security-auditor.md  # OWASP audit, credentials, deps
@@ -403,7 +405,8 @@ claude-code-framework/
 │   │   ├── database-architect.md # Schema, indexes, migrations
 │   │   ├── test-writer.md       # Test generation
 │   │   ├── documentation-writer.md  # API docs, guides
-│   │   └── framework-improver.md # Self-improvement meta-agent
+│   │   ├── framework-improver.md # Self-improvement meta-agent
+│   │   └── review-coordinator.md # Synthesizes parallel reviewer findings, persists state
 │   ├── commands/                # One-word automations
 │   │   ├── quick-test.md
 │   │   ├── lint-fix.md
@@ -432,6 +435,7 @@ claude-code-framework/
 ├── skills/
 │   ├── _template/               # Blueprint for new skills
 │   ├── develop/                 # Development cycle (memory-aware)
+│   ├── iterative-review/        # Plan → code → review → re-code loop with state
 │   ├── validate/                # Code validation
 │   ├── draft-story/             # Story creation
 │   ├── refine-story/            # Story refinement + templates

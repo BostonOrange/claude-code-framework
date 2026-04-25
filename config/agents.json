@@ -89,6 +89,13 @@
       "model": "opus",
       "blurb": "Self-improvement — update CLAUDE.md, rules, settings, agents",
       "description": "Self-improvement agent — analyzes project patterns and updates CLAUDE.md, rules, settings, and agent configurations to improve AI effectiveness"
+    },
+    {
+      "name": "review-coordinator",
+      "category": "meta",
+      "model": "opus",
+      "blurb": "Synthesizes parallel reviewer output — dedupes, filters, persists state across iterations",
+      "description": "Synthesizes findings from parallel reviewer agents into one consolidated report — dedupes, filters false positives, applies cross-iteration state, classifies the diff into a risk tier, and decides which sub-agents to spawn"
     }
   ]
 }

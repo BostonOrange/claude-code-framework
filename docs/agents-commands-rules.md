@@ -164,11 +164,12 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `test-writer` | Read, Glob, Grep, Edit, Write, Bash | opus | Generates tests for changed code |
 | `documentation-writer` | Read, Glob, Grep, Edit, Write, Bash | opus | API docs, READMEs, architecture docs |
 
-**Meta Agents (modify framework)**
+**Meta Agents (modify framework or orchestrate other agents)**
 
 | Agent | Tools | Model | Purpose |
 |-------|-------|-------|---------|
 | `framework-improver` | Read, Glob, Grep, Edit, Write, Bash | opus | Updates CLAUDE.md, rules, settings, agents |
+| `review-coordinator` | Read, Glob, Grep, Bash, Agent | opus | Synthesizes parallel reviewer output — dedupes, filters, classifies risk tier, persists state across iterations |
 
 ### Commands (6)
 

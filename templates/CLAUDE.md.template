@@ -54,6 +54,7 @@
 | `/deploy` | Orchestrate deployments |
 | `/merge-resolve` | AI-powered merge conflict resolution |
 | `/team` | Spawn agent teams for parallel analysis |
+| `/iterative-review` | Plan → code → review → re-code loop with persistent state across iterations |
 | `/improve` | Self-improvement — update CLAUDE.md, rules, settings from project state |
 | `/ai-update` | Branch + PR for AI process changes |
 | `/add-reference` | Add/update knowledge reference docs |
@@ -100,11 +101,12 @@ Spawn pre-configured teams of specialized agents for parallel analysis:
 | `test-writer` | Generate tests following project conventions and factories | opus |
 | `documentation-writer` | API docs, READMEs, architecture docs, setup guides | opus |
 
-### Meta Agents (modify framework)
+### Meta Agents (modify framework or orchestrate other agents)
 
 | Agent | Purpose | Model |
 |-------|---------|-------|
 | `framework-improver` | Self-improvement — update CLAUDE.md, rules, settings, agents | opus |
+| `review-coordinator` | Synthesizes parallel reviewer output — dedupes, filters, classifies risk tier, persists state across iterations (invoked by `/iterative-review`) | opus |
 
 ## Work Item Tracker
 
