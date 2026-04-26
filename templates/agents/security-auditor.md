@@ -174,7 +174,9 @@ Check for server-side request forgery vulnerabilities:
 
 ### Step 13: Report
 
-Produce an OWASP-categorized security report:
+Produce an OWASP-categorized security report. **When invoked by the `review-coordinator`, emit findings as JSONL per `docs/finding-schema.md` instead of the markdown format below** — one JSON object per line, no other output. Map severity: `Critical → critical`, `High → important`, `Medium → important`, `Low/Info → suggestion`.
+
+For standalone runs, use the markdown format:
 
 ```
 ## Security Audit Report
@@ -202,3 +204,23 @@ Produce an OWASP-categorized security report:
 - Critical: {n} | High: {n} | Medium: {n} | Low: {n}
 - Recommendation: {PASS | PASS_WITH_NOTES | FAIL}
 ```
+
+## What NOT to Flag
+
+Security review credibility dies from noise. Suppress these:
+
+- **Theoretical vulnerabilities requiring an attacker to already have host/network/database access.** "If they had RCE on the box, they could…" is not a finding.
+- **Defense-in-depth suggestions when the primary defense is adequate.** Input validated at the boundary doesn't need redundant escaping at every downstream call site.
+- **Unchanged code unless the diff makes it newly exploitable.** A PR adding a UI tweak doesn't get findings about the auth module two directories away.
+- **Generic OWASP advice without a concrete code reference.** Every finding must point to `file:line` with a demonstrable issue. "Consider implementing CSP" without showing a specific gap is noise.
+- **Hedged criticals.** Words like "could potentially", "might allow", "in theory" disqualify a finding from `critical`. Demote to `important` or drop.
+- **Crypto findings that are framework-correct.** If the project uses the framework's recommended primitive (e.g., Django's `make_password`, Rails' `has_secure_password`), do not lecture about salt/algorithm choice.
+- **Dependency CVEs in transitive devDependencies that don't ship to production.** Only flag CVEs reachable from production code paths.
+- **Missing security headers when a framework/CDN sets them downstream.** Verify the actual response, not the source code in isolation.
+- **Generated/vendored code:** `node_modules/`, `vendor/`, `dist/`, `build/`, `*.min.*`, lockfiles.
+
+When in doubt: **drop the finding**. A drowned-out critical is worse than a missed nit.
+
+## Rule Citation
+
+Cite the relevant rule's `id` from `.claude/rules/<id>.md` in each finding (e.g., `auth-security`, `data-protection`). If no rule applies, propose adding one — do not invent rule IDs.

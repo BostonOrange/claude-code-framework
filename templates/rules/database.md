@@ -1,4 +1,5 @@
 ---
+id: database
 patterns:
   - {{DATABASE_PATTERNS}}
 ---

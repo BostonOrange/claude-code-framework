@@ -58,11 +58,11 @@ The setup wizard asks:
 - **Design system** (Material UI, Tailwind, Chakra, Ant Design, shadcn/ui, custom, or None)
 
 Then generates:
-- `.claude/skills/` — 17 workflow skills adapted to your stack (incl. `/team`, `/improve`)
-- `.claude/agents/` — 12 AI agents covering full team roles (all opus)
+- `.claude/skills/` — 24 workflow skills adapted to your stack (incl. `/team`, `/improve`, `/setup`, `/plan`, `/build`, `/iterative-review`, `/impact`, `/index`, `/search`)
+- `.claude/agents/` — 39 AI agents (21 analysis + 6 implementation + 4 planning + 8 meta, all opus)
 - `.claude/commands/` — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)
-- `.claude/rules/` — 9 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components)
-- `.claude/hooks/` — 6 lifecycle hooks (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit)
+- `.claude/rules/` — 22 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components, code-smells, dry, purity, complexity, frontend-architecture, architecture-layering, api-layering, crypto, solid, concurrency, observability, supply-chain, secrets-management)
+- `.claude/hooks/` — 7 lifecycle hooks + 1 utility (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit, codebase-index)
 - `.claude/settings.local.json` — project permissions, hooks
 - `.mcp.json` — MCP servers (Context7 documentation)
 - `~/.claude/settings.json` — user-level AI factory permissions, team orchestration (safe-by-default)
@@ -139,7 +139,14 @@ mkdir -p .claude/skills/my-domain/references/
 | `/merge-resolve` | AI-powered merge conflict resolution — reads both features' story docs to understand intent, resolves per file type |
 | `/error-analyze` | Triage errors from monitoring, create tickets |
 | `/team` | Spawn agent teams for parallel analysis (review, architecture, release, quality, design, documentation, full) |
-| `/improve` | Self-improvement — update CLAUDE.md, rules, settings from project analysis |
+| `/plan` | Multi-agent planning — spawns planner-coordinator + planning specialists, produces `.claude/state/plan-<branch>.md` |
+| `/build` | Multi-agent implementation — spawns build-coordinator + build specialists, executes the plan in sequenced phases |
+| `/iterative-review` | Plan → code → review → re-code loop with persistent state across iterations (uses `review-coordinator`) |
+| `/setup` | First-time onboarding — inventories repo, runs 17-layer detection with tradeoff-explained options, applies confirmed proposal (uses `project-setup-detector` + `project-setup-applier`) |
+| `/impact` | On-demand precise cascade analysis for a symbol or file (uses `impact-analyzer`) |
+| `/index` | Build/refresh vector index of the codebase at `.claude/state/codebase.db` (opt-in for codebases >50k LOC) |
+| `/search` | Semantic search across the indexed codebase — answers "where do we handle X?" queries |
+| `/improve` | Self-improvement — update CLAUDE.md, rules, settings from project analysis (also refreshes `.claude/state/architecture.md`) |
 | `/ai-update` | Branch + PR for AI process file changes |
 | `/add-reference` | Add/update domain knowledge references |
 | `/update-tracker` | Push story docs back to work item tracker |
@@ -148,12 +155,24 @@ mkdir -p .claude/skills/my-domain/references/
 | `/mock-endpoint` | Mock external API integrations |
 | `/scaffold-design-system` | Scaffold design system tokens, components, and theme config |
 
-### AI Agents (12 specialized teammates)
+### AI Agents (39 specialized teammates)
 
 | Agent | Model | Purpose |
 |-------|-------|---------|
 | `architect` | opus | System design review, architecture patterns, scalability assessment |
 | `code-reviewer` | opus | Reviews diff for bugs, security, performance, design principles, code smells, conventions. Read-only |
+| `code-smell-reviewer` | opus | Code smells specialist: long methods, magic numbers, primitive obsession, dead code. Cites `code-smells` rule. Read-only |
+| `dry-reviewer` | opus | Duplication specialist: 3+ repeated logic, structural patterns. Cites `dry` rule. Read-only |
+| `purity-reviewer` | opus | Pure-function specialist: side effects, query/command separation, SRP, hidden state. Cites `purity` rule. Read-only |
+| `complexity-reviewer` | opus | Complexity specialist: function length, cyclomatic complexity, nesting, parameter count. Cites `complexity` rule. Read-only |
+| `frontend-architecture-reviewer` | opus | Frontend structure: component composition, state management, hooks, data flow, render-perf architecture. Cites `frontend-architecture` rule. Read-only |
+| `architecture-reviewer` | opus | Layering: dependency direction, cross-module reach, circular deps, god modules, public-API leaks. Cites `architecture-layering` rule. Read-only |
+| `api-layering-reviewer` | opus | API structure: controller/service/repo separation, validation placement, error contract, idempotency. Cites `api-layering` rule. Read-only |
+| `crypto-reviewer` | opus | OWASP A02 specialist: weak hashes, password storage, RNG, encryption modes/IV, JWT, TLS, key derivation, constant-time compare. Cites `crypto`. Read-only |
+| `solid-reviewer` | opus | OCP/LSP/ISP/DIP specialist (S is `purity`'s domain). Cites `solid`. Read-only |
+| `concurrency-reviewer` | opus | Race conditions, TOCTOU, async/await discipline, lock discipline, mutable shared state, background-work safety, channels. Cites `concurrency`. Read-only |
+| `observability-reviewer` | opus | OWASP A09 specialist: structured logging, log levels, metrics, tracing, audit logs, alerting, correlation. Cites `observability`. Read-only |
+| `supply-chain-reviewer` | opus | OWASP A06+A08 specialist: lockfiles, version pinning, CVE reachability, signing, dev/prod separation, deserialization, CI pipeline integrity. Cites `supply-chain`. Read-only |
 | `security-auditor` | opus | OWASP audit: credentials, dependencies, auth, compliance |
 | `refactor-advisor` | opus | Duplication, complexity, extraction opportunities. Read-only |
 | `devops-engineer` | opus | CI/CD, containers, infrastructure, deployment readiness |
@@ -163,7 +182,22 @@ mkdir -p .claude/skills/my-domain/references/
 | `database-architect` | opus | Schema, normalization, indexes, migration safety |
 | `test-writer` | opus | Generates tests following project conventions. Read/Write |
 | `documentation-writer` | opus | API docs, READMEs, architecture docs. Read/Write |
-| `framework-improver` | opus | Self-improvement: updates CLAUDE.md, rules, settings. Read/Write |
+| `framework-improver-detector` | opus | Meta: self-improvement (read-only) — scans project, builds /setup-aware skip-list, writes proposal (invoked by `/improve` Phase 1) |
+| `framework-improver-applier` | opus | Meta: self-improvement (write) — re-validates skip-list, applies improvements with backup + audit log (invoked by `/improve` Phase 3) |
+| `requirements-clarifier` | opus | Planning specialist: hunts ambiguity in story before planning starts (open questions, undefined terms, missing AC). Read-only |
+| `scope-decomposer` | opus | Planning specialist: breaks story into atomic, sequenced steps with parallelism groups and dependencies. Read-only |
+| `risk-assessor` | opus | Planning specialist: identifies rollback paths, blast radius, breaking-change and migration risk; proposes mitigations. Read-only |
+| `test-strategy-planner` | opus | Planning specialist: decides what tests at what level (unit/integration/e2e/contract) per planned step. Read-only |
+| `scaffold-implementer` | opus | Build phase 1: file structure, types, signatures, stubs (no logic). Read/Write, constrained by all relevant rules |
+| `happy-path-implementer` | opus | Build phase 2: core successful flow logic (defers errors and edges). Read/Write, constrained by all relevant rules |
+| `edge-case-implementer` | opus | Build phase 3: input validation, error handling, edge data, defensive code. Read/Write, tightly bound to error-handling, auth-security, data-protection |
+| `refactor-pass-implementer` | opus | Build phase 6 (final): actively applies code-smells/dry/purity/complexity rules; preempts review findings. Read/Write |
+| `review-coordinator` | opus | Meta: synthesizes parallel reviewer output, dedupes, filters, classifies risk tier, persists state across iterations |
+| `planner-coordinator` | opus | Meta: orchestrates planning specialists, classifies scope, spawns parallel waves, synthesizes one plan |
+| `build-coordinator` | opus | Meta: orchestrates build phases sequentially (scaffold → happy-path → edge-case → tests → docs → refactor) |
+| `project-setup-detector` | opus | Meta: first-time onboarding (read-only) — inventories repo, runs 17-layer detection, writes proposal (invoked by `/setup` Phase 1) |
+| `project-setup-applier` | opus | Meta: first-time onboarding (write) — reads confirmed proposal, validates allowlist, snapshots, applies substitutions, writes audit log (invoked by `/setup` Phase 4) |
+| `impact-analyzer` | opus | Meta: on-demand precise cascade analysis — greps callers, classifies, scores confidence, writes per-symbol report (invoked by `/impact`) |
 
 ### Agent Teams (pre-configured groups)
 
@@ -175,7 +209,9 @@ mkdir -p .claude/skills/my-domain/references/
 | Quality | `/team quality` | code-reviewer + test-writer + performance-optimizer |
 | Documentation | `/team documentation` | documentation-writer + api-designer |
 | Design | `/team design` | ui-ux-reviewer + performance-optimizer + refactor-advisor |
-| Full | `/team full` | All 12 agents |
+| Review-deep | `/team review-deep` | code-reviewer + security-auditor + 4 code-quality specialists (smell, dry, purity, complexity) |
+| Quality-deep | `/team quality-deep` | The 4 code-quality specialists in parallel (code-smell-reviewer + dry-reviewer + purity-reviewer + complexity-reviewer) |
+| Full | `/team full` | All 16 reviewer/implementation agents (excludes meta-agents like `review-coordinator`, the `framework-improver-*` pair, and the `project-setup-*` pair) |
 | Custom | `/team custom a b` | Any combination |
 
 ### Commands (one-word automations)
@@ -204,6 +240,19 @@ File-pattern-scoped rules that Claude follows automatically when editing matchin
 | `auth-security` | Source files | Fail-closed auth, CSRF, RBAC enforcement, session security, redirects |
 | `data-protection` | Source files | No PII in git, no credentials on disk, log redaction, third-party data |
 | `design-system` | UI components | Semantic tokens, spacing scale, consistent typography, theme compliance |
+| `code-smells` | Source files | Long methods, magic numbers, primitive obsession, data clumps, feature envy, dead code (cited by `code-smell-reviewer`) |
+| `dry` | Source files | True duplication threshold (3+ sites), what to extract / what NOT to extract (cited by `dry-reviewer`) |
+| `purity` | Source files | Pure-function discipline, query/command separation, hidden state, input mutation, SRP (cited by `purity-reviewer`) |
+| `complexity` | Source files | Function length, cyclomatic complexity, nesting, parameter count thresholds (cited by `complexity-reviewer`) |
+| `frontend-architecture` | UI components | Component composition, state management, hook discipline, data flow, render-perf architecture (cited by `frontend-architecture-reviewer`) |
+| `architecture-layering` | Source files | Layer dependency direction, cross-module reach, circular deps, god modules (cited by `architecture-reviewer`) |
+| `api-layering` | API handlers | Controller/service/repo separation, validation placement, error contract, idempotency (cited by `api-layering-reviewer`) |
+| `crypto` | Source files | Hashes, password storage, RNG, encryption modes/IV, JWT, TLS, key derivation, constant-time compare (cited by `crypto-reviewer`; OWASP A02) |
+| `solid` | Source files | Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion (cited by `solid-reviewer`) |
+| `concurrency` | Source files | Race conditions, TOCTOU, async discipline, locks, mutable shared state, background workers, channels (cited by `concurrency-reviewer`) |
+| `observability` | Source files | Structured logging, log levels, metrics, tracing, audit logs, alerting, correlation (cited by `observability-reviewer`; OWASP A09) |
+| `supply-chain` | Manifests/Dockerfiles/CI workflows | Lockfile hygiene, pinning, CVE reachability, signing, dev/prod separation, deserialization, pipeline integrity (cited by `supply-chain-reviewer`; OWASP A06+A08) |
+| `secrets-management` | Source files | Storage, loading, rotation, scanning, in-code discipline, service identity (cited by `security-auditor`) |
 
 ### Hooks (lifecycle quality gates)
 
@@ -251,11 +300,11 @@ File-pattern-scoped rules that Claude follows automatically when editing matchin
 └──────────┬───────────┘
            ↓ (background)
 ┌──────────────────────┐
-│  FRAMEWORK IMPROVE   │ framework-improver auto-evolves .claude/ config
+│  FRAMEWORK IMPROVE   │ /improve auto-evolves .claude/ config (detector + applier)
 └──────────────────────┘
 ```
 
-> The `framework-improver` agent runs automatically in the background after **any session where files were modified** — not just `/develop` and `/factory`. This is enforced via CLAUDE.md instructions, so documentation and `.claude/` config always stay in sync with the actual project state. Changes are logged to `docs/ai-improvements.md`.
+> The `/improve` skill (which spawns `framework-improver-detector` then `framework-improver-applier`) runs automatically in the background after **any session where files were modified** — not just `/develop` and `/factory`. This is enforced via CLAUDE.md instructions, so documentation and `.claude/` config always stay in sync with the actual project state. The applier respects the `/setup`-owned skip-list. Changes are logged to `docs/ai-improvements.md`.
 
 ## Self-Improvement System
 
@@ -265,7 +314,7 @@ The framework has a closed loop that keeps it honest over time. It's not one thi
 |-------|-----------|------|--------------|
 | Advisory | `post-edit-sync.sh` (hook) | After every Edit/Write | Prints which doc surfaces may need updating based on what changed (e.g. "Agent 'code-reviewer' changed → verify README agents table") |
 | Advisory | `post-coding-review.sh` (hook) | SessionEnd, when >=3 source files or >=50 LOC changed vs base | Nudges `/team review` (code-reviewer + security-auditor + ui-ux-reviewer); cooldown per branch+SHA prevents repeat nudges |
-| Mutating | `framework-improver` (agent) | End of any session with changes — instructed by CLAUDE.md | Updates CLAUDE.md, `.claude/rules/`, settings, agents from project state; fills deferred placeholders (`{{PROJECT_DESCRIPTION}}` etc.) |
+| Mutating | `framework-improver-detector` + `framework-improver-applier` (via `/improve`) | End of any session with changes — instructed by CLAUDE.md | Detector scans + builds skip-list (read-only); applier validates skip-list and applies changes with backup. Fills deferred placeholders (`{{PROJECT_DESCRIPTION}}` etc.) and updates rules/settings/agents — but never overwrites layers `/setup` owns |
 | Verifying | `framework-qa` (agent, framework-repo-only) | End of any session with changes | Validates counts and tables across README, CLAUDE.md, docs are consistent with actual file inventory |
 | Deterministic | `tests/run-all.sh` (5 test suites) | CI + before PR | Hard gates for drift: `check-consistency` (counts), `check-agent-registry` (agent JSON ↔ frontmatter ↔ docs, 72 checks), `check-placeholders` (sh/ps1 parity), `check-guardrails` (55 hook patterns), `check-templates` (structural validity) |
 
@@ -307,7 +356,7 @@ Setup installs `~/.claude/settings.json` with granular Bash permissions:
 | **Must ask** | Prompts for confirmation | `git push`, `rm`, `sf project deploy`, `kubectl apply`, DB migrations |
 | **Blocked** | Denied entirely | `rm -rf /`, `rm -rf ~`, `mkfs`, `dd if=` |
 
-All non-Bash tools are auto-allowed: file editing, agents, tasks, teams, web access, worktrees, cron, plan mode. The framework-improver can freely update `.claude/` and `CLAUDE.md` without prompting.
+All non-Bash tools are auto-allowed: file editing, agents, tasks, teams, web access, worktrees, cron, plan mode. The `framework-improver-applier` can freely update `.claude/` and `CLAUDE.md` without prompting (within the skip-list bounds).
 
 ## MCP Servers
 
@@ -391,9 +440,21 @@ claude-code-framework/
 │   ├── settings.json            # User-level AI factory permissions
 │   ├── settings.local.json      # Project-level permissions & model config
 │   ├── mcp.json                 # MCP server config (copied to .mcp.json)
-│   ├── agents/                  # 12 AI agent definitions
+│   ├── agents/                  # 39 AI agent definitions
 │   │   ├── architect.md         # System design, patterns, scalability
-│   │   ├── code-reviewer.md     # Bugs, security, performance in diffs
+│   │   ├── code-reviewer.md     # Bugs, security, performance in diffs (broad sweep)
+│   │   ├── code-smell-reviewer.md   # Smells specialist — cites `code-smells` rule
+│   │   ├── dry-reviewer.md          # Duplication specialist — cites `dry` rule
+│   │   ├── purity-reviewer.md       # Pure-function specialist — cites `purity` rule
+│   │   ├── complexity-reviewer.md   # Complexity specialist — cites `complexity` rule
+│   │   ├── frontend-architecture-reviewer.md  # FE structure — cites `frontend-architecture` rule
+│   │   ├── architecture-reviewer.md           # Layering/dependency direction — cites `architecture-layering` rule
+│   │   ├── api-layering-reviewer.md           # Controller/service/repo — cites `api-layering` rule
+│   │   ├── crypto-reviewer.md                 # OWASP A02 — cites `crypto` rule
+│   │   ├── solid-reviewer.md                  # OCP/LSP/ISP/DIP — cites `solid` rule
+│   │   ├── concurrency-reviewer.md            # Races, async, locks — cites `concurrency` rule
+│   │   ├── observability-reviewer.md          # OWASP A09 — cites `observability` rule
+│   │   ├── supply-chain-reviewer.md           # OWASP A06+A08 — cites `supply-chain` rule
 │   │   ├── security-auditor.md  # OWASP audit, credentials, deps
 │   │   ├── refactor-advisor.md  # Duplication, complexity, structure
 │   │   ├── devops-engineer.md   # CI/CD, containers, infrastructure
@@ -403,7 +464,22 @@ claude-code-framework/
 │   │   ├── database-architect.md # Schema, indexes, migrations
 │   │   ├── test-writer.md       # Test generation
 │   │   ├── documentation-writer.md  # API docs, guides
-│   │   └── framework-improver.md # Self-improvement meta-agent
+│   │   ├── requirements-clarifier.md          # Planning: ambiguity, open questions
+│   │   ├── scope-decomposer.md                # Planning: atomic steps, sequencing
+│   │   ├── risk-assessor.md                   # Planning: rollback, blast radius, migration risk
+│   │   ├── test-strategy-planner.md           # Planning: test levels per step
+│   │   ├── scaffold-implementer.md            # Build phase 1: skeleton
+│   │   ├── happy-path-implementer.md          # Build phase 2: core logic
+│   │   ├── edge-case-implementer.md           # Build phase 3: validation, errors, edges
+│   │   ├── refactor-pass-implementer.md       # Build phase 6: apply quality rules
+│   │   ├── framework-improver-detector.md     # Meta: self-improvement read-only (builds skip-list, writes proposal)
+│   │   ├── framework-improver-applier.md      # Meta: self-improvement write (validates skip-list, applies, audit log)
+│   │   ├── review-coordinator.md              # Meta: synthesizes reviewer findings, persists state
+│   │   ├── planner-coordinator.md             # Meta: orchestrates planning specialists
+│   │   ├── build-coordinator.md               # Meta: orchestrates build phases
+│   │   ├── project-setup-detector.md          # Meta: first-time onboarding read-only (17-layer detection)
+│   │   ├── project-setup-applier.md           # Meta: first-time onboarding write (allowlist + backup + audit log)
+│   │   └── impact-analyzer.md                 # Meta: on-demand cascade analysis (grep callers, score confidence, per-symbol report)
 │   ├── commands/                # One-word automations
 │   │   ├── quick-test.md
 │   │   ├── lint-fix.md
@@ -420,7 +496,20 @@ claude-code-framework/
 │   │   ├── error-handling.md
 │   │   ├── auth-security.md
 │   │   ├── data-protection.md
-│   │   └── design-system.md
+│   │   ├── design-system.md
+│   │   ├── code-smells.md                # Cited by `code-smell-reviewer`
+│   │   ├── dry.md                        # Cited by `dry-reviewer`
+│   │   ├── purity.md                     # Cited by `purity-reviewer`
+│   │   ├── complexity.md                 # Cited by `complexity-reviewer`
+│   │   ├── frontend-architecture.md      # Cited by `frontend-architecture-reviewer`
+│   │   ├── architecture-layering.md      # Cited by `architecture-reviewer`
+│   │   ├── api-layering.md               # Cited by `api-layering-reviewer`
+│   │   ├── crypto.md                     # Cited by `crypto-reviewer` (OWASP A02)
+│   │   ├── solid.md                      # Cited by `solid-reviewer`
+│   │   ├── concurrency.md                # Cited by `concurrency-reviewer`
+│   │   ├── observability.md              # Cited by `observability-reviewer` (OWASP A09)
+│   │   ├── supply-chain.md               # Cited by `supply-chain-reviewer` (OWASP A06+A08)
+│   │   └── secrets-management.md         # Cited by `security-auditor`
 │   ├── hooks/                   # Lifecycle scripts
 │   │   ├── guardrails.sh        # PreToolUse: block dangerous ops
 │   │   ├── post-edit-sync.sh    # PostToolUse: flag docs needing sync
@@ -432,6 +521,13 @@ claude-code-framework/
 ├── skills/
 │   ├── _template/               # Blueprint for new skills
 │   ├── develop/                 # Development cycle (memory-aware)
+│   ├── plan/                    # Multi-agent planning (planner-coordinator)
+│   ├── build/                   # Multi-agent implementation (build-coordinator)
+│   ├── iterative-review/        # Plan → code → review → re-code loop with state
+│   ├── setup/                   # First-time onboarding (17-layer detection via project-setup-detector + applier)
+│   ├── impact/                  # On-demand cascade analysis for a symbol or file
+│   ├── index/                   # Build vector index of the codebase (opt-in)
+│   ├── search/                  # Semantic search via the vector index
 │   ├── validate/                # Code validation
 │   ├── draft-story/             # Story creation
 │   ├── refine-story/            # Story refinement + templates

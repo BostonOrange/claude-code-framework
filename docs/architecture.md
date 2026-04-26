@@ -288,19 +288,46 @@ your-project/
 ├── .mcp.json                          # MCP servers (Context7 docs)
 ├── .claude/
 │   ├── settings.local.json            # Permissions & model config
-│   ├── agents/                        # 12 AI teammate definitions
+│   ├── agents/                        # 39 AI teammate definitions
 │   │   ├── architect.md               # System design, patterns
-│   │   ├── code-reviewer.md           # Bugs, security in diffs
+│   │   ├── code-reviewer.md           # Bugs, security in diffs (broad sweep)
+│   │   ├── code-smell-reviewer.md     # Smells specialist — cites `code-smells`
+│   │   ├── dry-reviewer.md            # Duplication specialist — cites `dry`
+│   │   ├── purity-reviewer.md         # Pure-function specialist — cites `purity`
+│   │   ├── complexity-reviewer.md     # Complexity specialist — cites `complexity`
+│   │   ├── frontend-architecture-reviewer.md  # FE structure — cites `frontend-architecture`
+│   │   ├── architecture-reviewer.md           # Layering — cites `architecture-layering`
+│   │   ├── api-layering-reviewer.md           # API structure — cites `api-layering`
+│   │   ├── crypto-reviewer.md                 # OWASP A02 — cites `crypto`
+│   │   ├── solid-reviewer.md                  # OCP/LSP/ISP/DIP — cites `solid`
+│   │   ├── concurrency-reviewer.md            # Races, async, locks — cites `concurrency`
+│   │   ├── observability-reviewer.md          # OWASP A09 — cites `observability`
+│   │   ├── supply-chain-reviewer.md           # OWASP A06+A08 — cites `supply-chain`
 │   │   ├── security-auditor.md        # OWASP audit
-│   │   ├── refactor-advisor.md        # Duplication, complexity
+│   │   ├── refactor-advisor.md        # Cross-cutting refactor (broader than dry-reviewer)
 │   │   ├── devops-engineer.md         # CI/CD, infrastructure
 │   │   ├── ui-ux-reviewer.md          # Accessibility, design
 │   │   ├── performance-optimizer.md   # Bundle, queries, caching
 │   │   ├── api-designer.md            # Endpoint design, schemas
 │   │   ├── database-architect.md      # Schema, indexes, migrations
-│   │   ├── test-writer.md             # Test generation
-│   │   ├── documentation-writer.md    # API docs, guides
-│   │   └── framework-improver.md      # Self-improvement
+│   │   ├── test-writer.md             # Test generation (build phase 4)
+│   │   ├── documentation-writer.md    # API docs, guides (build phase 5)
+│   │   ├── requirements-clarifier.md          # Planning: ambiguity, open questions
+│   │   ├── scope-decomposer.md                # Planning: atomic steps, sequencing
+│   │   ├── risk-assessor.md                   # Planning: rollback, blast radius, migration risk
+│   │   ├── test-strategy-planner.md           # Planning: test levels per step
+│   │   ├── scaffold-implementer.md            # Build phase 1: skeleton
+│   │   ├── happy-path-implementer.md          # Build phase 2: core logic
+│   │   ├── edge-case-implementer.md           # Build phase 3: validation, errors, edges
+│   │   ├── refactor-pass-implementer.md       # Build phase 6: apply quality rules
+│   │   ├── framework-improver-detector.md     # Meta: self-improvement read-only (skip-list + proposal)
+│   │   ├── framework-improver-applier.md      # Meta: self-improvement write (validation + apply + audit)
+│   │   ├── planner-coordinator.md             # Meta: orchestrates planning specialists
+│   │   ├── build-coordinator.md               # Meta: orchestrates build phases
+│   │   ├── review-coordinator.md              # Meta: synthesizes reviewer findings, persists state
+│   │   ├── project-setup-detector.md          # Meta: first-time onboarding read-only (17-layer detection)
+│   │   ├── project-setup-applier.md           # Meta: first-time onboarding write (allowlist + backup + audit log)
+│   │   └── impact-analyzer.md                 # Meta: on-demand cascade analysis (grep callers, score confidence)
 │   ├── commands/                      # One-word automations
 │   │   ├── quick-test.md
 │   │   ├── lint-fix.md
@@ -317,7 +344,20 @@ your-project/
 │   │   ├── error-handling.md
 │   │   ├── auth-security.md
 │   │   ├── data-protection.md
-│   │   └── design-system.md
+│   │   ├── design-system.md
+│   │   ├── code-smells.md             # Cited by code-smell-reviewer
+│   │   ├── dry.md                     # Cited by dry-reviewer
+│   │   ├── purity.md                  # Cited by purity-reviewer
+│   │   ├── complexity.md              # Cited by complexity-reviewer
+│   │   ├── frontend-architecture.md   # Cited by frontend-architecture-reviewer
+│   │   ├── architecture-layering.md   # Cited by architecture-reviewer
+│   │   ├── api-layering.md            # Cited by api-layering-reviewer
+│   │   ├── crypto.md                  # Cited by crypto-reviewer (OWASP A02)
+│   │   ├── solid.md                   # Cited by solid-reviewer
+│   │   ├── concurrency.md             # Cited by concurrency-reviewer
+│   │   ├── observability.md           # Cited by observability-reviewer (OWASP A09)
+│   │   ├── supply-chain.md            # Cited by supply-chain-reviewer (OWASP A06+A08)
+│   │   └── secrets-management.md      # Cited by security-auditor
 │   ├── hooks/                         # Lifecycle scripts
 │   │   ├── guardrails.sh              # PreToolUse: block dangerous ops
 │   │   ├── post-edit-sync.sh          # PostToolUse: flag docs needing sync
@@ -330,6 +370,7 @@ your-project/
 │   │   ├── validate/SKILL.md
 │   │   ├── factory/SKILL.md
 │   │   ├── team/SKILL.md              # Agent team spawning
+│   │   ├── setup/SKILL.md             # First-time onboarding (15-layer detection)
 │   │   ├── improve/SKILL.md           # Framework self-improvement
 │   │   ├── your-domain/
 │   │   │   ├── SKILL.md

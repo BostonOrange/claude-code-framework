@@ -1,4 +1,5 @@
 ---
+id: design-system
 patterns:
   - {{COMPONENT_PATTERNS}}
 ---

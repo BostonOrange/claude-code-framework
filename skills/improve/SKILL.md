@@ -1,170 +1,114 @@
 ---
 name: improve
-description: Self-improvement — analyze the project and update CLAUDE.md, rules, settings, and agents to improve AI effectiveness
+description: Self-improvement — orchestrates framework-improver-detector and framework-improver-applier across a skip-list-aware pipeline. Distinct from /setup (first-run shape decisions); /improve owns ongoing evolution and refuses to overwrite layers /setup decided
 ---
 
 # Improve — Framework Self-Improvement
 
-Analyze the current project state and improve the .claude/ configuration for better AI assistance.
+Analyze the current project state and improve the `.claude/` configuration. This is the *ongoing-evolution* lifecycle counterpart to `/setup` — it tunes around shape decisions `/setup` already made instead of overwriting them.
+
+**Lifecycle vs `/setup`:** `/setup` decides shape (first run). `/improve` keeps shape in tune as the project grows. Boundary is enforced architecturally: the detector reads `setup-applied.md` to build a skip-list at proposal time, the applier re-validates the skip-list at apply time. Items `/setup` owns never become candidates.
 
 ## Usage
 
 ```
-/improve                  — Full improvement pass (all areas)
-/improve claude-md        — Update CLAUDE.md only (fill placeholders, add patterns)
-/improve rules            — Update rule file patterns to match actual project
-/improve settings         — Update permissions and model config
-/improve agents           — Tune agent tools and models for project needs
-/improve scan             — Report only, no changes (dry run)
+/improve                  full pass: detect → apply (no user gate; autonomous)
+/improve scan             dry run — produce proposal only, don't apply
+/improve claude-md        scope to CLAUDE.md placeholders
+/improve rules            scope to .claude/rules/ patterns
+/improve settings         scope to .claude/settings.local.json
+/improve agents           scope to .claude/agents/ tuning
 ```
+
+Scopes are passed through to the detector to limit the proposal.
 
 ## Process
 
-### Phase 1: Project Discovery
+### Phase 1: Detect (read-only)
 
-Scan the project to build a comprehensive profile:
-
-1. **Tech stack detection:**
-```bash
-# Package managers and dependency files
-ls package.json requirements.txt Pipfile go.mod Cargo.toml build.gradle pom.xml Gemfile composer.json sfdx-project.json 2>/dev/null
-```
-
-2. **File type census:**
-```bash
-find . -type f -not -path "*/.git/*" -not -path "*/node_modules/*" -not -path "*/__pycache__/*" -not -path "*/vendor/*" -not -path "*/.next/*" -not -path "*/dist/*" -not -path "*/build/*" | sed 's/.*\.//' | sort | uniq -c | sort -rn | head -20
-```
-
-3. **Framework detection:** Read config files (next.config.*, vite.config.*, angular.json, etc.)
-
-4. **Directory structure:** Map the top-level architecture
-
-5. **Existing tooling:** Find linter configs, test configs, CI configs
-
-6. **Security quick-scan** (flag issues for the report, don't fix):
-   - `git ls-files | grep -E "\.(db|sqlite|sqlite3)" | head -5` — database files in git?
-   - `git ls-files | grep -E "^data/|/uploads/" | head -10` — real data files tracked?
-   - Check auth middleware for fail-open patterns (defaults to allow when config missing)
-   - Check for `ignoreBuildErrors: true` in build config
-   - Check for insecure default session secrets
-   - Check for CSRF protection on form-based POST endpoints
-
-### Phase 2: CLAUDE.md Improvement
-
-Read current CLAUDE.md and check:
-
-1. **Unfilled placeholders:** Find any remaining `{{...}}` and fill from discovered data:
-   - `{{PROJECT_DESCRIPTION}}` — from README.md, package.json description, etc.
-   - `{{TECH_STACK_TABLE}}` — build from dependency files
-   - `{{CODE_STRUCTURE}}` — generate directory tree
-   - `{{CODING_STANDARDS}}` — infer from linter configs (.eslintrc, .prettierrc, pyproject.toml, etc.)
-   - `{{ERROR_HANDLING_PATTERN}}` — find common error patterns in code
-   - `{{TESTING_STRATEGY}}` — infer from test config and existing tests
-   - `{{INTEGRATIONS}}` — list discovered external services
-   - `{{DESIGN_COLOR_RULES}}` — scan theme.css / globals.css for semantic color tokens, document which to use
-   - `{{DESIGN_COMPONENT_IMPORTS}}` — find base component directory, list imports with paths and key props
-   - `{{DESIGN_ICON_USAGE}}` — detect icon library from package.json, document import pattern and sizing
-   - `{{DESIGN_CARD_PATTERNS}}` — find the most common card pattern in components, document it
-   - `{{DESIGN_DARK_MODE}}` — detect dark mode strategy (tokens, class-based, media query), document it
-
-2. **Missing information:** Add sections for:
-   - Discovered environment variables and their purposes
-   - Common commands found in package.json scripts or Makefile
-   - Team conventions visible in git log patterns
-
-3. **Outdated information:** Check if documented commands, paths, or patterns still exist
-
-If `--scope claude-md` or full pass: apply changes. Otherwise skip.
-
-### Phase 3: Rules Improvement
-
-For each rule file in `.claude/rules/`:
-
-1. **Verify patterns match reality:**
-   - Extract the glob patterns from the YAML frontmatter
-   - Check if files matching those patterns actually exist
-   - If patterns are still `{{PLACEHOLDER}}`, replace with discovered file patterns
-
-2. **Add missing rules:**
-   - If the project has file types not covered by any rule, consider adding rules
-   - Common gaps: middleware files, config schemas, migration files, test utilities
-
-3. **Remove irrelevant rules:**
-   - If a rule's file patterns match zero files, warn (don't delete — user may add files later)
-
-If `--scope rules` or full pass: apply changes. Otherwise skip.
-
-### Phase 4: Settings Improvement
-
-Read `.claude/settings.local.json` and check:
-
-1. **Permissions:** Are all tools the project workflow needs allowed?
-   - If project uses git heavily, ensure Bash(git*) patterns
-   - If project needs web access for docs, ensure WebFetch/WebSearch
-
-2. **Model:** Is the default model appropriate?
-   - Complex architecture projects may benefit from opus
-   - High-volume code generation may benefit from sonnet for speed
-
-If `--scope settings` or full pass: apply changes. Otherwise skip.
-
-### Phase 5: Agent Improvement
-
-For each agent in `.claude/agents/`:
-
-1. **Tool appropriateness:** Do the allowed tools match what the agent needs?
-2. **Model selection:** Is the model appropriate for the task complexity?
-3. **Placeholder check:** Are any `{{PLACEHOLDER}}` values unfilled?
-
-If `--scope agents` or full pass: apply changes. Otherwise skip.
-
-### Phase 6: Report
+Spawn `framework-improver-detector`:
 
 ```
-## Framework Improvement Report
-
-### Project Profile
-- **Type:** {detected project type}
-- **Stack:** {tech stack summary}
-- **Size:** {file count, LOC estimate}
-
-### Changes Made
-| File | Change | Reason |
-|------|--------|--------|
-| {path} | {description} | {why} |
-
-### CLAUDE.md Status
-- Placeholders filled: {n}
-- Placeholders remaining: {n} (need human input)
-- Sections added: {list}
-- Sections updated: {list}
-
-### Rules Status
-- Rules with matching files: {n}/{total}
-- Patterns updated: {list}
-- New rules created: {list}
-
-### Recommendations (need human decision)
-- {items that require human judgment}
-
-### Next Steps
-1. Review changes in CLAUDE.md and fill remaining placeholders
-2. Run `/improve scan` again after making manual updates
-3. Consider `/team review` to validate the improved configuration
+Run your full process. Read setup-applied.md (if present) and build the
+skip-list, scan the project per docs/project-detection.md, identify
+improvements, filter against the skip-list, and write
+.claude/state/improve-proposal.md. End with the surface summary.
 ```
+
+The detector is read-only by tool restriction. It writes only `.claude/state/improve-proposal.md`.
+
+### Phase 2: Verify proposal
+
+Read the proposal:
+- Confirm `## Improvements` is well-formed
+- Confirm `## Filtered (owned by /setup)` lists items the detector dropped — surface to user as "respected /setup decisions"
+- Confirm there are no path-allowlist violations (the applier will halt if there are, but flagging here is faster)
+
+If `--scope scan`, stop here. Print the path to `improve-proposal.md` for inspection.
+
+### Phase 3: Apply
+
+Spawn `framework-improver-applier`:
+
+```
+Read .claude/state/improve-proposal.md. Run all 4 pre-apply gates
+(proposal exists, re-derive skip-list, filter & halt if non-empty drop
+count, allowlist validate). On success, snapshot to
+.claude/state/improve-backup-<ts>/, apply substitutions, smoke-check,
+write .claude/state/improve-applied.md. Auto-rollback on any error.
+```
+
+The applier has Edit/Write but refuses to apply any item in the `/setup`-owned skip-list.
+
+### Phase 4: Verify and report
+
+Read `.claude/state/improve-applied.md` and surface:
+
+- Count of changes applied
+- Count of refusals (skip-list enforcement — should be 0 if detector did its job)
+- List of remaining `{{...}}` placeholders (intentionally vs unexpected)
+- Backup directory path (rollback path)
+- Path to `docs/ai-improvements.md` (append-only changelog)
+
+## State Files
+
+| File | Owner | Lifecycle |
+|------|-------|-----------|
+| `.claude/state/improve-proposal.md` | detector (Phase 1) | Overwritten each run |
+| `.claude/state/improve-applied.md` | applier (Phase 3) | Append-only audit |
+| `.claude/state/improve-backup-<ts>/` | applier (Phase 3) | Created every apply; rollback path |
+| `docs/ai-improvements.md` | applier (Phase 3) | Append-only project-level changelog |
+
+## When to Use `/improve` vs `/setup`
+
+| Situation | Use |
+|-----------|-----|
+| First-time onboarding (just ran `setup.sh`) | `/setup` |
+| Convention drift after weeks of development | `/improve` |
+| Filling specific `{{...}}` placeholders | `/improve claude-md` |
+| Adding new rule patterns based on actual file structure | `/improve rules` |
+| Switched stacks (e.g., npm → pnpm) | `/setup --layer=build` |
+
+`/setup` is shape-deciding. `/improve` is shape-tuning. They don't overlap — the skip-list mechanism enforces it.
 
 ## Edge Cases
 
 | Scenario | Behavior |
 |----------|----------|
-| CLAUDE.md doesn't exist | Create from template, fill what's discoverable |
-| No .claude/ directory | Run setup.sh first (print instructions) |
-| `--scope scan` | Report only, make no changes |
-| Mixed project (frontend + backend) | Detect both, configure rules for both |
-| Monorepo with multiple apps | Detect workspace structure, note in CLAUDE.md |
+| `setup-applied.md` doesn't exist (no `/setup` ever run) | Detector treats every layer as in-scope; user warned that `/setup` is recommended for first-time onboarding |
+| Detector proposes empty improvements list | Skill skips Phase 3; reports "nothing to improve" |
+| Applier gate 3 drops items (non-empty) | Halt; surface refusals; user reviews and decides |
+| `CLAUDE.md` doesn't exist | Detector recommends running `/setup` first; does not fill placeholders into a missing file |
+| Apply fails mid-flight | Auto-rollback from backup; apply log not written; proposal stays valid for re-run after fix |
+| `--scope scan` | Stop after Phase 2; do not spawn applier |
 
-## Related Skills
+## Related
 
-- `/ai-update` — Create branch + PR for AI config changes (use after /improve for tracked changes)
+- `framework-improver-detector` agent — runs Phase 1, produces proposal (read-only by tool removal)
+- `framework-improver-applier` agent — runs Phase 3, applies with skip-list enforcement + backup + audit
+- `/setup` — first-run shape decisions; writes the skip-list this skill respects
+- `docs/project-detection.md` — shared detection bash
+- `docs/setup-state-schema.md` — schema for setup-proposal.md and setup-applied.md (defines the layer→placeholder mapping the skip-list uses)
+- `/ai-update` — Create branch + PR for AI config changes
 - `/add-reference` — Add domain knowledge references
 - `/team full` — Run all agents to validate improved configuration

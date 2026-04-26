@@ -54,7 +54,14 @@
 | `/deploy` | Orchestrate deployments |
 | `/merge-resolve` | AI-powered merge conflict resolution |
 | `/team` | Spawn agent teams for parallel analysis |
-| `/improve` | Self-improvement — update CLAUDE.md, rules, settings from project state |
+| `/plan` | Multi-agent planning — planner-coordinator + planning specialists; produces `.claude/state/plan-<branch>.md` |
+| `/build` | Multi-agent implementation — build-coordinator + build specialists; executes the plan in sequenced phases |
+| `/iterative-review` | Plan → code → review → re-code loop with persistent state across iterations |
+| `/setup` | First-time onboarding — inventories repo, runs 17-layer detection with tradeoff-explained options, applies confirmed proposal (uses `project-setup-detector` + `project-setup-applier`) |
+| `/impact` | On-demand cascade analysis for a symbol or file (uses `impact-analyzer`); produces a confidence-scored "what would break if I change this" report |
+| `/index` | Build/refresh vector index at `.claude/state/codebase.db` (opt-in for codebases >50k LOC) |
+| `/search` | Semantic search across the indexed codebase — answers "where do we handle X?" queries |
+| `/improve` | Self-improvement — update CLAUDE.md, rules, settings from project state (also refreshes `.claude/state/architecture.md`) |
 | `/ai-update` | Branch + PR for AI process changes |
 | `/add-reference` | Add/update knowledge reference docs |
 | `/update-tracker` | Push story docs to work item tracker |
@@ -69,12 +76,14 @@ Spawn pre-configured teams of specialized agents for parallel analysis:
 | Team | Command | Agents | When to Use |
 |------|---------|--------|-------------|
 | **Review** | `/team review` | code-reviewer, security-auditor, ui-ux-reviewer | Before merging PRs |
+| **Review-deep** | `/team review-deep` | code-reviewer, security-auditor, code-smell-reviewer, dry-reviewer, purity-reviewer, complexity-reviewer | Before merging non-trivial PRs |
 | **Architecture** | `/team architecture` | architect, api-designer, database-architect | Design phase, health checks |
 | **Release** | `/team release` | security-auditor, devops-engineer, performance-optimizer | Before releases |
 | **Quality** | `/team quality` | code-reviewer, test-writer, performance-optimizer | After implementation |
+| **Quality-deep** | `/team quality-deep` | code-smell-reviewer, dry-reviewer, purity-reviewer, complexity-reviewer | Targeted code-quality sweep |
 | **Design** | `/team design` | ui-ux-reviewer, performance-optimizer, refactor-advisor | UI/UX consistency, design system compliance |
 | **Documentation** | `/team documentation` | documentation-writer, api-designer | After API changes |
-| **Full** | `/team full` | All 12 agents | Major milestones |
+| **Full** | `/team full` | All 16 reviewer/implementation agents | Major milestones |
 | **Custom** | `/team custom a b c` | Any combination | Targeted analysis |
 
 ## Agents Available
@@ -84,27 +93,59 @@ Spawn pre-configured teams of specialized agents for parallel analysis:
 | Agent | Purpose | Model |
 |-------|---------|-------|
 | `architect` | System design review, architecture patterns, scalability | opus |
-| `code-reviewer` | Review diffs for bugs, security, performance, design principles, code smells, conventions | opus |
+| `code-reviewer` | Review diffs for bugs, security, performance, design principles, code smells, conventions (broad sweep) | opus |
+| `code-smell-reviewer` | Code smells specialist: long methods, magic numbers, primitive obsession, data clumps, feature envy, dead code (cites `code-smells` rule) | opus |
+| `dry-reviewer` | Duplication specialist: 3+ repeated logic, structural patterns (cites `dry` rule) | opus |
+| `purity-reviewer` | Pure-function specialist: side effects, query/command separation, hidden state, SRP (cites `purity` rule) | opus |
+| `complexity-reviewer` | Complexity specialist: function length, cyclomatic complexity, nesting, parameter count (cites `complexity` rule) | opus |
+| `frontend-architecture-reviewer` | Frontend structure: composition, state, hooks, data flow, render-perf architecture (cites `frontend-architecture` rule) | opus |
+| `architecture-reviewer` | Layering: dependency direction, cross-module reach, circular deps, god modules (cites `architecture-layering` rule) | opus |
+| `api-layering-reviewer` | API structure: controller/service/repo separation, validation placement, error contract (cites `api-layering` rule) | opus |
+| `crypto-reviewer` | OWASP A02: weak hashes, password storage, RNG, encryption modes/IV, JWT, TLS, key derivation (cites `crypto` rule) | opus |
+| `solid-reviewer` | OCP/LSP/ISP/DIP (cites `solid` rule); SRP is purity-reviewer's domain | opus |
+| `concurrency-reviewer` | Race conditions, TOCTOU, async/lock discipline, mutable shared state, background workers, channels (cites `concurrency` rule) | opus |
+| `observability-reviewer` | OWASP A09: structured logging, log levels, metrics, tracing, audit logs, alerting, correlation (cites `observability` rule) | opus |
+| `supply-chain-reviewer` | OWASP A06+A08: lockfiles, version pinning, CVE reachability, signing, dev/prod separation, CI pipeline integrity (cites `supply-chain` rule) | opus |
 | `security-auditor` | OWASP audit, credentials, dependencies, compliance | opus |
-| `refactor-advisor` | Duplication, complexity, extraction opportunities | opus |
+| `refactor-advisor` | Duplication, complexity, extraction opportunities (broader than `dry-reviewer`) | opus |
 | `devops-engineer` | CI/CD, containers, infrastructure, monitoring | opus |
 | `ui-ux-reviewer` | Accessibility, design consistency, responsiveness | opus |
 | `performance-optimizer` | Bundle size, queries, rendering, caching, memory | opus |
 | `api-designer` | Endpoint design, schemas, versioning, DX | opus |
 | `database-architect` | Schema, normalization, indexes, migration safety | opus |
 
+### Planning Agents (read-only — used by `/plan`)
+
+| Agent | Purpose | Model |
+|-------|---------|-------|
+| `requirements-clarifier` | Hunts ambiguity in story before planning starts (open questions, undefined terms, missing AC) | opus |
+| `scope-decomposer` | Breaks story into atomic, sequenced steps with parallelism groups and dependencies | opus |
+| `risk-assessor` | Identifies rollback paths, blast radius, breaking-change and migration risk; proposes mitigations | opus |
+| `test-strategy-planner` | Decides what tests at what level (unit/integration/e2e/contract) per planned step | opus |
+
 ### Implementation Agents (can modify code)
 
 | Agent | Purpose | Model |
 |-------|---------|-------|
+| `scaffold-implementer` | Build phase 1: file structure, types, signatures, stubs — no logic | opus |
+| `happy-path-implementer` | Build phase 2: core successful flow logic | opus |
+| `edge-case-implementer` | Build phase 3: input validation, error handling, edge data (binds `error-handling`, `auth-security`, `data-protection`) | opus |
+| `refactor-pass-implementer` | Build phase 6 (final): actively applies `code-smells`/`dry`/`purity`/`complexity` rules; preempts review findings | opus |
 | `test-writer` | Generate tests following project conventions and factories | opus |
 | `documentation-writer` | API docs, READMEs, architecture docs, setup guides | opus |
 
-### Meta Agents (modify framework)
+### Meta Agents (orchestrate other agents)
 
 | Agent | Purpose | Model |
 |-------|---------|-------|
-| `framework-improver` | Self-improvement — update CLAUDE.md, rules, settings, agents | opus |
+| `framework-improver-detector` | Self-improvement (read-only) — scans, builds /setup-aware skip-list, writes proposal (invoked by `/improve` Phase 1) | opus |
+| `framework-improver-applier` | Self-improvement (write) — re-validates skip-list, applies improvements with backup + audit log (invoked by `/improve` Phase 3) | opus |
+| `planner-coordinator` | Orchestrates planning specialists; classifies scope; synthesizes one plan (invoked by `/plan`) | opus |
+| `build-coordinator` | Orchestrates build phases sequentially: scaffold → happy-path → edge-case → tests → docs → refactor (invoked by `/build`) | opus |
+| `review-coordinator` | Synthesizes parallel reviewer output — dedupes, filters, classifies risk tier, persists state across iterations (invoked by `/iterative-review`) | opus |
+| `project-setup-detector` | First-time onboarding (read-only) — inventories repo, runs 17-layer detection, writes proposal (invoked by `/setup` Phase 1) | opus |
+| `project-setup-applier` | First-time onboarding (write) — reads confirmed proposal, validates allowlist, snapshots, applies substitutions (invoked by `/setup` Phase 4) | opus |
+| `impact-analyzer` | On-demand cascade analysis for a symbol/file — greps callers, classifies (direct/type/test), scores confidence (invoked by `/impact`) | opus |
 
 ## Work Item Tracker
 
@@ -161,6 +202,16 @@ Write for a **technical audience**. Be direct, no filler. Use identifiers, not d
 ### Dark Mode
 
 {{DESIGN_DARK_MODE}}
+
+## Architectural Awareness
+
+For module map, dependency direction (Mermaid), impact hotspots, cross-cutting concerns, common patterns, architectural invariants, and recently-churned files, see **`.claude/state/architecture.md`** — auto-generated by `/improve` and refreshed every session. Agents that benefit (architect, architecture-reviewer, refactor-advisor, dry-reviewer, impact-analyzer, code-reviewer) read it before acting.
+
+If the file is missing, run `/improve` to generate it. If the file is stale (timestamp older than the most recent commit), run `/improve` to refresh — that pipeline regenerates `architecture.md` as part of its standard pass.
+
+For precise on-demand impact analysis of a specific symbol or file, run **`/impact <symbol-or-file>`** — produces a targeted "what would break if I change this" report at `.claude/state/impact-<hash>.md`.
+
+For semantic search across a large codebase ("where do we handle invoice number generation?"), run **`/search "natural language query"`** — uses the vector index at `.claude/state/codebase.db` (built by `/index`). The index is opt-in; small projects don't need it.
 
 ## Coding Conventions
 
@@ -271,7 +322,7 @@ When invoked with `/factory TICKET-{id}`:
 
 ## Self-Improvement (always active)
 
-**Before ending any session where project files were modified**, spawn the `framework-improver` agent in the background. This keeps CLAUDE.md, rules, and settings in sync with the actual project state — not just after `/develop` or `/factory`, but after any work session including manual coding, refactoring, config changes, or dependency updates.
+**Before ending any session where project files were modified**, spawn `/improve` in the background (it orchestrates `framework-improver-detector` → `framework-improver-applier`). This keeps CLAUDE.md, rules, and settings in sync with the actual project state — not just after `/develop` or `/factory`, but after any work session including manual coding, refactoring, config changes, or dependency updates. The applier respects the `/setup`-owned skip-list, so onboarding decisions are never overwritten.
 
 The improver:
 - Fills unfilled `{{...}}` placeholders from project analysis

@@ -27,7 +27,8 @@ When editing template files, follow these rules:
 - Include the placeholder for project-specific commands (e.g., `{{TEST_COMMAND}}`)
 
 ## Rule Templates
-- YAML frontmatter must include: `patterns` array
+- YAML frontmatter must include: `id` (kebab-case, matches filename without `.md`) and `patterns` array
+- The `id` is the citation key reviewer agents use in findings — it MUST be stable forever (never rename, never reuse)
 - Use `{{PATTERN_PLACEHOLDER}}` for project-specific file patterns
 - Rules should be directives (imperative), not suggestions
 - Keep rules actionable and verifiable
