@@ -272,6 +272,13 @@
       "model": "opus",
       "blurb": "First-time onboarding (write): reads confirmed proposal, validates allowlist, snapshots, applies substitutions, writes audit log (invoked by `/setup` Phase 4)",
       "description": "First-time onboarding applier — reads `.claude/state/setup-proposal.md` (with user-confirmed values), validates the apply allowlist, snapshots existing files, then applies placeholder substitutions to CLAUDE.md, .claude/rules/, .claude/skills/, settings, and .gitignore. Refuses to run if `## Confirmed by user` is empty. Paired with `project-setup-detector` and orchestrated by `/setup`"
+    },
+    {
+      "name": "impact-analyzer",
+      "category": "meta",
+      "model": "opus",
+      "blurb": "On-demand precise impact analysis: greps callers, classifies cascade, scores confidence, writes per-symbol report (invoked by `/impact`)",
+      "description": "On-demand precise impact analysis for a symbol or file. Greps for callers, reads them, classifies the cascade (direct/indirect/test-only), and writes a structured report at `.claude/state/impact-<hash>.md`. Used by `/impact` and callable by review/refactor agents before suggesting changes"
     }
   ]
 }

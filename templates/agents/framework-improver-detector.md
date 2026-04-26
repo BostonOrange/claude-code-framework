@@ -77,6 +77,28 @@ For each candidate improvement:
 
 The applier will re-validate this filter at apply time, but doing it here too makes the proposal honest: the user sees exactly what would change.
 
+### Step 4a: Refresh the architecture state file
+
+Always include an improvement of type `architecture-refresh` in the proposal — this regenerates `.claude/state/architecture.md`. The file is the framework's structural-awareness primitive: it gives every other agent a precomputed module map, dependency-direction Mermaid diagram, impact hotspots, common patterns, and architectural invariants in prose form, so they don't reconstruct the same context from scratch each conversation.
+
+Generate the proposed architecture.md content from project scan output:
+
+- **Module map:** walk top-level directories (and one nested level for monorepos via Layer 11 detection); list each with one-line purpose + dependency direction inferred from imports.
+- **Dependency direction (Mermaid):** parse import statements (per-language: TypeScript `import`, Python `import`/`from`, Go `import`, Java `import`, Apex via `extends`/`implements`/explicit qualifying); collapse to module-level edges; emit `graph LR` block. Cap at 30 nodes for readability — group leaf modules into parents if exceeding.
+- **Impact hotspots:** find symbols with ≥10 inbound references via `grep -r "<symbol>(" --include='*.<ext>'` for the project's languages. List top 10 by reference count with file:line of definition.
+- **Cross-cutting concerns:** auto-detect logging (`logger`, `pino`, `winston`, `slog`, Apex `Logger.cls`), error handling (`Error`, `Exception`, custom error files), auth (`auth`, `session`, `permission`), config — list locations.
+- **Common patterns:** detect from file structure: API route convention, test file pattern, component structure, Salesforce-specific (Apex class naming, trigger handler pattern, LWC layout).
+- **Architectural invariants:** infer from CLAUDE.md "Coding Conventions" + observed import direction; surface rules like "lib/db has no business logic" only with high-confidence (e.g., grep confirms zero business logic in db/).
+- **Recently churned (last 7 days):** `git log --since="7 days ago" --pretty=format: --name-only | sort | uniq -c | sort -rn | head -10`.
+
+The proposed change row in `## Improvements`:
+
+```
+| N | architecture-refresh | .claude/state/architecture.md | n/a | <regenerated content> | structural awareness for agents; reduces token-cost re-grepping |
+```
+
+This refresh runs every `/improve` invocation. The file is gitignored (under `.claude/state/`); only its content matters per session.
+
 ### Step 5: Write the proposal
 
 Write `.claude/state/improve-proposal.md`:

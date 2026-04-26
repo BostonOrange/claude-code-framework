@@ -58,11 +58,11 @@ The setup wizard asks:
 - **Design system** (Material UI, Tailwind, Chakra, Ant Design, shadcn/ui, custom, or None)
 
 Then generates:
-- `.claude/skills/` — 21 workflow skills adapted to your stack (incl. `/team`, `/improve`, `/setup`, `/plan`, `/build`, `/iterative-review`)
-- `.claude/agents/` — 38 AI agents (21 analysis + 6 implementation + 4 planning + 7 meta, all opus)
+- `.claude/skills/` — 24 workflow skills adapted to your stack (incl. `/team`, `/improve`, `/setup`, `/plan`, `/build`, `/iterative-review`, `/impact`, `/index`, `/search`)
+- `.claude/agents/` — 39 AI agents (21 analysis + 6 implementation + 4 planning + 8 meta, all opus)
 - `.claude/commands/` — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)
 - `.claude/rules/` — 22 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components, code-smells, dry, purity, complexity, frontend-architecture, architecture-layering, api-layering, crypto, solid, concurrency, observability, supply-chain, secrets-management)
-- `.claude/hooks/` — 6 lifecycle hooks (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit)
+- `.claude/hooks/` — 7 lifecycle hooks + 1 utility (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit, codebase-index)
 - `.claude/settings.local.json` — project permissions, hooks
 - `.mcp.json` — MCP servers (Context7 documentation)
 - `~/.claude/settings.json` — user-level AI factory permissions, team orchestration (safe-by-default)
@@ -143,7 +143,10 @@ mkdir -p .claude/skills/my-domain/references/
 | `/build` | Multi-agent implementation — spawns build-coordinator + build specialists, executes the plan in sequenced phases |
 | `/iterative-review` | Plan → code → review → re-code loop with persistent state across iterations (uses `review-coordinator`) |
 | `/setup` | First-time onboarding — inventories repo, runs 17-layer detection with tradeoff-explained options, applies confirmed proposal (uses `project-setup-detector` + `project-setup-applier`) |
-| `/improve` | Self-improvement — update CLAUDE.md, rules, settings from project analysis |
+| `/impact` | On-demand precise cascade analysis for a symbol or file (uses `impact-analyzer`) |
+| `/index` | Build/refresh vector index of the codebase at `.claude/state/codebase.db` (opt-in for codebases >50k LOC) |
+| `/search` | Semantic search across the indexed codebase — answers "where do we handle X?" queries |
+| `/improve` | Self-improvement — update CLAUDE.md, rules, settings from project analysis (also refreshes `.claude/state/architecture.md`) |
 | `/ai-update` | Branch + PR for AI process file changes |
 | `/add-reference` | Add/update domain knowledge references |
 | `/update-tracker` | Push story docs back to work item tracker |
@@ -152,7 +155,7 @@ mkdir -p .claude/skills/my-domain/references/
 | `/mock-endpoint` | Mock external API integrations |
 | `/scaffold-design-system` | Scaffold design system tokens, components, and theme config |
 
-### AI Agents (38 specialized teammates)
+### AI Agents (39 specialized teammates)
 
 | Agent | Model | Purpose |
 |-------|-------|---------|
@@ -194,6 +197,7 @@ mkdir -p .claude/skills/my-domain/references/
 | `build-coordinator` | opus | Meta: orchestrates build phases sequentially (scaffold → happy-path → edge-case → tests → docs → refactor) |
 | `project-setup-detector` | opus | Meta: first-time onboarding (read-only) — inventories repo, runs 17-layer detection, writes proposal (invoked by `/setup` Phase 1) |
 | `project-setup-applier` | opus | Meta: first-time onboarding (write) — reads confirmed proposal, validates allowlist, snapshots, applies substitutions, writes audit log (invoked by `/setup` Phase 4) |
+| `impact-analyzer` | opus | Meta: on-demand precise cascade analysis — greps callers, classifies, scores confidence, writes per-symbol report (invoked by `/impact`) |
 
 ### Agent Teams (pre-configured groups)
 
@@ -436,7 +440,7 @@ claude-code-framework/
 │   ├── settings.json            # User-level AI factory permissions
 │   ├── settings.local.json      # Project-level permissions & model config
 │   ├── mcp.json                 # MCP server config (copied to .mcp.json)
-│   ├── agents/                  # 38 AI agent definitions
+│   ├── agents/                  # 39 AI agent definitions
 │   │   ├── architect.md         # System design, patterns, scalability
 │   │   ├── code-reviewer.md     # Bugs, security, performance in diffs (broad sweep)
 │   │   ├── code-smell-reviewer.md   # Smells specialist — cites `code-smells` rule
@@ -474,7 +478,8 @@ claude-code-framework/
 │   │   ├── planner-coordinator.md             # Meta: orchestrates planning specialists
 │   │   ├── build-coordinator.md               # Meta: orchestrates build phases
 │   │   ├── project-setup-detector.md          # Meta: first-time onboarding read-only (17-layer detection)
-│   │   └── project-setup-applier.md           # Meta: first-time onboarding write (allowlist + backup + audit log)
+│   │   ├── project-setup-applier.md           # Meta: first-time onboarding write (allowlist + backup + audit log)
+│   │   └── impact-analyzer.md                 # Meta: on-demand cascade analysis (grep callers, score confidence, per-symbol report)
 │   ├── commands/                # One-word automations
 │   │   ├── quick-test.md
 │   │   ├── lint-fix.md
@@ -520,6 +525,9 @@ claude-code-framework/
 │   ├── build/                   # Multi-agent implementation (build-coordinator)
 │   ├── iterative-review/        # Plan → code → review → re-code loop with state
 │   ├── setup/                   # First-time onboarding (17-layer detection via project-setup-detector + applier)
+│   ├── impact/                  # On-demand cascade analysis for a symbol or file
+│   ├── index/                   # Build vector index of the codebase (opt-in)
+│   ├── search/                  # Semantic search via the vector index
 │   ├── validate/                # Code validation
 │   ├── draft-story/             # Story creation
 │   ├── refine-story/            # Story refinement + templates

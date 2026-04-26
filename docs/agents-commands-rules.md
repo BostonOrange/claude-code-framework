@@ -200,6 +200,7 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `review-coordinator` | Read, Glob, Grep, Bash, Agent | opus | Synthesizes parallel reviewer output (invoked by `/iterative-review`) |
 | `project-setup-detector` | Read, Glob, Grep, Bash | opus | First-time onboarding (read-only) — 17-layer stack detection, writes proposal (invoked by `/setup` Phase 1) |
 | `project-setup-applier` | Read, Edit, Write, Bash | opus | First-time onboarding (write) — applies confirmed proposal with allowlist + backup + audit log (invoked by `/setup` Phase 4) |
+| `impact-analyzer` | Read, Glob, Grep, Bash | opus | On-demand cascade analysis — greps callers, classifies, scores confidence (invoked by `/impact`) |
 
 ### Commands (6)
 

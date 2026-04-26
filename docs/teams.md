@@ -65,6 +65,7 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents �
 | `review-coordinator` | Review Orchestration | opus | Synthesizes parallel reviewer findings, classifies risk tier, persists state across iterations (invoked by `/iterative-review`) |
 | `project-setup-detector` | Onboarding (read-only) | opus | First-time setup — 17-layer stack detection with tradeoff-explained options; writes proposal (invoked by `/setup` Phase 1) |
 | `project-setup-applier` | Onboarding (write) | opus | First-time setup — validates allowlist, snapshots, applies substitutions, writes audit log (invoked by `/setup` Phase 4) |
+| `impact-analyzer` | Cascade Analysis | opus | On-demand precise impact analysis — greps callers, classifies, scores confidence, writes per-symbol report (invoked by `/impact`) |
 
 ## Pre-Configured Teams
 

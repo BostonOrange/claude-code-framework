@@ -54,6 +54,7 @@ For each kept row:
 - **rule-create** → `Write <new rule file>` only if path passes allowlist.
 - **settings-update** → `Edit .claude/settings.local.json` with surgical addition.
 - **agent-tune** → `Edit <agent file>` with surgical frontmatter change.
+- **architecture-refresh** → `Write .claude/state/architecture.md` with the proposed content. This is the only Write target outside the standard allowlist's restricted set (`.claude/state/` is permitted by the allowlist regex). Always run last so other improvements have settled before the snapshot is taken.
 
 Track every applied change in memory: `(target_file, change_type, old, new)`.
 
