@@ -2,7 +2,8 @@
 
 Canonical bash blocks for project-state detection. Used by:
 - `templates/agents/project-setup-detector.md` — first-run onboarding
-- `templates/agents/framework-improver.md` — ongoing evolution
+- `templates/agents/framework-improver-detector.md` — ongoing evolution (read-only scan)
+- `templates/agents/framework-improver-applier.md` — ongoing evolution (apply with skip-list)
 - `skills/improve/SKILL.md` — manual `/improve` invocation
 
 When you find yourself listing manifests / lockfiles / configs in another agent or skill, **add it here and reference this file** instead of duplicating. Drift between these lists has caused gaps before (e.g., missing `Pipfile`, `*.csproj`, `mix.exs`).
@@ -88,5 +89,5 @@ The `sed` redaction strips embedded credential tokens (`https://x-access-token:G
 ## When to update this file
 
 1. A new common manifest, lockfile, or config emerges (e.g., a new package manager).
-2. A detection gap is found in `framework-improver` or `project-setup-detector` output.
+2. A detection gap is found in `framework-improver-detector` or `project-setup-detector` output.
 3. A network-touching command sneaks into one of the agents — move it here as a "what NOT to run" entry.

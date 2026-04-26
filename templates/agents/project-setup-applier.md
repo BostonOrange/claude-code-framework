@@ -25,7 +25,7 @@ Run these checks first. If any fail, halt immediately with a clear error and pro
 
 4. **Working tree pre-check.** Read the proposal's `## Pre-apply checks` block. If `Apply on dirty: yes`, skip this gate. Otherwise: run `git status --porcelain CLAUDE.md` (and the same for each path in the `In file` column of `## Substitutions`). If any of those have uncommitted changes, halt: "Uncommitted changes in <files>. Commit or stash before applying — or set `Apply on dirty: yes` in the proposal's `## Pre-apply checks` block to override." The opt-out is for the legitimate case where the user has intentional staged edits they want `/setup` to apply on top of (rare; explicit consent only).
 
-5. **Allowlist validation.** For every entry in `## Affected files`, run the *two-step* check below. The regex alone is not sufficient — string-level pre-checks catch path traversal and NUL bytes that the regex can't.
+5. **Allowlist validation.** Build the unique set of paths from the `In file` column of `## Substitutions` — that set IS the affected-files list (per `docs/setup-state-schema.md`; the legacy `## Affected files` section was removed). For every path in that set, run the *two-step* check below. The regex alone is not sufficient — string-level pre-checks catch path traversal and NUL bytes that the regex can't.
 
    **Step 5a — Reject any path that contains:**
    - Any of: `..`, `\` (backslash), NUL byte, `\r`, `\n`
@@ -48,7 +48,7 @@ If all five gates pass, proceed.
 
 Create `.claude/state/setup-backup-<ISO timestamp>/` and copy:
 - `CLAUDE.md` (if it exists)
-- All files in `## Affected files` that currently exist
+- All files in the affected set (unique `In file` values from `## Substitutions`) that currently exist
 
 Also write a **manifest** listing every file backed up. The manifest is the authoritative restore list — `cp -r` semantics won't undo files the apply *added*, but a manifest restore can detect "file existed in backup, was modified, restore" vs "file did not exist in backup, was added by apply, delete to undo."
 
@@ -66,7 +66,7 @@ else
   echo "MISSING CLAUDE.md" >> "$MANIFEST"
 fi
 
-# Each file in `## Affected files` — preserve relative path inside backup
+# Each file in the affected set (derived from ## Substitutions) — preserve relative path inside backup
 for f in $AFFECTED_FILES; do
   if [ -f "$f" ]; then
     mkdir -p "$BACKUP/$(dirname "$f")"
@@ -107,7 +107,7 @@ Apply substitutions per-layer in the order listed in `## Confirmed by user`. Tra
 
 **TOCTOU re-check before each Edit.** Before performing each Edit, recompute the sha256 of `.claude/state/setup-proposal.md` and compare to `PROPOSAL_HASH_AT_GATE` from gate 1. If they differ, halt: "Proposal modified between gate validation and apply (TOCTOU detected). All applied changes have been rolled back." Then auto-rollback per the procedure below. This catches a concurrent process or accidental edit to the proposal between Phase 3 confirmation and Phase 4 apply.
 
-**On any error in Step 3 — auto-rollback.** If an Edit fails (placeholder not found, file missing, write error) or the TOCTOU re-check fails, do NOT stop and leave partial state. Instead:
+**On any error in Step 3 — auto-rollback AND release the lock.** If an Edit fails (placeholder not found, file missing, write error) or the TOCTOU re-check fails, do NOT stop and leave partial state. The lock release is part of the rollback path, not a separate later step — `rm -f .claude/state/setup.lock` runs as the final action of the rollback so the next `/setup` is unblocked even if this run died mid-apply. Then:
 
 1. For every Edit you successfully applied so far, restore the file from `.claude/state/setup-backup-<ts>/` (the manifest at `<backup>/manifest.txt` lists what to restore).
 2. Halt with a clear error: "Apply failed at layer N (`{{PLACEHOLDER}}` in `<file>`). All applied changes have been rolled back from `<backup>`. Working tree is now in pre-apply state."
@@ -160,7 +160,7 @@ Write `.claude/state/setup-applied.md`:
 - ...
 
 ## Layers owned by /setup
-*(framework-improver will respect these — only fill empty placeholders, never overwrite values listed here)*
+*(`framework-improver-detector` reads this table to build its skip-list at proposal time; `framework-improver-applier` re-validates at apply time. Only fill empty placeholders; never overwrite values listed here.)*
 | # | Layer | Final value |
 |---|-------|-------------|
 | 1 | Language | TypeScript |
@@ -188,10 +188,10 @@ The manifest-driven restore correctly undoes both modifications and additions. A
 
 ## Next action
 - Run `/develop TICKET-123` to try the dev cycle
-- After your first feature, `framework-improver` will keep things in sync as conventions emerge
+- After your first feature, `/improve` will keep things in sync as conventions emerge
 ```
 
-This file is the contract `framework-improver` reads. It must list every layer `/setup` decided so improver doesn't overwrite them.
+This file is the contract `framework-improver-detector` and `framework-improver-applier` both read. It must list every layer `/setup` decided so the improver pair doesn't overwrite them.
 
 ## What NOT to Do
 
@@ -200,7 +200,7 @@ This file is the contract `framework-improver` reads. It must list every layer `
 - **Don't run network commands.** Forbidden command list in `docs/project-detection.md`. Bash is for filesystem and git operations only.
 - **Don't re-detect.** The detector already wrote the proposal. You consume it. If the proposal is missing data, halt and ask the skill to re-run detection.
 - **Don't skip the backup step.** Even if the smoke check is clean, the backup is the rollback path. Always create it.
-- **Don't modify files not listed in `## Affected files`.** If you find yourself wanting to "just also update X," that's a sign the proposal is incomplete — halt and surface.
+- **Don't modify files outside the derived affected-files set.** The set comes from the unique `In file` values in `## Substitutions`. If you find yourself wanting to "just also update X" for a file not referenced by any substitution, that's a sign the proposal is incomplete — halt and surface.
 - **Don't overwrite the proposal or apply log.** Both are append-only audit artifacts.
 
 ## Edge Cases
@@ -214,6 +214,6 @@ This file is the contract `framework-improver` reads. It must list every layer `
 | Smoke check finds unexpected `{{...}}` | Halt; do not write apply log; user can re-run after fix |
 | Working tree has uncommitted CLAUDE.md changes | Halt at gate 4; tell user to commit/stash |
 | `.gitignore` doesn't exist | Create one with `.claude/state/` (Step 2) |
-| Allowlist regex rejects a path the user expected to be covered | Halt; surface the rejected path; instruct user to update the proposal's `## Affected files` and re-confirm |
+| Allowlist regex rejects a path the user expected to be covered | Halt; surface the rejected path; instruct user to update the proposal's `## Substitutions` row's `In file` value and re-confirm |
 | Apply log already exists from prior run | Append a `## Re-applied <timestamp>` section; do not overwrite prior history |
 | Detector wrote `Status: needs-decision` for a layer but `## Confirmed by user` doesn't include it | Halt: "Layer N awaits a decision in the confirmed section" |

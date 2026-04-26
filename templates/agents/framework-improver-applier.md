@@ -11,16 +11,28 @@ You are the write half of `/improve`. The detector produced `.claude/state/impro
 
 ## Pre-apply Gates
 
-Run these checks first. Halt if any fail.
+Run these checks first. Halt if any fail. Same shape as `project-setup-applier` so users can reason about both pipelines uniformly.
 
-1. **Proposal file exists.** Read `.claude/state/improve-proposal.md`. Halt if missing.
+0. **Cross-lifecycle lock check.** If `.claude/state/setup.lock` exists and is less than 1 hour old, halt: "A `/setup` is in progress (lock at `<path>`, age `<seconds>s`). `/improve` cannot apply while `/setup` is mid-flight — wait for it to finish, or `rm` the lock if it's stale." Stale (>1hr) → log warning and proceed. This prevents `/improve` from racing against an in-progress `/setup` that hasn't yet written `setup-applied.md`.
+
+   Then acquire `.claude/state/improve.lock` for self-mutual-exclusion (same format as setup.lock — `<ISO timestamp>\n<process info>\n`). If another `/improve` is running (lock exists, <1hr old), halt with the same message style. Release on success, failure, or auto-rollback.
+
+1. **Proposal file exists.** Read `.claude/state/improve-proposal.md`. Halt if missing. Compute sha256 of file contents and store in memory as `IMPROVE_PROPOSAL_HASH_AT_GATE` — TOCTOU baseline. You will re-verify before each Edit.
+
 2. **Re-derive the skip-list.** Read `.claude/state/setup-applied.md` if present, build `OWNED_PLACEHOLDERS` and `OWNED_FILES` per `docs/setup-state-schema.md`'s layer-to-placeholder mapping. (The detector did this too; you do it again as a defense-in-depth gate against a tampered or stale proposal.)
+
 3. **Filter the proposal.** For each row in `## Improvements`:
    - If `target_placeholder ∈ OWNED_PLACEHOLDERS` → drop, log to refusals.
    - If `target_file ∈ OWNED_FILES` AND change is non-additive → drop, log to refusals.
+
+   **"Additive vs non-additive" is canonically defined in `docs/setup-state-schema.md`** — both detector and applier use the same definition (additive = adds new pattern/section/entry; non-additive = mutates content already on disk).
+
    - Otherwise → keep.
    - **Halt if the count of dropped items here is non-zero** (means proposal escaped detector filtering — surface to user, do not apply).
-4. **Allowlist validation.** Apply the same path allowlist used by `project-setup-applier` (see `docs/setup-state-schema.md` — same regex). Reject any `target_file` outside the allowlist.
+
+4. **Working tree pre-check.** Run `git status --porcelain CLAUDE.md` and `git status --porcelain` for each path in the kept proposal's `Target` column. If any have uncommitted changes, halt: "Uncommitted changes in `<files>`. Commit or stash before applying — `/improve` is autonomous and will clobber unstaged work otherwise."
+
+5. **Allowlist validation.** Apply the canonical path allowlist (see `docs/setup-state-schema.md` "Path allowlist" section — same regex used by `project-setup-applier`). Run the same two-step check (string pre-filter + anchored regex) on every `Target` path. Reject anything outside the allowlist.
 
 ## Process
 
@@ -39,7 +51,9 @@ For each kept row:
 
 Track every applied change in memory: `(target_file, change_type, old, new)`.
 
-**Auto-rollback on error.** Same pattern as `project-setup-applier`: if any Edit fails, restore from the backup manifest, halt, do not write the apply log.
+**TOCTOU re-check before each Edit.** Recompute sha256 of `.claude/state/improve-proposal.md` and compare to `IMPROVE_PROPOSAL_HASH_AT_GATE` from gate 1. If they differ, halt and auto-rollback: "Proposal modified between gate validation and apply (TOCTOU detected). All applied changes have been rolled back."
+
+**Auto-rollback on error.** Same pattern as `project-setup-applier`: if any Edit fails OR the TOCTOU re-check fails, restore from the backup manifest, halt, do not write the apply log. Always release `.claude/state/improve.lock` on rollback so the user can re-run.
 
 ### Step 3: Smoke check
 
@@ -48,6 +62,14 @@ grep -r '{{' CLAUDE.md .claude/ 2>/dev/null | grep -vE '\.claude/state/' | head 
 ```
 
 For remaining `{{...}}`, classify intentionally-unfilled (in `setup-applied.md`'s `## Intentionally unfilled`) vs unexpected. Unexpected → auto-rollback.
+
+### Step 3a: Release the lock
+
+Remove `.claude/state/improve.lock` (acquired at gate 0). On any halt or auto-rollback above, also release. Mandatory whether the apply succeeded, failed, or rolled back.
+
+```bash
+rm -f .claude/state/improve.lock
+```
 
 ### Step 4: Write apply log
 

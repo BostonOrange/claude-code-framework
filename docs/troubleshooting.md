@@ -65,7 +65,7 @@ bash tests/check-agent-registry.sh 2>&1 | grep FAIL
 
 **Symptom:** Running the `framework-qa` agent (or the QA step at session end) reports inconsistencies across README / CLAUDE.md / CLAUDE.md.template / docs.
 
-**Fix:** Run `framework-improver` first — it's the mutating agent. `framework-qa` is read-only and only verifies. The improver edits docs to bring them back in line with actual file state; the QA agent re-runs and confirms the fix.
+**Fix:** Run `/improve` first (it spawns `framework-improver-detector` → `framework-improver-applier`, the mutating pair). `framework-qa` is read-only and only verifies. The improver pair edits docs to bring them back in line with actual file state; the QA agent re-runs and confirms the fix.
 
 ## Unreplaced `{{...}}` Placeholders After Setup
 

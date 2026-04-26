@@ -41,7 +41,8 @@ Spawn a team of specialized agents to work in parallel on the current codebase.
 | `documentation-writer` | API docs, READMEs, architecture docs | opus | Read/Write |
 | `api-designer` | Endpoint design, schemas, consistency | opus | Read-only |
 | `database-architect` | Schema, migrations, indexes, queries | opus | Read-only |
-| `framework-improver` | Self-improvement of .claude/ config | opus | Read/Write |
+| `framework-improver-detector` | Self-improvement (read-only): scan + skip-list + proposal (invoked by `/improve`, not `/team`) | opus | Read-only |
+| `framework-improver-applier` | Self-improvement (write): re-validates skip-list, applies improvements (invoked by `/improve`, not `/team`) | opus | Read/Write |
 | `review-coordinator` | Synthesizes parallel reviewer findings, persists state across iterations (invoked by `/iterative-review`, not `/team`) | opus | Read + Agent spawning |
 
 ## Process
@@ -60,10 +61,10 @@ Parse the team name from the command argument. Map to agent list:
 | `quality-deep` | code-smell-reviewer, dry-reviewer, purity-reviewer, complexity-reviewer |
 | `design` | ui-ux-reviewer, performance-optimizer, refactor-advisor |
 | `documentation` | documentation-writer, api-designer |
-| `full` | all 16 review/implementation agents (excludes meta-agents `framework-improver` and `review-coordinator`) |
+| `full` | all 16 review/implementation agents (excludes meta-agents like `review-coordinator`, the `framework-improver-*` pair, and the `project-setup-*` pair) |
 | `custom` | agents listed after "custom" keyword |
 
-`review-coordinator` and `framework-improver` are meta-agents — the first orchestrates other reviewers (use `/iterative-review` for the full feedback loop), the second updates the framework itself (use `/improve`). Neither is a `/team` member.
+`review-coordinator`, `framework-improver-detector`/`-applier`, and `project-setup-detector`/`-applier` are meta-agents — the review-coordinator orchestrates other reviewers (use `/iterative-review` for the full feedback loop); the improver pair updates the framework itself (use `/improve`); the setup pair runs first-time onboarding (use `/setup`). None are `/team` members.
 
 If no argument provided, show usage and available teams.
 
@@ -115,5 +116,5 @@ Combine individual reports into a unified team report:
 
 ## Related Skills
 
-- `/improve` — Uses framework-improver agent to update .claude/ configuration
+- `/improve` — Uses framework-improver-detector + framework-improver-applier to update .claude/ configuration
 - `/validate` — Code validation (more focused than /team review)

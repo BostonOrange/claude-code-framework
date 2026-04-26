@@ -116,15 +116,15 @@ grep -r "{{" .claude/ CLAUDE.md | grep -v ".git"
 
 ## Self-improvement workflow
 
-When you edit framework files, the `framework-improver` agent (framework-repo-only, not distributed) can update downstream docs automatically. From CLAUDE.md:
+When you edit framework files, `/improve` (orchestrating `framework-improver-detector` → `framework-improver-applier`) can update downstream docs automatically. From CLAUDE.md:
 
-> **Before ending any session where framework files were modified**, spawn the `framework-improver` agent in the background. Additionally, run the `framework-qa` agent to validate that all counts and tables are consistent.
+> **Before ending any session where framework files were modified**, spawn `/improve` in the background. Additionally, run the `framework-qa` agent to validate that all counts and tables are consistent.
 
 Both run automatically under the self-improvement hook if wired. Manually:
 
 ```bash
 # In a Claude Code session:
-# "Run framework-improver and framework-qa on the recent changes."
+# "Run /improve and framework-qa on the recent changes."
 ```
 
 ## Known parity drifts (tracked)

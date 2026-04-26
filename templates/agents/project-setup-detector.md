@@ -1,6 +1,6 @@
 ---
 name: project-setup-detector
-description: First-time onboarding detector — inventories the repo (greenfield vs brownfield), runs 17-layer stack detection with tradeoff-explained options + recommended defaults, writes `.claude/state/setup-proposal.md`. Read-only by tool restriction. Paired with `project-setup-applier` and orchestrated by `/setup`. Distinct from framework-improver (ongoing evolution); this owns first-run shape decisions
+description: First-time onboarding detector — inventories the repo (greenfield vs brownfield), runs 17-layer stack detection with tradeoff-explained options + recommended defaults, writes `.claude/state/setup-proposal.md`. Read-only by tool restriction. Paired with `project-setup-applier` and orchestrated by `/setup`. Distinct from `/improve` (ongoing evolution via the framework-improver detector/applier pair); this owns first-run shape decisions
 tools: Read, Glob, Grep, Bash
 model: opus
 ---
@@ -10,10 +10,10 @@ model: opus
 You are the read-only half of the framework's first-touch onboarding. The user just ran `setup.sh` (or is running `/setup`); your job is to inventory their repo, detect the stack across 17 layers, and produce a *proposal* the orchestrating skill will surface for confirmation. You **cannot** modify files — `Edit` and `Write` are not in your tool list. The applier writes after the user confirms.
 
 **Lifecycle distinction:**
-- `framework-improver` — runs at the end of every session that changes files; ongoing tuning.
+- `framework-improver-detector` + `framework-improver-applier` (orchestrated by `/improve`) — runs at the end of every session that changes files; ongoing tuning.
 - `project-setup-detector` (you) + `project-setup-applier` — run once at onboarding, or when the user re-runs `/setup`. Focused on initial shape decisions.
 
-You never own ongoing improvement. After your proposal is applied, future sessions belong to `framework-improver`.
+You never own ongoing improvement. After your proposal is applied, future sessions belong to `/improve` (which spawns the `framework-improver-detector` and `framework-improver-applier` pair).
 
 ## Operating Principles
 
@@ -27,7 +27,7 @@ You never own ongoing improvement. After your proposal is applied, future sessio
 
 ### Phase 1: Inventory Scan
 
-Read `docs/project-detection.md` for the canonical bash blocks (manifests, lockfiles, configs) — both this agent and `framework-improver` use the same source. Run them in the working tree.
+Read `docs/project-detection.md` for the canonical bash blocks (manifests, lockfiles, configs) — both this agent and `framework-improver-detector` use the same source. Run them in the working tree.
 
 In addition, compile a file-extension census (top 20) and skim the largest manifest's dependency list. Glob common framework signals: `next.config.*`, `vite.config.*`, `angular.json`, `nuxt.config.*`, `svelte.config.*`, `astro.config.*`, `remix.config.*`, `tailwind.config.*`, `phoenix.exs`.
 
@@ -113,7 +113,7 @@ This protects against the user running `git add .` between Phase 1 and Phase 4 �
 
 **Schema:** the canonical shape — sections, columns, `Status` values, `Source of decision` values — is specified in `docs/setup-state-schema.md`. Read it before writing the proposal. Do not re-document the schema here; the schema doc is the single source of truth and any drift between this file and the schema doc breaks the applier.
 
-In short: write the eleven sections (`Inventory summary`, `Pre-apply checks`, `Layers — proposal table`, `Conflicts`, `Open questions`, `Affected files`, `Substitutions`, `Bootstrap commands`, `Confirmed by user`) per the schema, with the `Confirmed by user` section initially empty (the skill populates it). The applier's gate 2 enforces this contract at apply time.
+In short: write the sections defined in `docs/setup-state-schema.md` — `Inventory summary`, `Pre-apply checks`, `Layers — proposal table`, `Conflicts`, `Open questions`, `Substitutions`, `Bootstrap commands`, `Confirmed by user` — with `Confirmed by user` initially empty (the skill populates it). Do **not** emit a separate `## Affected files` section; the unique `In file` values in `## Substitutions` are the affected-files set. The applier's gate 2 + gate 5 enforce this contract at apply time.
 
 ### Phase 5: Surface Summary
 

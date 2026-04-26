@@ -288,15 +288,15 @@ If yes -> Spawn `/update-tracker {TICKET_ID}` as a background sub-agent.
 
 ## Phase 9: Framework Improvement (Background)
 
-After every completed development cycle, spawn the `framework-improver` agent as a background sub-agent to evolve the `.claude/` configuration:
+After every completed development cycle, spawn `/improve` in the background to evolve the `.claude/` configuration:
 
 ```
-Agent: framework-improver
+Skill: /improve
 Mode: background (fire-and-forget)
 ```
 
-The improver runs silently and:
-- Fills any remaining `{{...}}` placeholders in CLAUDE.md from project state
+`/improve` orchestrates `framework-improver-detector` → `framework-improver-applier`. It:
+- Fills any remaining `{{...}}` placeholders in CLAUDE.md from project state (subject to the `/setup`-owned skip-list — onboarding decisions are never overwritten)
 - Updates `.claude/rules/` patterns if actual file paths have drifted
 - Notes newly discovered coding patterns or conventions
 - Logs changes to `docs/ai-improvements.md` (append, never overwrite)

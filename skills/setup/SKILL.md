@@ -9,7 +9,7 @@ description: First-time onboarding — orchestrates project-setup-detector and p
 
 The bash installer can only ask the eight questions it was built around. `/setup` walks 17 layers — language, framework, build, test, type-check, format/lint, persistence, API style, frontend, design system, monorepo, observability, infra, CI/CD, tracker, notification, branch — and uses what's actually in the repo to pre-fill answers. For each layer it can't auto-answer, it shows the options, the tradeoffs, and a recommended default. You pick "default" or pick differently — no research required.
 
-**Lifecycle vs `/improve`:** `/setup` decides shape (first run, or re-baseline). `/improve` keeps shape in tune as the project grows. They don't overlap — `framework-improver` reads the `## Layers owned by /setup` block in `setup-applied.md` and refuses to overwrite values `/setup` decided.
+**Lifecycle vs `/improve`:** `/setup` decides shape (first run, or re-baseline). `/improve` keeps shape in tune as the project grows. They don't overlap — `framework-improver-detector` reads the `## Layers owned by /setup` block in `setup-applied.md` to build a skip-list at proposal time, and `framework-improver-applier` re-validates that skip-list at apply time, halting if anything escaped detection.
 
 ## Usage
 
@@ -83,6 +83,12 @@ Wait for user reply. Common shapes:
 - **"use detected + <answer1> + <answer2>"** — detected plus answers to open questions.
 - **Layer-by-layer** — explicit choice per layer.
 
+**Working-tree dirty?** If the detector's `## Pre-apply checks` block reported uncommitted changes to CLAUDE.md or any `.claude/` file in the affected set, surface that to the user explicitly:
+
+> "Working tree has uncommitted changes to `<files>`. The applier will halt unless you opt in. Reply `apply on dirty` to set the override (your unstaged work in those files will be backed up but the apply will run on top of it). Otherwise commit/stash first and re-run `/setup`."
+
+If the user replies `apply on dirty`, set `Apply on dirty: yes` in the proposal's `## Pre-apply checks` block before continuing to Phase 4.
+
 Update `.claude/state/setup-proposal.md` in place with the resolved values under the existing `## Confirmed by user` section. The schema for that section — required columns, valid `Source of decision` values, and which `Status` values must appear — is in `docs/setup-state-schema.md`. **Every layer with `Status: detected`, `needs-confirmation`, or `needs-decision` must appear in `## Confirmed by user`.** Anything else fails the applier's gate 2.
 
 If `--dry-run`, stop here and remove `.claude/state/setup.lock` so the next `/setup` is unblocked. Print the path to `setup-proposal.md` for inspection.
@@ -121,14 +127,14 @@ After the applier returns:
 ### Phase 6: Hand-off
 
 - **Brownfield:** "Run `/develop TICKET-123` to try the dev cycle, or `/team review` to validate the framework picked up your conventions."
-- **Greenfield:** "Run the bootstrap command listed in `.claude/state/setup-proposal.md` (under `## Bootstrap commands`). After your first commit, `framework-improver` will keep things in sync as conventions emerge."
+- **Greenfield:** "Run the bootstrap command listed in `.claude/state/setup-proposal.md` (under `## Bootstrap commands`). After your first commit, `/improve` will keep things in sync as conventions emerge."
 
 ## State Files
 
 | File | Owner | Lifecycle |
 |------|-------|-----------|
 | `.claude/state/setup-proposal.md` | `project-setup-detector` (Phase 1); skill updates `## Confirmed by user` (Phase 3) | Append-only audit |
-| `.claude/state/setup-applied.md` | `project-setup-applier` (Phase 4) | Append-only; `framework-improver` reads `## Layers owned by /setup` |
+| `.claude/state/setup-applied.md` | `project-setup-applier` (Phase 4) | Append-only; `framework-improver-detector` and `framework-improver-applier` both read `## Layers owned by /setup` |
 | `.claude/state/setup-backup-<ts>/` | `project-setup-applier` (Phase 4 step 1) | Created every apply; rollback path |
 
 All under `.claude/state/` (the applier ensures `.gitignore` covers it).
@@ -167,7 +173,7 @@ If you're onboarding a sensitive repo, **verify in your transcript** that no net
 
 - `project-setup-detector` agent — runs Phase 1, produces the proposal (read-only by tool removal)
 - `project-setup-applier` agent — runs Phase 4, applies with backup + allowlist + audit log
-- `docs/project-detection.md` — shared detection bash (used by detector + framework-improver)
+- `docs/project-detection.md` — shared detection bash (used by `project-setup-detector` + `framework-improver-detector`)
 - `/improve` — ongoing evolution; reads `setup-applied.md` to respect `/setup`'s decisions
-- `framework-improver` agent — what `/improve` spawns
+- `framework-improver-detector` + `framework-improver-applier` agents — what `/improve` spawns (detect → apply pipeline)
 - `setup.sh` / `setup.ps1` — bash/PowerShell installers; `/setup` refines what they generated

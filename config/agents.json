@@ -264,7 +264,7 @@
       "category": "meta",
       "model": "opus",
       "blurb": "First-time onboarding (read-only): inventories repo, runs 17-layer detection, writes proposal (invoked by `/setup` Phase 1)",
-      "description": "First-time onboarding detector — inventories the repo (greenfield vs brownfield), runs 17-layer stack detection with tradeoff-explained options + recommended defaults, writes `.claude/state/setup-proposal.md`. Read-only by tool restriction. Paired with `project-setup-applier` and orchestrated by `/setup`. Distinct from framework-improver (ongoing evolution); this owns first-run shape decisions"
+      "description": "First-time onboarding detector — inventories the repo (greenfield vs brownfield), runs 17-layer stack detection with tradeoff-explained options + recommended defaults, writes `.claude/state/setup-proposal.md`. Read-only by tool restriction. Paired with `project-setup-applier` and orchestrated by `/setup`. Distinct from `/improve` (ongoing evolution via the framework-improver detector/applier pair); this owns first-run shape decisions"
     },
     {
       "name": "project-setup-applier",
