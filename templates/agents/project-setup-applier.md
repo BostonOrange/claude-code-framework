@@ -54,43 +54,9 @@ If all five gates pass, proceed.
 
 ### Step 1: Snapshot existing state (always — even if dry-run)
 
-Create `.claude/state/setup-backup-<ISO timestamp>/` and copy:
-- `CLAUDE.md` (if it exists)
-- All files in the affected set (unique `In file` values from `## Substitutions`) that currently exist
+Run the **canonical snapshot procedure** from `docs/applier-pattern.md` "Snapshot procedure" with `<name>=setup`. The procedure backs up `CLAUDE.md` plus every file in the affected set (unique `In file` values from `## Substitutions`) to `.claude/state/setup-backup-<ts>/` and writes a `manifest.txt`.
 
-Also write a **manifest** listing every file backed up. The manifest is the authoritative restore list — `cp -r` semantics won't undo files the apply *added*, but a manifest restore can detect "file existed in backup, was modified, restore" vs "file did not exist in backup, was added by apply, delete to undo."
-
-```bash
-TS="$(date -u +%Y%m%dT%H%M%SZ)"
-BACKUP=".claude/state/setup-backup-$TS"
-mkdir -p "$BACKUP"
-MANIFEST="$BACKUP/manifest.txt"
-
-# CLAUDE.md (always backed up if present)
-if [ -f CLAUDE.md ]; then
-  cp CLAUDE.md "$BACKUP/CLAUDE.md"
-  echo "EXISTING CLAUDE.md" >> "$MANIFEST"
-else
-  echo "MISSING CLAUDE.md" >> "$MANIFEST"
-fi
-
-# Each file in the affected set (derived from ## Substitutions) — preserve relative path inside backup
-for f in $AFFECTED_FILES; do
-  if [ -f "$f" ]; then
-    mkdir -p "$BACKUP/$(dirname "$f")"
-    cp "$f" "$BACKUP/$f"
-    echo "EXISTING $f" >> "$MANIFEST"
-  else
-    echo "MISSING $f" >> "$MANIFEST"
-  fi
-done
-```
-
-The manifest format is `{EXISTING|MISSING} <relative-path>` per line. Recovery walks this manifest:
-- `EXISTING <path>` → `cp $BACKUP/<path> <path>` (restore prior content)
-- `MISSING <path>` → `rm <path>` (delete what apply added; this undoes additions that `cp -r` cannot)
-
-This is the rollback path used by Step 3's auto-rollback and by the user via the apply log's recovery section.
+The manifest is the authoritative restore list — `cp -r` cannot undo files the apply added; the manifest can. Recovery format: see pattern doc "Recovery bash" — the canonical snippet lives there. This is the rollback path used by Step 3's auto-rollback and by the user via the apply log's recovery section.
 
 ### Step 2: Ensure `.claude/state/` is gitignored
 

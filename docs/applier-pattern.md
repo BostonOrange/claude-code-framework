@@ -78,6 +78,38 @@ MISSING .claude/rules/observability.md
 
 A naive `cp -r` cannot undo additions; the manifest does.
 
+### Snapshot procedure (canonical bash)
+
+Both appliers run this verbatim during Step 1 — substitute `<name>` with `setup` or `improve`. `$AFFECTED_FILES` is the unique set of paths derived from the proposal (the proposal's substitution table for `/setup`, the proposal's `Target` column for `/improve`).
+
+```bash
+TS="$(date -u +%Y%m%dT%H%M%SZ)"
+BACKUP=".claude/state/<name>-backup-$TS"
+mkdir -p "$BACKUP"
+MANIFEST="$BACKUP/manifest.txt"
+
+# CLAUDE.md (always snapshot if present — it's the most-edited file)
+if [ -f CLAUDE.md ]; then
+  cp CLAUDE.md "$BACKUP/CLAUDE.md"
+  echo "EXISTING CLAUDE.md" >> "$MANIFEST"
+else
+  echo "MISSING CLAUDE.md" >> "$MANIFEST"
+fi
+
+# Each affected file — preserve relative path inside backup
+for f in $AFFECTED_FILES; do
+  if [ -f "$f" ]; then
+    mkdir -p "$BACKUP/$(dirname "$f")"
+    cp "$f" "$BACKUP/$f"
+    echo "EXISTING $f" >> "$MANIFEST"
+  else
+    echo "MISSING $f" >> "$MANIFEST"
+  fi
+done
+```
+
+When changing this snippet, both appliers must be re-tested in the same commit.
+
 ### Recovery bash (canonical)
 
 Run from a bash-compatible shell (Git Bash on Windows works; PowerShell does not — use bash or WSL):
@@ -174,4 +206,3 @@ When extending the schema, update that doc first; both detectors and appliers re
 2. The manifest format changes.
 3. The lockfile format changes (more fields, different file structure).
 4. A new applier-pattern primitive is introduced (e.g., a "dry-run" mode).
-5. A new pair is added that doesn't fit the existing template — note the deviation here so future authors don't follow it blindly.

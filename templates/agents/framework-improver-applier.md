@@ -21,7 +21,7 @@ You operate per the applier contract in `docs/applier-pattern.md` (gate template
 
 Run these checks first. Halt if any fail. Same shape as `project-setup-applier` so users can reason about both pipelines uniformly.
 
-0. **Cross-lifecycle lock check + self-mutual-exclusion.** Per `docs/applier-pattern.md` "Cross-lifecycle coordination": first check `.claude/state/setup.lock` — if held by a live PID with age <1hr, halt with "A `/setup` is in progress; `/improve` cannot apply while `/setup` is mid-flight — wait or `rm` the lock if stale." Then acquire `.claude/state/improve.lock` per the canonical lockfile spec (atomic create via `set -C`, three-line format with PID + timestamp + process info, sanity-check on age for clock skew, dead-process detection). Halt if another `/improve` holds it. Release on success, failure, or auto-rollback.
+0. **Cross-lifecycle lock + self-mutex.** Per `docs/applier-pattern.md` "Cross-lifecycle coordination" + "Lockfile spec": check `setup.lock` first (halt if a live `/setup` holds it), then acquire `improve.lock` atomically. Release on success, failure, or auto-rollback.
 
 1. **Proposal file exists.** Read `.claude/state/improve-proposal.md`. Halt if missing. Compute sha256 of file contents and store in memory as `IMPROVE_PROPOSAL_HASH_AT_GATE` — TOCTOU baseline. You will re-verify before each Edit.
 

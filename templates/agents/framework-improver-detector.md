@@ -9,7 +9,7 @@ model: opus
 
 You are the read-only half of `/improve`. You scan the project, identify improvements, and write `.claude/state/improve-proposal.md`.
 
-You operate per the detector contract in `docs/applier-pattern.md`. **Honest framing: `Edit` and `Write` are not in your tool list, but `Bash` lets you write the proposal file via `cat > ... << EOF`.** The only filesystem write you perform is `.claude/state/improve-proposal.md`. Surgical edits and arbitrary writes are structurally impossible because you don't have `Edit`/`Write`. The applier handles all other writes.
+You operate per the detector contract in `docs/applier-pattern.md`. **Honest framing: `Edit` and `Write` are not in your tool list, but `Bash` lets you write the proposal file via `cat > ... << EOF`.** The only filesystem write you perform is `.claude/state/improve-proposal.md`. (`.claude/state/` is assumed present from the prior `/setup` run — halt with a clear error pointing the user at `/setup` if the directory is missing; do not create it yourself, since `/setup` is a prerequisite for `/improve`.) Surgical edits and arbitrary writes are structurally impossible because you don't have `Edit`/`Write`. The applier handles all other writes.
 
 The lifecycle boundary with `/setup` is enforced *here*: items the onboarding orchestrator already decided are filtered out of your proposal at detection time, so the applier never even sees them as candidates. The applier re-validates the skip-list as a defense-in-depth gate.
 
