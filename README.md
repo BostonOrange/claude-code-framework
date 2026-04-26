@@ -59,7 +59,7 @@ The setup wizard asks:
 
 Then generates:
 - `.claude/skills/` — 21 workflow skills adapted to your stack (incl. `/team`, `/improve`, `/setup`, `/plan`, `/build`, `/iterative-review`)
-- `.claude/agents/` — 36 AI agents covering full team + 12 review specialists + 4 planning specialists + 4 build specialists + 4 meta agents (all opus)
+- `.claude/agents/` — 37 AI agents (21 analysis + 6 implementation + 4 planning + 6 meta, all opus)
 - `.claude/commands/` — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)
 - `.claude/rules/` — 22 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components, code-smells, dry, purity, complexity, frontend-architecture, architecture-layering, api-layering, crypto, solid, concurrency, observability, supply-chain, secrets-management)
 - `.claude/hooks/` — 6 lifecycle hooks (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit)
@@ -152,7 +152,7 @@ mkdir -p .claude/skills/my-domain/references/
 | `/mock-endpoint` | Mock external API integrations |
 | `/scaffold-design-system` | Scaffold design system tokens, components, and theme config |
 
-### AI Agents (36 specialized teammates)
+### AI Agents (37 specialized teammates)
 
 | Agent | Model | Purpose |
 |-------|-------|---------|
@@ -191,7 +191,8 @@ mkdir -p .claude/skills/my-domain/references/
 | `review-coordinator` | opus | Meta: synthesizes parallel reviewer output, dedupes, filters, classifies risk tier, persists state across iterations |
 | `planner-coordinator` | opus | Meta: orchestrates planning specialists, classifies scope, spawns parallel waves, synthesizes one plan |
 | `build-coordinator` | opus | Meta: orchestrates build phases sequentially (scaffold → happy-path → edge-case → tests → docs → refactor) |
-| `project-setup` | opus | Meta: first-time onboarding — inventories repo, runs 15-layer detection with tradeoff-explained options, applies confirmed proposal (invoked by `/setup`) |
+| `project-setup-detector` | opus | Meta: first-time onboarding (read-only) — inventories repo, runs 17-layer detection, writes proposal (invoked by `/setup` Phase 1) |
+| `project-setup-applier` | opus | Meta: first-time onboarding (write) — reads confirmed proposal, validates allowlist, snapshots, applies substitutions, writes audit log (invoked by `/setup` Phase 4) |
 
 ### Agent Teams (pre-configured groups)
 
@@ -434,7 +435,7 @@ claude-code-framework/
 │   ├── settings.json            # User-level AI factory permissions
 │   ├── settings.local.json      # Project-level permissions & model config
 │   ├── mcp.json                 # MCP server config (copied to .mcp.json)
-│   ├── agents/                  # 36 AI agent definitions
+│   ├── agents/                  # 37 AI agent definitions
 │   │   ├── architect.md         # System design, patterns, scalability
 │   │   ├── code-reviewer.md     # Bugs, security, performance in diffs (broad sweep)
 │   │   ├── code-smell-reviewer.md   # Smells specialist — cites `code-smells` rule
@@ -470,7 +471,8 @@ claude-code-framework/
 │   │   ├── review-coordinator.md              # Meta: synthesizes reviewer findings, persists state
 │   │   ├── planner-coordinator.md             # Meta: orchestrates planning specialists
 │   │   ├── build-coordinator.md               # Meta: orchestrates build phases
-│   │   └── project-setup.md                   # Meta: first-time onboarding (15-layer detection)
+│   │   ├── project-setup-detector.md          # Meta: first-time onboarding read-only (17-layer detection)
+│   │   └── project-setup-applier.md           # Meta: first-time onboarding write (allowlist + backup + audit log)
 │   ├── commands/                # One-word automations
 │   │   ├── quick-test.md
 │   │   ├── lint-fix.md

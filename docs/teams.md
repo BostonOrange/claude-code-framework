@@ -62,7 +62,8 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents �
 | `planner-coordinator` | Planning Orchestration | opus | Spawns planning specialists in parallel waves; synthesizes one plan (invoked by `/plan`) |
 | `build-coordinator` | Build Orchestration | opus | Sequences build phases; spawns specialist per phase; runs safety gates (invoked by `/build`) |
 | `review-coordinator` | Review Orchestration | opus | Synthesizes parallel reviewer findings, classifies risk tier, persists state across iterations (invoked by `/iterative-review`) |
-| `project-setup` | Onboarding Orchestration | opus | First-time setup — 15-layer stack detection with tradeoff-explained options; applies confirmed proposal (invoked by `/setup`) |
+| `project-setup-detector` | Onboarding (read-only) | opus | First-time setup — 17-layer stack detection with tradeoff-explained options; writes proposal (invoked by `/setup` Phase 1) |
+| `project-setup-applier` | Onboarding (write) | opus | First-time setup — validates allowlist, snapshots, applies substitutions, writes audit log (invoked by `/setup` Phase 4) |
 
 ## Pre-Configured Teams
 

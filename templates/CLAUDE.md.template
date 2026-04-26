@@ -139,7 +139,8 @@ Spawn pre-configured teams of specialized agents for parallel analysis:
 | `planner-coordinator` | Orchestrates planning specialists; classifies scope; synthesizes one plan (invoked by `/plan`) | opus |
 | `build-coordinator` | Orchestrates build phases sequentially: scaffold → happy-path → edge-case → tests → docs → refactor (invoked by `/build`) | opus |
 | `review-coordinator` | Synthesizes parallel reviewer output — dedupes, filters, classifies risk tier, persists state across iterations (invoked by `/iterative-review`) | opus |
-| `project-setup` | First-time onboarding orchestrator — 15-layer detection with tradeoff-explained options; applies confirmed proposal (invoked by `/setup`) | opus |
+| `project-setup-detector` | First-time onboarding (read-only) — inventories repo, runs 17-layer detection, writes proposal (invoked by `/setup` Phase 1) | opus |
+| `project-setup-applier` | First-time onboarding (write) — reads confirmed proposal, validates allowlist, snapshots, applies substitutions (invoked by `/setup` Phase 4) | opus |
 
 ## Work Item Tracker
 

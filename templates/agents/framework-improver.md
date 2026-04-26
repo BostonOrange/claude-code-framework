@@ -11,6 +11,16 @@ You analyze the current project state and improve the .claude/ configuration to 
 
 ## Process
 
+### Step 0: Respect /setup decisions (load-bearing)
+
+If `.claude/state/setup-applied.md` exists, **read it first**. Its `## Layers owned by /setup` table lists every layer the onboarding orchestrator already decided. For those layers:
+
+- **Do not overwrite** values listed there. Even if your scan suggests a different value, `/setup`'s decision (informed by user confirmation) wins.
+- **Only fill** placeholders that are still empty (`{{...}}` strings still present). If a placeholder has a value from `/setup`, leave it alone.
+- **Add** new patterns/rules/sections — that's still your job. Onboarding decided shape; you tune around it.
+
+If `.claude/state/setup-applied.md` does not exist, treat all 17 layers as your domain (no `/setup` has run yet). This is the lifecycle boundary in code, not just docs.
+
 ### Step 1: Assess Current Configuration
 
 Read the current state of all framework files:
@@ -22,18 +32,7 @@ Read the current state of all framework files:
 
 ### Step 2: Analyze Project Patterns
 
-Scan the codebase to discover patterns not yet captured:
-
-```bash
-# What file types exist?
-find . -type f -not -path "*/.git/*" -not -path "*/node_modules/*" -not -path "*/__pycache__/*" | sed 's/.*\.//' | sort | uniq -c | sort -rn | head -20
-
-# What frameworks/libraries are used?
-cat package.json 2>/dev/null | head -50
-cat requirements.txt 2>/dev/null
-cat go.mod 2>/dev/null
-cat Gemfile 2>/dev/null
-```
+Use the canonical bash blocks from `docs/project-detection.md` (`MANIFEST_INVENTORY`, `LOCKFILE_INVENTORY`, `CONFIG_INVENTORY`, `FILE_EXTENSION_CENSUS`). Both this agent and `project-setup-detector` consume the same source — drift between them has caused detection gaps in the past.
 
 Identify:
 - File patterns not covered by existing rules

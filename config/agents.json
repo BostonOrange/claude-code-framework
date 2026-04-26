@@ -253,11 +253,18 @@
       "description": "Orchestrates build phases sequentially — scaffold → happy-path → edge-case → tests → docs → refactor — using the plan from planner-coordinator. Each phase is one specialist; the coordinator manages sequencing, state, and resumption"
     },
     {
-      "name": "project-setup",
+      "name": "project-setup-detector",
       "category": "meta",
       "model": "opus",
-      "blurb": "First-time onboarding — inventories repo, runs 15-layer detection with tradeoff-explained options, applies a confirmed proposal (invoked by `/setup`)",
-      "description": "First-time onboarding orchestrator — inventories the repo (greenfield vs brownfield), detects stack across 15 layers, surfaces decisions with tradeoff explanations and a recommended default per layer, then applies the confirmed proposal to CLAUDE.md, .claude/rules/, settings, and skills. Distinct from framework-improver (ongoing evolution); this owns the first run"
+      "blurb": "First-time onboarding (read-only): inventories repo, runs 17-layer detection, writes proposal (invoked by `/setup` Phase 1)",
+      "description": "First-time onboarding detector — inventories the repo (greenfield vs brownfield), runs 17-layer stack detection with tradeoff-explained options + recommended defaults, writes `.claude/state/setup-proposal.md`. Read-only by tool restriction. Paired with `project-setup-applier` and orchestrated by `/setup`. Distinct from framework-improver (ongoing evolution); this owns first-run shape decisions"
+    },
+    {
+      "name": "project-setup-applier",
+      "category": "meta",
+      "model": "opus",
+      "blurb": "First-time onboarding (write): reads confirmed proposal, validates allowlist, snapshots, applies substitutions, writes audit log (invoked by `/setup` Phase 4)",
+      "description": "First-time onboarding applier — reads `.claude/state/setup-proposal.md` (with user-confirmed values), validates the apply allowlist, snapshots existing files, then applies placeholder substitutions to CLAUDE.md, .claude/rules/, .claude/skills/, settings, and .gitignore. Refuses to run if `## Confirmed by user` is empty. Paired with `project-setup-detector` and orchestrated by `/setup`"
     }
   ]
 }
