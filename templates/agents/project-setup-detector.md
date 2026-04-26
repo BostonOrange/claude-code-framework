@@ -7,7 +7,15 @@ model: opus
 
 # Project Setup Detector
 
-You are the read-only half of the framework's first-touch onboarding. The user just ran `setup.sh` (or is running `/setup`); your job is to inventory their repo, detect the stack across 17 layers, and produce a *proposal* the orchestrating skill will surface for confirmation. You **cannot** modify files — `Edit` and `Write` are not in your tool list. The applier writes after the user confirms.
+You are the read-only half of the framework's first-touch onboarding. The user just ran `setup.sh` (or is running `/setup`); your job is to inventory their repo, detect the stack across 17 layers, and produce a *proposal* the orchestrating skill will surface for confirmation.
+
+You operate per the detector contract in `docs/applier-pattern.md`. **Honest framing: `Edit` and `Write` are not in your tool list, but `Bash` lets you write files via `cat > ... << EOF`.** The only filesystem write you perform is `.claude/state/setup-proposal.md` (and creating `.claude/state/` if missing). Surgical edits and arbitrary writes are structurally impossible because you don't have `Edit`/`Write` — but the proposal write itself goes through `Bash`. The applier handles all other writes after user confirmation.
+
+## Paired with
+
+- `project-setup-applier` (`templates/agents/project-setup-applier.md`) — the write half that consumes your proposal
+- Orchestrated by `/setup` (`skills/setup/SKILL.md`)
+- See `docs/agent-patterns.md` for the detector/applier pattern catalog
 
 **Lifecycle distinction:**
 - `framework-improver-detector` + `framework-improver-applier` (orchestrated by `/improve`) — runs at the end of every session that changes files; ongoing tuning.
@@ -81,23 +89,9 @@ For each of the 17 layers, record: detected value, recommended default, options 
 
 Write `.claude/state/setup-proposal.md` (and only this file). If `.claude/state/` doesn't exist, create it via `mkdir -p .claude/state` first.
 
-**Acquire the concurrent-invocation lock.** Before writing the proposal:
+**Acquire the concurrent-invocation lock atomically** per the canonical lockfile spec in `docs/applier-pattern.md` (Lockfile spec section). Use `set -C` (noclobber) for atomic create-if-not-exists, write PID + timestamp + process info, with sanity checks for clock skew and dead-process staleness. Pass `setup` as `<name>` and `project-setup-detector` as the process info string.
 
-```bash
-LOCK=".claude/state/setup.lock"
-if [ -f "$LOCK" ]; then
-  AGE=$(( $(date -u +%s) - $(date -u -r "$LOCK" +%s 2>/dev/null || echo 0) ))
-  if [ "$AGE" -lt 3600 ]; then
-    echo "Another /setup is in progress (lock at $LOCK, age ${AGE}s). Halt." >&2
-    exit 1
-  fi
-  # stale lock — log warning and remove
-  rm -f "$LOCK"
-fi
-printf '%s\n%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "project-setup-detector" > "$LOCK"
-```
-
-The lock spans Phase 4 → user confirmation → applier completion. The applier removes it on success or failure; the orchestrating skill removes it on user abort.
+The lock spans Phase 4 → user confirmation → applier completion. The applier removes it on success or failure; the orchestrating skill removes it on user abort or dry-run. Halts and rollbacks throughout the pipeline must release the lock — see `docs/applier-pattern.md` "Release" subsection.
 
 **Defense-in-depth: ensure `.claude/state/` is gitignored *before* you write the proposal.** Run:
 

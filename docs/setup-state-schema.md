@@ -97,6 +97,14 @@ Required columns: `#` (integer), `Layer` (string), `Final value` (string).
 <one-line hand-off>
 ```
 
+## Lockfile semantics
+
+**The lockfile is a UX coordination mechanism, not a security boundary.** Anyone with write access to `.claude/state/` can delete or forge the lock. The threat model already assumes write access to the working tree; the lock prevents accidental concurrent runs (two terminal windows triggering `/setup` simultaneously, or `/improve` racing against an in-progress `/setup`), not malicious tampering.
+
+If you need actual mutual exclusion against an adversary, file-system locks aren't the right primitive — use a process supervisor or external coordination service.
+
+Canonical lockfile format and acquisition spec: `docs/applier-pattern.md` "Lockfile spec".
+
 ## Path allowlist (canonical regex — used by applier gate 5)
 
 The applier validates every path in the `In file` column of `## Substitutions` (and any path referenced in proposal sections that imply file writes) against this two-step check:

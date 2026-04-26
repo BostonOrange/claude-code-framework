@@ -82,9 +82,32 @@ The `sed` redaction strips embedded credential tokens (`https://x-access-token:G
 
 ## What NOT to run
 
-- `npm view`, `pip search`, `gh api`, `gem list --remote` — network calls; the detector and improver are local-only.
-- `cat ~/.aws/credentials`, `cat ~/.ssh/*` — outside the working directory.
-- `find /` or any unbounded recursive scan from the filesystem root.
+**Network / registry calls** — the detector and improver are local-only:
+- `curl`, `wget`, `nc`, `ssh`, `scp`, `rsync` to remotes
+- `npm view`, `npm publish`, `pip search`, `pip download` from remote indexes
+- `gh api`, `gh repo`, `gh issue` (any remote `gh` operation)
+- `gem list --remote`, `gem fetch`
+- `cargo publish`, `cargo search`
+- `go get` (network fetch)
+
+**Filesystem reads outside the working tree** — out of scope:
+- `cat ~/.aws/credentials`, `cat ~/.aws/config`
+- `cat ~/.ssh/id_*`, `cat ~/.ssh/known_hosts`
+- `cat /etc/passwd`, `cat /etc/shadow`, `cat /etc/hosts`
+- `cat ~/.netrc`, `cat ~/.docker/config.json`, `cat ~/.kube/config`
+- Any `find /` or `find ~/` (use the working tree, not the home directory)
+
+**Environment / secrets exfiltration** — never:
+- `env | grep -i token`, `env | grep -i secret`, `env | grep -i key`
+- `printenv | grep ...`
+- `set | grep ...` (shell builtin variant)
+
+**Unbounded scans**:
+- `find /` from the filesystem root
+- `git log --all` with no path restriction (can dump enormous output for monorepos)
+- `tar` / `zip` of arbitrary directories
+
+If your detection logic seems to need any of these, flag it as a recommendation in the proposal — don't just add it. The "no network, no exfil" property is a contract maintained by these instructions, not a sandbox guarantee. Verify in the agent's transcript that none of these ran.
 
 ## When to update this file
 
