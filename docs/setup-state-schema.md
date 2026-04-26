@@ -22,7 +22,9 @@ When you find yourself describing column names, status values, or section struct
 ## Pre-apply checks
 - [ ] `.claude/state/` in `.gitignore` (status: yes | no)
 - [ ] CLAUDE.md backup target: `.claude/state/setup-backup-<ISO timestamp>/`
-- [ ] git working tree status: <clean | dirty — applier will halt>
+- [ ] git working tree status: <clean | dirty — applier will halt unless `Apply on dirty: yes` is set below>
+
+**Apply on dirty:** no  *(optional override — set to `yes` only if the user has intentional uncommitted CLAUDE.md edits they want `/setup` to apply on top of)*
 
 ## Layers — proposal table
 
@@ -43,12 +45,11 @@ Required columns:
 ## Open questions
 - **<layer name>** — <question>
 
-## Affected files
-List of relative paths the applier may write to. Each MUST pass the allowlist regex (see applier gate 5).
-
 ## Substitutions
 | Placeholder | Value | In file |
 Required columns: `Placeholder`, `Value`, `In file`.
+
+**The unique set of `In file` values IS the affected-files allowlist.** A separate `## Affected files` section was previously specified but caused drift (substitutions referencing files not in the affected list, and vice versa). The applier derives the affected-files set from this table. Each `In file` value must pass the allowlist regex below.
 
 ## Bootstrap commands
 \`\`\`bash
@@ -89,6 +90,25 @@ Required columns: `#` (integer), `Layer` (string), `Final value` (string).
 ## Next action
 <one-line hand-off>
 ```
+
+## Path allowlist (canonical regex — used by applier gate 5)
+
+The applier validates every path in the `In file` column of `## Substitutions` (and any path referenced in proposal sections that imply file writes) against this two-step check:
+
+**Step a — string-level pre-filter (reject if any of these are present):**
+- `..`
+- `\` (backslash)
+- NUL byte (`\0`), `\r`, `\n`
+- Leading `/` (absolute path)
+- Leading `~` (home expansion)
+
+**Step b — anchored regex match:**
+
+```
+^(CLAUDE\.md|\.gitignore|\.env\.example|\.claude/settings\.local\.json|\.claude/(rules|skills|state)/[^/].*)$
+```
+
+Both `framework-improver-applier` and `project-setup-applier` enforce this same regex. Updates land here first, then propagate to both appliers.
 
 ## Status values (load-bearing)
 

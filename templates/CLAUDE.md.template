@@ -135,7 +135,8 @@ Spawn pre-configured teams of specialized agents for parallel analysis:
 
 | Agent | Purpose | Model |
 |-------|---------|-------|
-| `framework-improver` | Self-improvement — update CLAUDE.md, rules, settings, agents | opus |
+| `framework-improver-detector` | Self-improvement (read-only) — scans, builds /setup-aware skip-list, writes proposal (invoked by `/improve` Phase 1) | opus |
+| `framework-improver-applier` | Self-improvement (write) — re-validates skip-list, applies improvements with backup + audit log (invoked by `/improve` Phase 3) | opus |
 | `planner-coordinator` | Orchestrates planning specialists; classifies scope; synthesizes one plan (invoked by `/plan`) | opus |
 | `build-coordinator` | Orchestrates build phases sequentially: scaffold → happy-path → edge-case → tests → docs → refactor (invoked by `/build`) | opus |
 | `review-coordinator` | Synthesizes parallel reviewer output — dedupes, filters, classifies risk tier, persists state across iterations (invoked by `/iterative-review`) | opus |
@@ -307,7 +308,7 @@ When invoked with `/factory TICKET-{id}`:
 
 ## Self-Improvement (always active)
 
-**Before ending any session where project files were modified**, spawn the `framework-improver` agent in the background. This keeps CLAUDE.md, rules, and settings in sync with the actual project state — not just after `/develop` or `/factory`, but after any work session including manual coding, refactoring, config changes, or dependency updates.
+**Before ending any session where project files were modified**, spawn `/improve` in the background (it orchestrates `framework-improver-detector` → `framework-improver-applier`). This keeps CLAUDE.md, rules, and settings in sync with the actual project state — not just after `/develop` or `/factory`, but after any work session including manual coding, refactoring, config changes, or dependency updates. The applier respects the `/setup`-owned skip-list, so onboarding decisions are never overwritten.
 
 The improver:
 - Fills unfilled `{{...}}` placeholders from project analysis

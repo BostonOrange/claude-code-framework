@@ -58,7 +58,8 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents â
 
 | Agent | Role | Model | Specialty |
 |-------|------|-------|-----------|
-| `framework-improver` | Self-Improvement | opus | Updates CLAUDE.md, rules, settings, agents |
+| `framework-improver-detector` | Self-Improvement (read-only) | opus | Scans, builds /setup-aware skip-list, writes proposal (invoked by `/improve` Phase 1) |
+| `framework-improver-applier` | Self-Improvement (write) | opus | Re-validates skip-list, applies improvements with backup + audit log (invoked by `/improve` Phase 3) |
 | `planner-coordinator` | Planning Orchestration | opus | Spawns planning specialists in parallel waves; synthesizes one plan (invoked by `/plan`) |
 | `build-coordinator` | Build Orchestration | opus | Sequences build phases; spawns specialist per phase; runs safety gates (invoked by `/build`) |
 | `review-coordinator` | Review Orchestration | opus | Synthesizes parallel reviewer findings, classifies risk tier, persists state across iterations (invoked by `/iterative-review`) |
@@ -108,7 +109,7 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents â
 **Output:** Updated docs + API design review
 
 ### `/team full` â€” Full Team Review
-**Agents:** All 16 reviewer/implementation agents (excludes meta-agents `framework-improver` and `review-coordinator`)
+**Agents:** All 16 reviewer/implementation agents (excludes meta-agents like `review-coordinator`, the `framework-improver-*` pair, and the `project-setup-*` pair)
 **When:** Major milestones, quarterly reviews, new project onboarding
 **Output:** Comprehensive analysis across all dimensions
 
@@ -225,7 +226,7 @@ Edit the agent's `tools:` field:
 
 ## Self-Improvement
 
-The `framework-improver` agent and `/improve` skill enable the framework to evolve:
+The `/improve` skill (which orchestrates `framework-improver-detector` â†’ `framework-improver-applier`) enables the framework to evolve:
 
 1. **Run `/improve`** after setup to fill in CLAUDE.md from project analysis
 2. **Run `/improve` periodically** to catch drift between docs and code

@@ -59,7 +59,7 @@ The setup wizard asks:
 
 Then generates:
 - `.claude/skills/` — 21 workflow skills adapted to your stack (incl. `/team`, `/improve`, `/setup`, `/plan`, `/build`, `/iterative-review`)
-- `.claude/agents/` — 37 AI agents (21 analysis + 6 implementation + 4 planning + 6 meta, all opus)
+- `.claude/agents/` — 38 AI agents (21 analysis + 6 implementation + 4 planning + 7 meta, all opus)
 - `.claude/commands/` — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)
 - `.claude/rules/` — 22 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components, code-smells, dry, purity, complexity, frontend-architecture, architecture-layering, api-layering, crypto, solid, concurrency, observability, supply-chain, secrets-management)
 - `.claude/hooks/` — 6 lifecycle hooks (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit)
@@ -152,7 +152,7 @@ mkdir -p .claude/skills/my-domain/references/
 | `/mock-endpoint` | Mock external API integrations |
 | `/scaffold-design-system` | Scaffold design system tokens, components, and theme config |
 
-### AI Agents (37 specialized teammates)
+### AI Agents (38 specialized teammates)
 
 | Agent | Model | Purpose |
 |-------|-------|---------|
@@ -179,7 +179,8 @@ mkdir -p .claude/skills/my-domain/references/
 | `database-architect` | opus | Schema, normalization, indexes, migration safety |
 | `test-writer` | opus | Generates tests following project conventions. Read/Write |
 | `documentation-writer` | opus | API docs, READMEs, architecture docs. Read/Write |
-| `framework-improver` | opus | Self-improvement: updates CLAUDE.md, rules, settings. Read/Write |
+| `framework-improver-detector` | opus | Meta: self-improvement (read-only) — scans project, builds /setup-aware skip-list, writes proposal (invoked by `/improve` Phase 1) |
+| `framework-improver-applier` | opus | Meta: self-improvement (write) — re-validates skip-list, applies improvements with backup + audit log (invoked by `/improve` Phase 3) |
 | `requirements-clarifier` | opus | Planning specialist: hunts ambiguity in story before planning starts (open questions, undefined terms, missing AC). Read-only |
 | `scope-decomposer` | opus | Planning specialist: breaks story into atomic, sequenced steps with parallelism groups and dependencies. Read-only |
 | `risk-assessor` | opus | Planning specialist: identifies rollback paths, blast radius, breaking-change and migration risk; proposes mitigations. Read-only |
@@ -206,7 +207,7 @@ mkdir -p .claude/skills/my-domain/references/
 | Design | `/team design` | ui-ux-reviewer + performance-optimizer + refactor-advisor |
 | Review-deep | `/team review-deep` | code-reviewer + security-auditor + 4 code-quality specialists (smell, dry, purity, complexity) |
 | Quality-deep | `/team quality-deep` | The 4 code-quality specialists in parallel (code-smell-reviewer + dry-reviewer + purity-reviewer + complexity-reviewer) |
-| Full | `/team full` | All 16 reviewer/implementation agents (excludes meta-agents `review-coordinator` and `framework-improver`) |
+| Full | `/team full` | All 16 reviewer/implementation agents (excludes meta-agents like `review-coordinator`, the `framework-improver-*` pair, and the `project-setup-*` pair) |
 | Custom | `/team custom a b` | Any combination |
 
 ### Commands (one-word automations)
@@ -295,11 +296,11 @@ File-pattern-scoped rules that Claude follows automatically when editing matchin
 └──────────┬───────────┘
            ↓ (background)
 ┌──────────────────────┐
-│  FRAMEWORK IMPROVE   │ framework-improver auto-evolves .claude/ config
+│  FRAMEWORK IMPROVE   │ /improve auto-evolves .claude/ config (detector + applier)
 └──────────────────────┘
 ```
 
-> The `framework-improver` agent runs automatically in the background after **any session where files were modified** — not just `/develop` and `/factory`. This is enforced via CLAUDE.md instructions, so documentation and `.claude/` config always stay in sync with the actual project state. Changes are logged to `docs/ai-improvements.md`.
+> The `/improve` skill (which spawns `framework-improver-detector` then `framework-improver-applier`) runs automatically in the background after **any session where files were modified** — not just `/develop` and `/factory`. This is enforced via CLAUDE.md instructions, so documentation and `.claude/` config always stay in sync with the actual project state. The applier respects the `/setup`-owned skip-list. Changes are logged to `docs/ai-improvements.md`.
 
 ## Self-Improvement System
 
@@ -309,7 +310,7 @@ The framework has a closed loop that keeps it honest over time. It's not one thi
 |-------|-----------|------|--------------|
 | Advisory | `post-edit-sync.sh` (hook) | After every Edit/Write | Prints which doc surfaces may need updating based on what changed (e.g. "Agent 'code-reviewer' changed → verify README agents table") |
 | Advisory | `post-coding-review.sh` (hook) | SessionEnd, when >=3 source files or >=50 LOC changed vs base | Nudges `/team review` (code-reviewer + security-auditor + ui-ux-reviewer); cooldown per branch+SHA prevents repeat nudges |
-| Mutating | `framework-improver` (agent) | End of any session with changes — instructed by CLAUDE.md | Updates CLAUDE.md, `.claude/rules/`, settings, agents from project state; fills deferred placeholders (`{{PROJECT_DESCRIPTION}}` etc.) |
+| Mutating | `framework-improver-detector` + `framework-improver-applier` (via `/improve`) | End of any session with changes — instructed by CLAUDE.md | Detector scans + builds skip-list (read-only); applier validates skip-list and applies changes with backup. Fills deferred placeholders (`{{PROJECT_DESCRIPTION}}` etc.) and updates rules/settings/agents — but never overwrites layers `/setup` owns |
 | Verifying | `framework-qa` (agent, framework-repo-only) | End of any session with changes | Validates counts and tables across README, CLAUDE.md, docs are consistent with actual file inventory |
 | Deterministic | `tests/run-all.sh` (5 test suites) | CI + before PR | Hard gates for drift: `check-consistency` (counts), `check-agent-registry` (agent JSON ↔ frontmatter ↔ docs, 72 checks), `check-placeholders` (sh/ps1 parity), `check-guardrails` (55 hook patterns), `check-templates` (structural validity) |
 
@@ -351,7 +352,7 @@ Setup installs `~/.claude/settings.json` with granular Bash permissions:
 | **Must ask** | Prompts for confirmation | `git push`, `rm`, `sf project deploy`, `kubectl apply`, DB migrations |
 | **Blocked** | Denied entirely | `rm -rf /`, `rm -rf ~`, `mkfs`, `dd if=` |
 
-All non-Bash tools are auto-allowed: file editing, agents, tasks, teams, web access, worktrees, cron, plan mode. The framework-improver can freely update `.claude/` and `CLAUDE.md` without prompting.
+All non-Bash tools are auto-allowed: file editing, agents, tasks, teams, web access, worktrees, cron, plan mode. The `framework-improver-applier` can freely update `.claude/` and `CLAUDE.md` without prompting (within the skip-list bounds).
 
 ## MCP Servers
 
@@ -435,7 +436,7 @@ claude-code-framework/
 │   ├── settings.json            # User-level AI factory permissions
 │   ├── settings.local.json      # Project-level permissions & model config
 │   ├── mcp.json                 # MCP server config (copied to .mcp.json)
-│   ├── agents/                  # 37 AI agent definitions
+│   ├── agents/                  # 38 AI agent definitions
 │   │   ├── architect.md         # System design, patterns, scalability
 │   │   ├── code-reviewer.md     # Bugs, security, performance in diffs (broad sweep)
 │   │   ├── code-smell-reviewer.md   # Smells specialist — cites `code-smells` rule
@@ -467,7 +468,8 @@ claude-code-framework/
 │   │   ├── happy-path-implementer.md          # Build phase 2: core logic
 │   │   ├── edge-case-implementer.md           # Build phase 3: validation, errors, edges
 │   │   ├── refactor-pass-implementer.md       # Build phase 6: apply quality rules
-│   │   ├── framework-improver.md              # Meta: self-improvement
+│   │   ├── framework-improver-detector.md     # Meta: self-improvement read-only (builds skip-list, writes proposal)
+│   │   ├── framework-improver-applier.md      # Meta: self-improvement write (validates skip-list, applies, audit log)
 │   │   ├── review-coordinator.md              # Meta: synthesizes reviewer findings, persists state
 │   │   ├── planner-coordinator.md             # Meta: orchestrates planning specialists
 │   │   ├── build-coordinator.md               # Meta: orchestrates build phases

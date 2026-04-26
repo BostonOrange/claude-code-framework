@@ -32,7 +32,7 @@ claude-code-framework/
 │   ├── settings.json            # User-level permissions (~/.claude/)
 │   ├── settings.local.json      # Project-level permissions
 │   ├── mcp.json                 # MCP server config (→ .mcp.json)
-│   ├── agents/                  # 37 AI agent definitions
+│   ├── agents/                  # 38 AI agent definitions
 │   ├── commands/                # 6 quick command definitions
 │   ├── rules/                   # 22 file-pattern guardrails
 │   ├── hooks/                   # 6 lifecycle scripts
@@ -145,7 +145,8 @@ Spawn pre-configured teams for parallel analysis of the framework:
 | `happy-path-implementer` | Build phase 2: core successful flow (defers errors and edges) | opus |
 | `edge-case-implementer` | Build phase 3: validation, errors, edge data (binds error-handling, auth-security, data-protection) | opus |
 | `refactor-pass-implementer` | Build phase 6 (final): actively applies code-smells/dry/purity/complexity rules | opus |
-| `framework-improver` | Self-improvement of .claude/ config | opus |
+| `framework-improver-detector` | Self-improvement read-only (invoked by `/improve` Phase 1); scans + builds /setup-aware skip-list + writes proposal | opus |
+| `framework-improver-applier` | Self-improvement write (invoked by `/improve` Phase 3); skip-list re-validation + apply + audit log | opus |
 | `review-coordinator` | Synthesizes parallel reviewer output (dedupe, filter, risk-tier classify, cross-iteration state) | opus |
 | `planner-coordinator` | Orchestrates planning specialists, classifies scope, synthesizes one plan | opus |
 | `build-coordinator` | Orchestrates build phases sequentially (scaffold → happy-path → edge-case → tests → docs → refactor) | opus |
@@ -173,7 +174,7 @@ grep -r "{{" .claude/ CLAUDE.md | grep -v ".git"
 
 ## Self-Improvement (always active)
 
-**Before ending any session where framework files were modified**, spawn the `framework-improver` agent in the background. This keeps CLAUDE.md, README.md, docs, and setup scripts in sync with the actual framework state.
+**Before ending any session where framework files were modified**, spawn `/improve` (which orchestrates `framework-improver-detector` → `framework-improver-applier`) in the background. This keeps CLAUDE.md, README.md, docs, and setup scripts in sync with the actual framework state.
 
 Additionally, run the `framework-qa` agent to validate that all counts and tables are consistent across README, CLAUDE.md template, setup scripts, and docs.
 
@@ -185,6 +186,6 @@ Additionally, run the `framework-qa` agent to validate that all counts and table
 |-------|-----------|------|------|
 | **Hook** | `guardrails.sh` (PreToolUse) | Before every Bash command | Blocks dangerous ops (deploys, migrations, force push) |
 | **Hook** | `post-edit-sync.sh` (PostToolUse) | After every Edit/Write | Flags which docs need updating based on what changed |
-| **Agent** | `framework-improver` | End of every session with changes | Updates CLAUDE.md, rules, settings from project state |
+| **Agent** | `framework-improver-detector` + `framework-improver-applier` (via `/improve`) | End of every session with changes | Detector scans + builds skip-list (read-only); applier validates skip-list + applies + audit log |
 | **Agent** | `framework-qa` | End of every session with changes | Validates all doc counts and tables match actual files |
 | **CLAUDE.md** | This instruction | Always | Enforces the above as non-optional behavior |

@@ -12,11 +12,13 @@ When you find yourself listing manifests / lockfiles / configs in another agent 
 ```bash
 ls package.json pyproject.toml requirements.txt setup.py Pipfile poetry.lock \
    Cargo.toml go.mod pom.xml build.gradle build.gradle.kts \
-   Gemfile composer.json sfdx-project.json *.csproj *.fsproj \
-   mix.exs Package.swift 2>/dev/null
+   Gemfile composer.json sfdx-project.json *.csproj \
+   mix.exs 2>/dev/null
 ```
 
-Covers: Node, Python (pip/poetry/pipenv/setup.py), Rust, Go, Java/Kotlin (maven + gradle), Ruby, PHP, Salesforce, .NET, Elixir, Swift.
+Covers: Node, Python (pip/poetry/pipenv/setup.py), Rust, Go, Java/Kotlin (maven + gradle), Ruby, PHP, Salesforce, .NET (C#), Elixir.
+
+> Swift (`Package.swift`) and F# (`*.fsproj`) are not currently wired through to the Layer 1 detection logic in `project-setup-detector.md`. If your project needs them, add the manifest pattern here AND extend the language options in `project-setup-detector.md`'s Layer 1 row. Don't add aspirational coverage that the layer table doesn't act on.
 
 ## LOCKFILE_INVENTORY
 

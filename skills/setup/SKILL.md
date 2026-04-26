@@ -85,7 +85,9 @@ Wait for user reply. Common shapes:
 
 Update `.claude/state/setup-proposal.md` in place with the resolved values under the existing `## Confirmed by user` section. The schema for that section — required columns, valid `Source of decision` values, and which `Status` values must appear — is in `docs/setup-state-schema.md`. **Every layer with `Status: detected`, `needs-confirmation`, or `needs-decision` must appear in `## Confirmed by user`.** Anything else fails the applier's gate 2.
 
-If `--dry-run`, stop here. Print the path to `setup-proposal.md` so the user can inspect.
+If `--dry-run`, stop here and remove `.claude/state/setup.lock` so the next `/setup` is unblocked. Print the path to `setup-proposal.md` for inspection.
+
+**On user abort during this phase** (user explicitly cancels, or the skill is interrupted): remove `.claude/state/setup.lock`. The proposal stays on disk; the next `/setup` will resume from it.
 
 ### Phase 4: Apply
 
@@ -93,12 +95,12 @@ Spawn `project-setup-applier`:
 
 ```
 --apply mode. Read .claude/state/setup-proposal.md (with the populated `## Confirmed by user` section).
-Run all 5 pre-apply gates. If any fail, halt.
-Otherwise: snapshot to .claude/state/setup-backup-<ts>/, ensure .gitignore, apply substitutions
-per the table, smoke-check, write .claude/state/setup-applied.md.
+Run all 6 pre-apply gates per project-setup-applier.md. On success, snapshot to
+.claude/state/setup-backup-<ts>/, ensure .gitignore, apply substitutions, smoke-check,
+write .claude/state/setup-applied.md, release the lock.
 ```
 
-The applier has Edit/Write but refuses to run if `## Confirmed by user` is empty, conflicts are unresolved, the working tree has uncommitted changes to affected files, or any path violates the allowlist.
+Gates and behavior are specified in `project-setup-applier.md`. The applier owns the spec; do not duplicate gate logic here.
 
 ### Phase 5: Verify
 

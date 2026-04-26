@@ -15,10 +15,16 @@ You **only** run when invoked with `--apply` and a path to the confirmed proposa
 
 Run these checks first. If any fail, halt immediately with a clear error and produce no Edits/Writes.
 
-1. **Proposal file exists.** Read `.claude/state/setup-proposal.md`. If missing, halt: "No proposal found — run `/setup` first."
+0. **Concurrent-invocation lock.** Read `.claude/state/setup.lock` if it exists. Format: `<ISO timestamp>\n<process info>\n`. If lockfile is present and the timestamp is less than 1 hour old, halt: "Another /setup is in progress (started at <ts>). Wait for it to finish or `rm .claude/state/setup.lock` if it's stale." If the lockfile is older than 1 hour, treat as stale, log a warning, and proceed (the skill will refresh the lock).
+
+1. **Proposal file exists.** Read `.claude/state/setup-proposal.md`. If missing, halt: "No proposal found — run `/setup` first." Compute a sha256 hash of the file contents and store in memory as `PROPOSAL_HASH_AT_GATE` — this is the TOCTOU baseline; you will re-verify it before each Edit.
+
 2. **`## Confirmed by user` section is populated.** The section must exist and contain at least one row in its table. If empty, halt: "Proposal not yet confirmed — the `/setup` skill must collect user decisions before applying." Also halt if any layer in the proposal table with `Status: needs-decision` OR `Status: needs-confirmation` is missing from `## Confirmed by user`.
+
 3. **`## Conflicts` section is empty or all conflicts have a `Final value` in `## Confirmed by user`.** If unresolved conflicts remain, halt: "Resolve conflicts before applying: <list>."
-4. **Working tree pre-check.** Run `git status --porcelain CLAUDE.md` (and the same for each `.claude/` file in the apply list). If any of those have uncommitted changes, halt: "Uncommitted changes in <files>. Commit or stash before applying."
+
+4. **Working tree pre-check.** Read the proposal's `## Pre-apply checks` block. If `Apply on dirty: yes`, skip this gate. Otherwise: run `git status --porcelain CLAUDE.md` (and the same for each path in the `In file` column of `## Substitutions`). If any of those have uncommitted changes, halt: "Uncommitted changes in <files>. Commit or stash before applying — or set `Apply on dirty: yes` in the proposal's `## Pre-apply checks` block to override." The opt-out is for the legitimate case where the user has intentional staged edits they want `/setup` to apply on top of (rare; explicit consent only).
+
 5. **Allowlist validation.** For every entry in `## Affected files`, run the *two-step* check below. The regex alone is not sufficient — string-level pre-checks catch path traversal and NUL bytes that the regex can't.
 
    **Step 5a — Reject any path that contains:**
@@ -99,7 +105,9 @@ Read the `## Substitutions` table from the proposal. For each row:
 
 Apply substitutions per-layer in the order listed in `## Confirmed by user`. Track every Edit you perform in an in-memory list (path + placeholder + old_value + new_value) so Step 4 can roll back on failure.
 
-**On any error in Step 3 — auto-rollback.** If an Edit fails (placeholder not found, file missing, write error), do NOT stop and leave partial state. Instead:
+**TOCTOU re-check before each Edit.** Before performing each Edit, recompute the sha256 of `.claude/state/setup-proposal.md` and compare to `PROPOSAL_HASH_AT_GATE` from gate 1. If they differ, halt: "Proposal modified between gate validation and apply (TOCTOU detected). All applied changes have been rolled back." Then auto-rollback per the procedure below. This catches a concurrent process or accidental edit to the proposal between Phase 3 confirmation and Phase 4 apply.
+
+**On any error in Step 3 — auto-rollback.** If an Edit fails (placeholder not found, file missing, write error) or the TOCTOU re-check fails, do NOT stop and leave partial state. Instead:
 
 1. For every Edit you successfully applied so far, restore the file from `.claude/state/setup-backup-<ts>/` (the manifest at `<backup>/manifest.txt` lists what to restore).
 2. Halt with a clear error: "Apply failed at layer N (`{{PLACEHOLDER}}` in `<file>`). All applied changes have been rolled back from `<backup>`. Working tree is now in pre-apply state."
@@ -126,6 +134,14 @@ For each remaining `{{...}}`, classify:
 - **Unexpected** → trigger the same auto-rollback as Step 3 errors; do not write the apply log
 
 **Defense-in-depth post-write check.** After substitutions, re-list every file actually modified (track via the in-memory list from Step 3) and re-run the gate-5 allowlist check on each path. If any path fails, treat as a critical bug, auto-rollback, and halt with "post-write allowlist violation — likely an applier bug; rolled back."
+
+### Step 4a: Release the lock
+
+Remove `.claude/state/setup.lock` (it was acquired by the detector at Phase 4). On any halt or auto-rollback above, also remove the lock so the next `/setup` invocation can proceed. The lock release is mandatory whether the apply succeeded, failed, or rolled back.
+
+```bash
+rm -f .claude/state/setup.lock
+```
 
 ### Step 5: Write the apply log
 
@@ -181,7 +197,7 @@ This file is the contract `framework-improver` reads. It must list every layer `
 
 - **Don't apply without `## Confirmed by user`.** That's a hard halt. No exceptions.
 - **Don't write outside the allowlist.** The path regex is the boundary.
-- **Don't run network commands.** Bash is for filesystem and git operations only — no `curl`/`wget`/`gh api`/`npm view`.
+- **Don't run network commands.** Forbidden command list in `docs/project-detection.md`. Bash is for filesystem and git operations only.
 - **Don't re-detect.** The detector already wrote the proposal. You consume it. If the proposal is missing data, halt and ask the skill to re-run detection.
 - **Don't skip the backup step.** Even if the smoke check is clean, the backup is the rollback path. Always create it.
 - **Don't modify files not listed in `## Affected files`.** If you find yourself wanting to "just also update X," that's a sign the proposal is incomplete — halt and surface.

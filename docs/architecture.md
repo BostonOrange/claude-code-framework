@@ -288,7 +288,7 @@ your-project/
 ├── .mcp.json                          # MCP servers (Context7 docs)
 ├── .claude/
 │   ├── settings.local.json            # Permissions & model config
-│   ├── agents/                        # 37 AI teammate definitions
+│   ├── agents/                        # 38 AI teammate definitions
 │   │   ├── architect.md               # System design, patterns
 │   │   ├── code-reviewer.md           # Bugs, security in diffs (broad sweep)
 │   │   ├── code-smell-reviewer.md     # Smells specialist — cites `code-smells`
@@ -320,7 +320,8 @@ your-project/
 │   │   ├── happy-path-implementer.md          # Build phase 2: core logic
 │   │   ├── edge-case-implementer.md           # Build phase 3: validation, errors, edges
 │   │   ├── refactor-pass-implementer.md       # Build phase 6: apply quality rules
-│   │   ├── framework-improver.md              # Meta: self-improvement
+│   │   ├── framework-improver-detector.md     # Meta: self-improvement read-only (skip-list + proposal)
+│   │   ├── framework-improver-applier.md      # Meta: self-improvement write (validation + apply + audit)
 │   │   ├── planner-coordinator.md             # Meta: orchestrates planning specialists
 │   │   ├── build-coordinator.md               # Meta: orchestrates build phases
 │   │   ├── review-coordinator.md              # Meta: synthesizes reviewer findings, persists state

@@ -193,7 +193,8 @@ The framework maintains a canonical registry of all distributable agents at `con
 
 | Agent | Tools | Model | Purpose |
 |-------|-------|-------|---------|
-| `framework-improver` | Read, Glob, Grep, Edit, Write, Bash | opus | Updates CLAUDE.md, rules, settings, agents |
+| `framework-improver-detector` | Read, Glob, Grep, Bash | opus | Self-improvement (read-only) — scans, builds skip-list, writes proposal (invoked by `/improve` Phase 1) |
+| `framework-improver-applier` | Read, Edit, Write, Bash | opus | Self-improvement (write) — validates skip-list, applies improvements with backup + audit log (invoked by `/improve` Phase 3) |
 | `planner-coordinator` | Read, Glob, Grep, Bash, Agent | opus | Orchestrates planning specialists (invoked by `/plan`) |
 | `build-coordinator` | Read, Glob, Grep, Bash, Agent | opus | Orchestrates build phases sequentially (invoked by `/build`) |
 | `review-coordinator` | Read, Glob, Grep, Bash, Agent | opus | Synthesizes parallel reviewer output (invoked by `/iterative-review`) |

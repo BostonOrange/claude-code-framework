@@ -225,11 +225,18 @@
       "description": "Build phase 5 specialist (final pass before review) — actively applies code-quality rules to the just-implemented code: simplifies, extracts, dedupes, reduces complexity. Tightly bound to `code-smells`, `dry`, `purity`, `complexity` rules. Goal is that the review-coordinator finds little to flag"
     },
     {
-      "name": "framework-improver",
+      "name": "framework-improver-detector",
       "category": "meta",
       "model": "opus",
-      "blurb": "Self-improvement — update CLAUDE.md, rules, settings, agents",
-      "description": "Self-improvement agent — analyzes project patterns and updates CLAUDE.md, rules, settings, and agent configurations to improve AI effectiveness"
+      "blurb": "Self-improvement (read-only): scans, builds /setup-aware skip-list, writes proposal (invoked by `/improve` Phase 1)",
+      "description": "Self-improvement detector — scans the project, identifies improvements to CLAUDE.md placeholders, .claude/rules patterns, settings, and agent configs. Read-only by tool restriction. Builds the `/setup`-owned skip-list before scanning so improvements respecting onboarding decisions are filtered out at proposal time. Paired with `framework-improver-applier` and orchestrated by `/improve`"
+    },
+    {
+      "name": "framework-improver-applier",
+      "category": "meta",
+      "model": "opus",
+      "blurb": "Self-improvement (write): re-validates skip-list, applies improvements with backup + audit log (invoked by `/improve` Phase 3)",
+      "description": "Self-improvement applier — reads `.claude/state/improve-proposal.md`, re-validates against the `/setup`-owned skip-list, applies improvements (CLAUDE.md placeholder fills, rule pattern updates, settings tweaks), writes audit log to `.claude/state/improve-applied.md`. Refuses to apply items in the skip-list. Paired with `framework-improver-detector` and orchestrated by `/improve`"
     },
     {
       "name": "review-coordinator",
