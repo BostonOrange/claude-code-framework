@@ -57,7 +57,7 @@
 | `/plan` | Multi-agent planning — planner-coordinator + planning specialists; produces `.claude/state/plan-<branch>.md` |
 | `/build` | Multi-agent implementation — build-coordinator + build specialists; executes the plan in sequenced phases |
 | `/iterative-review` | Plan → code → review → re-code loop with persistent state across iterations |
-| `/setup` | First-time onboarding — inventories repo, runs 15-layer detection with tradeoff-explained options, applies confirmed proposal (uses `project-setup`) |
+| `/setup` | First-time onboarding — inventories repo, runs 17-layer detection with tradeoff-explained options, applies confirmed proposal (uses `project-setup-detector` + `project-setup-applier`) |
 | `/improve` | Self-improvement — update CLAUDE.md, rules, settings from project state |
 | `/ai-update` | Branch + PR for AI process changes |
 | `/add-reference` | Add/update knowledge reference docs |

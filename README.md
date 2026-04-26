@@ -142,7 +142,7 @@ mkdir -p .claude/skills/my-domain/references/
 | `/plan` | Multi-agent planning — spawns planner-coordinator + planning specialists, produces `.claude/state/plan-<branch>.md` |
 | `/build` | Multi-agent implementation — spawns build-coordinator + build specialists, executes the plan in sequenced phases |
 | `/iterative-review` | Plan → code → review → re-code loop with persistent state across iterations (uses `review-coordinator`) |
-| `/setup` | First-time onboarding — inventories repo, runs 15-layer detection with tradeoff-explained options, applies confirmed proposal (uses `project-setup`) |
+| `/setup` | First-time onboarding — inventories repo, runs 17-layer detection with tradeoff-explained options, applies confirmed proposal (uses `project-setup-detector` + `project-setup-applier`) |
 | `/improve` | Self-improvement — update CLAUDE.md, rules, settings from project analysis |
 | `/ai-update` | Branch + PR for AI process file changes |
 | `/add-reference` | Add/update domain knowledge references |
@@ -517,7 +517,7 @@ claude-code-framework/
 │   ├── plan/                    # Multi-agent planning (planner-coordinator)
 │   ├── build/                   # Multi-agent implementation (build-coordinator)
 │   ├── iterative-review/        # Plan → code → review → re-code loop with state
-│   ├── setup/                   # First-time onboarding (15-layer detection via project-setup agent)
+│   ├── setup/                   # First-time onboarding (17-layer detection via project-setup-detector + applier)
 │   ├── validate/                # Code validation
 │   ├── draft-story/             # Story creation
 │   ├── refine-story/            # Story refinement + templates

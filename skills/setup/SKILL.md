@@ -79,25 +79,11 @@ Greenfield mode looks similar but each layer presents 2–4 options with one-sen
 ### Phase 3: Collect Decisions
 
 Wait for user reply. Common shapes:
-- **"use detected"** — every detected layer takes its detected value; open questions still need answers.
+- **"use detected"** — every detected/needs-confirmation layer takes its detected value; open questions still need answers.
 - **"use detected + <answer1> + <answer2>"** — detected plus answers to open questions.
 - **Layer-by-layer** — explicit choice per layer.
 
-Update `.claude/state/setup-proposal.md` in place with the resolved values under the existing `## Confirmed by user` section. **Schema (load-bearing — applier reads this exact shape):**
-
-```markdown
-## Confirmed by user
-
-| Layer | Final value | Source of decision |
-|-------|-------------|--------------------|
-| 1 | TypeScript | detected (no override) |
-| 2 | Next.js 15 | detected (no override) |
-| 7 | Drizzle | user override (rejected Prisma) |
-| 15 | Linear | user choice |
-| 16 | Slack | user choice |
-```
-
-Required columns: `Layer` (number), `Final value` (string), `Source of decision` (one of: `detected (no override)`, `user override (<reason>)`, `user choice`, `n/a`). Every layer with `Status` other than `n/a` in the proposal table must appear here, otherwise the applier will halt at gate 5.
+Update `.claude/state/setup-proposal.md` in place with the resolved values under the existing `## Confirmed by user` section. The schema for that section — required columns, valid `Source of decision` values, and which `Status` values must appear — is in `docs/setup-state-schema.md`. **Every layer with `Status: detected`, `needs-confirmation`, or `needs-decision` must appear in `## Confirmed by user`.** Anything else fails the applier's gate 2.
 
 If `--dry-run`, stop here. Print the path to `setup-proposal.md` so the user can inspect.
 

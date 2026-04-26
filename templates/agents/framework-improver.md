@@ -11,15 +11,24 @@ You analyze the current project state and improve the .claude/ configuration to 
 
 ## Process
 
-### Step 0: Respect /setup decisions (load-bearing)
+### Step 0: Build the `/setup`-owned skip-list (load-bearing — gate, not policy)
 
-If `.claude/state/setup-applied.md` exists, **read it first**. Its `## Layers owned by /setup` table lists every layer the onboarding orchestrator already decided. For those layers:
+If `.claude/state/setup-applied.md` exists, parse it before doing anything else and build a concrete **skip-list** that gates every subsequent edit. Without this skip-list, you risk overwriting decisions `/setup` made (with user confirmation) and breaking the lifecycle boundary.
 
-- **Do not overwrite** values listed there. Even if your scan suggests a different value, `/setup`'s decision (informed by user confirmation) wins.
-- **Only fill** placeholders that are still empty (`{{...}}` strings still present). If a placeholder has a value from `/setup`, leave it alone.
-- **Add** new patterns/rules/sections — that's still your job. Onboarding decided shape; you tune around it.
+Concrete steps:
 
-If `.claude/state/setup-applied.md` does not exist, treat all 17 layers as your domain (no `/setup` has run yet). This is the lifecycle boundary in code, not just docs.
+1. Read `.claude/state/setup-applied.md`.
+2. Extract the `## Layers owned by /setup` markdown table. For each row, record `(layer_number, layer_name, final_value)`.
+3. From the layer-name → placeholder map (canonical source: `docs/setup-state-schema.md`'s "Layer-to-placeholder mapping"), build `OWNED_PLACEHOLDERS = {layer's placeholders for each row}` and `OWNED_FILES = {files referenced in those layers}`.
+4. Hold both sets in memory through Steps 3 (Update CLAUDE.md), 4 (Update Rules), and 5 (Update Settings).
+
+Then enforce the gate at every Edit:
+
+- **Before any `Edit` on CLAUDE.md:** if the `old_string` matches a placeholder name in `OWNED_PLACEHOLDERS`, refuse the edit. Only fill placeholders not in the owned set, or placeholders still in raw `{{...}}` form (i.e., `/setup` left them intentionally unfilled — see `## Intentionally unfilled` in `setup-applied.md`).
+- **Before any `Edit` on a file in `OWNED_FILES`:** verify the change you're making is *additive* (new section, new pattern, new rule). If the change touches a value already set by `/setup`, refuse and surface the conflict to the user instead.
+- **Maintain a per-session changelog**: every refusal is logged to `docs/ai-improvements.md` so the user can see what you would have changed had `/setup` not owned it.
+
+If `.claude/state/setup-applied.md` does not exist, `OWNED_PLACEHOLDERS = {}` and `OWNED_FILES = {}` — treat every layer as your domain. This is the lifecycle boundary enforced by gate, not by prose.
 
 ### Step 1: Assess Current Configuration
 

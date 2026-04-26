@@ -16,14 +16,23 @@ You **only** run when invoked with `--apply` and a path to the confirmed proposa
 Run these checks first. If any fail, halt immediately with a clear error and produce no Edits/Writes.
 
 1. **Proposal file exists.** Read `.claude/state/setup-proposal.md`. If missing, halt: "No proposal found — run `/setup` first."
-2. **`## Confirmed by user` section is populated.** The section must exist and contain at least one row in its table. If empty, halt: "Proposal not yet confirmed — the `/setup` skill must collect user decisions before applying."
+2. **`## Confirmed by user` section is populated.** The section must exist and contain at least one row in its table. If empty, halt: "Proposal not yet confirmed — the `/setup` skill must collect user decisions before applying." Also halt if any layer in the proposal table with `Status: needs-decision` OR `Status: needs-confirmation` is missing from `## Confirmed by user`.
 3. **`## Conflicts` section is empty or all conflicts have a `Final value` in `## Confirmed by user`.** If unresolved conflicts remain, halt: "Resolve conflicts before applying: <list>."
 4. **Working tree pre-check.** Run `git status --porcelain CLAUDE.md` (and the same for each `.claude/` file in the apply list). If any of those have uncommitted changes, halt: "Uncommitted changes in <files>. Commit or stash before applying."
-5. **Allowlist validation.** For every entry in `## Affected files`, validate against the path regex:
+5. **Allowlist validation.** For every entry in `## Affected files`, run the *two-step* check below. The regex alone is not sufficient — string-level pre-checks catch path traversal and NUL bytes that the regex can't.
+
+   **Step 5a — Reject any path that contains:**
+   - Any of: `..`, `\` (backslash), NUL byte, `\r`, `\n`
+   - A leading `/` (absolute path)
+   - A leading `~` (home expansion)
+
+   **Step 5b — Match against the anchored allowlist regex:**
    ```
-   ^(CLAUDE\.md|\.claude/(rules|skills|state|settings\.local\.json).*|\.gitignore|\.env\.example)$
+   ^(CLAUDE\.md|\.gitignore|\.env\.example|\.claude/settings\.local\.json|\.claude/(rules|skills|state)/[^/].*)$
    ```
-   Reject anything outside the allowlist (no absolute paths, no `..` traversal, no paths outside the working directory). Halt with the offending paths listed.
+   This regex requires that paths under `.claude/rules/`, `.claude/skills/`, `.claude/state/` have at least one non-slash character after the directory separator (so bare directories and `..` traversal are rejected even if step 5a missed something). The literal-file branches (`CLAUDE.md`, `.gitignore`, `.env.example`, `.claude/settings.local.json`) are exact matches with no trailing wildcard.
+
+   Halt if either step fails, with the offending path and the rule that rejected it.
 
 If all five gates pass, proceed.
 
@@ -35,14 +44,39 @@ Create `.claude/state/setup-backup-<ISO timestamp>/` and copy:
 - `CLAUDE.md` (if it exists)
 - All files in `## Affected files` that currently exist
 
+Also write a **manifest** listing every file backed up. The manifest is the authoritative restore list — `cp -r` semantics won't undo files the apply *added*, but a manifest restore can detect "file existed in backup, was modified, restore" vs "file did not exist in backup, was added by apply, delete to undo."
+
 ```bash
 TS="$(date -u +%Y%m%dT%H%M%SZ)"
-mkdir -p ".claude/state/setup-backup-$TS"
-cp CLAUDE.md ".claude/state/setup-backup-$TS/" 2>/dev/null || true
-# repeat for each affected file under .claude/
+BACKUP=".claude/state/setup-backup-$TS"
+mkdir -p "$BACKUP"
+MANIFEST="$BACKUP/manifest.txt"
+
+# CLAUDE.md (always backed up if present)
+if [ -f CLAUDE.md ]; then
+  cp CLAUDE.md "$BACKUP/CLAUDE.md"
+  echo "EXISTING CLAUDE.md" >> "$MANIFEST"
+else
+  echo "MISSING CLAUDE.md" >> "$MANIFEST"
+fi
+
+# Each file in `## Affected files` — preserve relative path inside backup
+for f in $AFFECTED_FILES; do
+  if [ -f "$f" ]; then
+    mkdir -p "$BACKUP/$(dirname "$f")"
+    cp "$f" "$BACKUP/$f"
+    echo "EXISTING $f" >> "$MANIFEST"
+  else
+    echo "MISSING $f" >> "$MANIFEST"
+  fi
+done
 ```
 
-This is the rollback path. The skill's verify phase tells the user the backup directory; if anything went wrong, restore from there.
+The manifest format is `{EXISTING|MISSING} <relative-path>` per line. Recovery walks this manifest:
+- `EXISTING <path>` → `cp $BACKUP/<path> <path>` (restore prior content)
+- `MISSING <path>` → `rm <path>` (delete what apply added; this undoes additions that `cp -r` cannot)
+
+This is the rollback path used by Step 3's auto-rollback and by the user via the apply log's recovery section.
 
 ### Step 2: Ensure `.claude/state/` is gitignored
 
@@ -63,7 +97,13 @@ Read the `## Substitutions` table from the proposal. For each row:
 - Use **`Write`** only when the affected file does not exist yet (rare — usually `.claude/state/setup-applied.md` only).
 - **Never** rewrite an entire CLAUDE.md or skill file. Always edit-in-place.
 
-Apply substitutions per-layer in the order listed in `## Confirmed by user`. Stop at the first error and surface what was applied so far.
+Apply substitutions per-layer in the order listed in `## Confirmed by user`. Track every Edit you perform in an in-memory list (path + placeholder + old_value + new_value) so Step 4 can roll back on failure.
+
+**On any error in Step 3 — auto-rollback.** If an Edit fails (placeholder not found, file missing, write error), do NOT stop and leave partial state. Instead:
+
+1. For every Edit you successfully applied so far, restore the file from `.claude/state/setup-backup-<ts>/` (the manifest at `<backup>/manifest.txt` lists what to restore).
+2. Halt with a clear error: "Apply failed at layer N (`{{PLACEHOLDER}}` in `<file>`). All applied changes have been rolled back from `<backup>`. Working tree is now in pre-apply state."
+3. Do not write the apply log — the proposal stays valid for re-run.
 
 **Concrete example:**
 ```
@@ -78,12 +118,14 @@ Action: Edit .claude/skills/develop/SKILL.md
 After all substitutions:
 
 ```bash
-grep -r '{{' CLAUDE.md .claude/ 2>/dev/null | grep -vE '\.claude/(state|backup)/' | head -30
+grep -r '{{' CLAUDE.md .claude/ 2>/dev/null | grep -vE '\.claude/state/' | head -30
 ```
 
 For each remaining `{{...}}`, classify:
 - **Intentionally left** (e.g., backend-only project keeps `{{DESIGN_*}}` empty) → record in apply log as `intentionally-unfilled`
-- **Unexpected** → halt and surface to the user; do not write the apply log
+- **Unexpected** → trigger the same auto-rollback as Step 3 errors; do not write the apply log
+
+**Defense-in-depth post-write check.** After substitutions, re-list every file actually modified (track via the in-memory list from Step 3) and re-run the gate-5 allowlist check on each path. If any path fails, treat as a critical bug, auto-rollback, and halt with "post-write allowlist violation — likely an applier bug; rolled back."
 
 ### Step 5: Write the apply log
 
@@ -114,11 +156,19 @@ Write `.claude/state/setup-applied.md`:
 - ...
 
 ## Recovery
-If something is wrong, restore from `.claude/state/setup-backup-<timestamp>/`:
+If something is wrong, restore from `.claude/state/setup-backup-<timestamp>/` using the manifest. Run from a bash-compatible shell (Git Bash on Windows works; PowerShell does not — use bash or WSL):
+
 \`\`\`bash
-cp .claude/state/setup-backup-<timestamp>/CLAUDE.md ./
-cp -r .claude/state/setup-backup-<timestamp>/.claude/* .claude/
+BACKUP=".claude/state/setup-backup-<timestamp>"
+while IFS=' ' read -r status path; do
+  case "$status" in
+    EXISTING) cp "$BACKUP/$path" "$path" ;;       # restore prior content
+    MISSING)  rm -f "$path" ;;                     # delete what apply added
+  esac
+done < "$BACKUP/manifest.txt"
 \`\`\`
+
+The manifest-driven restore correctly undoes both modifications and additions. A naive `cp -r` would leave new files in place.
 
 ## Next action
 - Run `/develop TICKET-123` to try the dev cycle

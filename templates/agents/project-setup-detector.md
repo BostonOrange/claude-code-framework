@@ -79,79 +79,23 @@ For each of the 17 layers, record: detected value, recommended default, options 
 
 ### Phase 4: Write the Proposal
 
-Write `.claude/state/setup-proposal.md` (and only this file). If `.claude/state/` doesn't exist, create it via `mkdir -p .claude/state` first. Verify `.claude/state/` is in `.gitignore` — if not, surface that as a `## Pre-apply checks` item (the applier will fix it; you only flag).
+Write `.claude/state/setup-proposal.md` (and only this file). If `.claude/state/` doesn't exist, create it via `mkdir -p .claude/state` first.
 
-**Schema (load-bearing — applier reads this exact shape):**
+**Defense-in-depth: ensure `.claude/state/` is gitignored *before* you write the proposal.** Run:
 
-```markdown
-# Project Setup Proposal — <ISO timestamp>
-
-**Mode:** greenfield | brownfield
-**Working directory:** <abspath>
-**Detector version:** v1
-
-## Inventory summary
-<short paragraph: detected language, framework, deps count, infra signal>
-
-## Pre-apply checks
-- [ ] `.claude/state/` in `.gitignore` (status: yes | no — applier will fix if no)
-- [ ] CLAUDE.md backup target: `.claude/state/setup-backup-<ISO timestamp>/`
-- [ ] git working tree status: <clean | uncommitted CLAUDE.md changes detected — applier will halt>
-
-## Layers — proposal table
-
-| # | Layer | Detected | Recommended | Options | Source | Status |
-|---|-------|----------|-------------|---------|--------|--------|
-| 1 | Language | TypeScript | TypeScript | TS / JS | tsconfig.json + .ts files | detected |
-| 2 | Framework | Next.js 15 | Next.js 15 | Next.js / Remix / SvelteKit / SPA | next dependency | detected |
-| ... | ... | ... | ... | ... | ... | needs-decision |
-
-`Status` values: `detected` (auto-fill, brownfield-only), `needs-confirmation` (ask user even if detected — used in greenfield, or when conflict exists, or always for tracker/notification), `needs-decision` (no detection — user must pick), `n/a` (layer skipped).
-
-## Conflicts
-<list any layer where detection contradicts existing CLAUDE.md or .claude/ — applier MUST NOT proceed if any conflict is unresolved>
-- **Layer N (<name>):** detection says `<X>`, existing CLAUDE.md says `<Y>`. Pick one.
-
-## Open questions
-<layers with `Status: needs-decision`, listed for the skill to surface>
-- **Notification system** — Slack / Teams / Discord / None?
-
-## Affected files (apply allowlist)
-The applier will write only to paths matching this allowlist. Paths outside it are rejected.
-- `CLAUDE.md`
-- `.claude/rules/<name>.md` (one entry per affected rule)
-- `.claude/skills/<name>/SKILL.md` (one entry per affected skill)
-- `.claude/settings.local.json`
-- `.gitignore` (only to add `.claude/state/`)
-- `.claude/state/setup-applied.md` (apply log)
-
-**Path validation rule (applier enforces):** `^(CLAUDE\.md|\.claude/(rules|skills|state|settings\.local\.json).*|\.gitignore|\.env\.example)$` relative to working directory. No absolute paths, no parent-directory traversal (`..`).
-
-## Substitutions
-<concrete placeholder → value mappings the applier will execute>
-| Placeholder | Value | In file |
-|-------------|-------|---------|
-| `{{TEST_COMMAND}}` | `pnpm test` | `.claude/skills/develop/SKILL.md` |
-
-## Bootstrap commands (greenfield only — n/a otherwise)
 ```bash
-npm create vite@latest -- --template react-ts
-cd <project>
-npm install
-```
-*(User runs these themselves; the applier never executes scaffolding commands.)*
-
-## Confirmed by user
-*(Empty until the orchestrating skill collects user replies and writes here. The applier MUST refuse to apply if this section is empty or missing.)*
-
-| Layer | Final value | Source of decision |
-|-------|-------------|--------------------|
-| 1 | TypeScript | detected (no override) |
-| 2 | Next.js 15 | detected (no override) |
-| 16 | Slack | user choice |
+if [ -f .gitignore ] && ! grep -qE '^\.claude/state/?$' .gitignore; then
+    printf '\n.claude/state/\n' >> .gitignore
+elif [ ! -f .gitignore ]; then
+    printf '.claude/state/\n' > .gitignore
+fi
 ```
 
-The `## Confirmed by user` section is initially empty; the skill populates it during Phase 3 of `/setup`. The applier validates this section is present and has at least one row before doing any Edit/Write.
+This protects against the user running `git add .` between Phase 1 and Phase 4 — proposal data (detected dep names, repo topology) never lands in commit history. The applier's Step 2 is idempotent with this; both can run safely.
+
+**Schema:** the canonical shape — sections, columns, `Status` values, `Source of decision` values — is specified in `docs/setup-state-schema.md`. Read it before writing the proposal. Do not re-document the schema here; the schema doc is the single source of truth and any drift between this file and the schema doc breaks the applier.
+
+In short: write the eleven sections (`Inventory summary`, `Pre-apply checks`, `Layers — proposal table`, `Conflicts`, `Open questions`, `Affected files`, `Substitutions`, `Bootstrap commands`, `Confirmed by user`) per the schema, with the `Confirmed by user` section initially empty (the skill populates it). The applier's gate 2 enforces this contract at apply time.
 
 ### Phase 5: Surface Summary
 

@@ -22,26 +22,13 @@ Analyze the current project state and improve the .claude/ configuration for bet
 
 ### Phase 1: Project Discovery
 
-Scan the project to build a comprehensive profile:
+Scan the project to build a comprehensive profile. Use the canonical bash blocks from `docs/project-detection.md` (`MANIFEST_INVENTORY`, `LOCKFILE_INVENTORY`, `CONFIG_INVENTORY`, `FRAMEWORK_SIGNALS`, `FILE_EXTENSION_CENSUS`, `GIT_STATE`). All three discovery surfaces (this skill, `framework-improver`, `project-setup-detector`) share that source so detection stays consistent.
 
-1. **Tech stack detection:**
-```bash
-# Package managers and dependency files
-ls package.json requirements.txt Pipfile go.mod Cargo.toml build.gradle pom.xml Gemfile composer.json sfdx-project.json 2>/dev/null
-```
+In addition:
 
-2. **File type census:**
-```bash
-find . -type f -not -path "*/.git/*" -not -path "*/node_modules/*" -not -path "*/__pycache__/*" -not -path "*/vendor/*" -not -path "*/.next/*" -not -path "*/dist/*" -not -path "*/build/*" | sed 's/.*\.//' | sort | uniq -c | sort -rn | head -20
-```
-
-3. **Framework detection:** Read config files (next.config.*, vite.config.*, angular.json, etc.)
-
-4. **Directory structure:** Map the top-level architecture
-
-5. **Existing tooling:** Find linter configs, test configs, CI configs
-
-6. **Security quick-scan** (flag issues for the report, don't fix):
+1. **Directory structure** — map the top-level architecture from the inventory output.
+2. **Existing tooling** — locate linter / test / CI configs from `CONFIG_INVENTORY`.
+3. **Security quick-scan** (flag issues for the report; don't fix):
    - `git ls-files | grep -E "\.(db|sqlite|sqlite3)" | head -5` — database files in git?
    - `git ls-files | grep -E "^data/|/uploads/" | head -10` — real data files tracked?
    - Check auth middleware for fail-open patterns (defaults to allow when config missing)
