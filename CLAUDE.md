@@ -32,12 +32,12 @@ claude-code-framework/
 │   ├── settings.json            # User-level permissions (~/.claude/)
 │   ├── settings.local.json      # Project-level permissions
 │   ├── mcp.json                 # MCP server config (→ .mcp.json)
-│   ├── agents/                  # 35 AI agent definitions
+│   ├── agents/                  # 36 AI agent definitions
 │   ├── commands/                # 6 quick command definitions
-│   ├── rules/                   # 9 file-pattern guardrails
+│   ├── rules/                   # 22 file-pattern guardrails
 │   ├── hooks/                   # 6 lifecycle scripts
 │   └── statusline/              # Status bar config
-├── skills/                      # 20 workflow skills + 1 template
+├── skills/                      # 21 workflow skills + 1 template
 ├── workflows/                   # 4 GitHub Actions CI/CD templates
 ├── memory/                      # Memory system templates
 └── docs/                        # Framework documentation
@@ -149,6 +149,7 @@ Spawn pre-configured teams for parallel analysis of the framework:
 | `review-coordinator` | Synthesizes parallel reviewer output (dedupe, filter, risk-tier classify, cross-iteration state) | opus |
 | `planner-coordinator` | Orchestrates planning specialists, classifies scope, synthesizes one plan | opus |
 | `build-coordinator` | Orchestrates build phases sequentially (scaffold → happy-path → edge-case → tests → docs → refactor) | opus |
+| `project-setup` | First-time onboarding orchestrator (invoked by `/setup`); 15-layer detection + tradeoff-explained decisions + apply pass | opus |
 
 > `framework-qa` is available in this repo's own `.claude/agents/` but is not a distributable template agent.
 

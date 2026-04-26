@@ -197,6 +197,7 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `planner-coordinator` | Read, Glob, Grep, Bash, Agent | opus | Orchestrates planning specialists (invoked by `/plan`) |
 | `build-coordinator` | Read, Glob, Grep, Bash, Agent | opus | Orchestrates build phases sequentially (invoked by `/build`) |
 | `review-coordinator` | Read, Glob, Grep, Bash, Agent | opus | Synthesizes parallel reviewer output (invoked by `/iterative-review`) |
+| `project-setup` | Read, Glob, Grep, Edit, Write, Bash | opus | First-time onboarding — 15-layer stack detection + apply pass (invoked by `/setup`) |
 
 ### Commands (6)
 

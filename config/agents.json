@@ -251,6 +251,13 @@
       "model": "opus",
       "blurb": "Orchestrates build phases sequentially — scaffold → happy-path → edge-case → tests → docs → refactor",
       "description": "Orchestrates build phases sequentially — scaffold → happy-path → edge-case → tests → docs → refactor — using the plan from planner-coordinator. Each phase is one specialist; the coordinator manages sequencing, state, and resumption"
+    },
+    {
+      "name": "project-setup",
+      "category": "meta",
+      "model": "opus",
+      "blurb": "First-time onboarding — inventories repo, runs 15-layer detection with tradeoff-explained options, applies a confirmed proposal (invoked by `/setup`)",
+      "description": "First-time onboarding orchestrator — inventories the repo (greenfield vs brownfield), detects stack across 15 layers, surfaces decisions with tradeoff explanations and a recommended default per layer, then applies the confirmed proposal to CLAUDE.md, .claude/rules/, settings, and skills. Distinct from framework-improver (ongoing evolution); this owns the first run"
     }
   ]
 }

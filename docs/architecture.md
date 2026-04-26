@@ -288,7 +288,7 @@ your-project/
 ├── .mcp.json                          # MCP servers (Context7 docs)
 ├── .claude/
 │   ├── settings.local.json            # Permissions & model config
-│   ├── agents/                        # 35 AI teammate definitions
+│   ├── agents/                        # 36 AI teammate definitions
 │   │   ├── architect.md               # System design, patterns
 │   │   ├── code-reviewer.md           # Bugs, security in diffs (broad sweep)
 │   │   ├── code-smell-reviewer.md     # Smells specialist — cites `code-smells`
@@ -323,7 +323,8 @@ your-project/
 │   │   ├── framework-improver.md              # Meta: self-improvement
 │   │   ├── planner-coordinator.md             # Meta: orchestrates planning specialists
 │   │   ├── build-coordinator.md               # Meta: orchestrates build phases
-│   │   └── review-coordinator.md              # Meta: synthesizes reviewer findings, persists state
+│   │   ├── review-coordinator.md              # Meta: synthesizes reviewer findings, persists state
+│   │   └── project-setup.md                   # Meta: first-time onboarding (15-layer detection)
 │   ├── commands/                      # One-word automations
 │   │   ├── quick-test.md
 │   │   ├── lint-fix.md
@@ -366,6 +367,7 @@ your-project/
 │   │   ├── validate/SKILL.md
 │   │   ├── factory/SKILL.md
 │   │   ├── team/SKILL.md              # Agent team spawning
+│   │   ├── setup/SKILL.md             # First-time onboarding (15-layer detection)
 │   │   ├── improve/SKILL.md           # Framework self-improvement
 │   │   ├── your-domain/
 │   │   │   ├── SKILL.md
