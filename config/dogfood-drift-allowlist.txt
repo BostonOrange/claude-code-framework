@@ -1,0 +1,47 @@
+# Expected differences between this framework repo's own .claude/ config and
+# the distributable templates/skills. Keep this list explicit so accidental
+# drift fails tests/check-dogfood-drift.sh.
+#
+# Format is the exact normalized line emitted by the test.
+
+Files .claude/agents/api-designer.md and templates/agents/api-designer.md differ
+Files .claude/agents/architect.md and templates/agents/architect.md differ
+Files .claude/agents/code-reviewer.md and templates/agents/code-reviewer.md differ
+Files .claude/agents/documentation-writer.md and templates/agents/documentation-writer.md differ
+Files .claude/agents/performance-optimizer.md and templates/agents/performance-optimizer.md differ
+Files .claude/agents/security-auditor.md and templates/agents/security-auditor.md differ
+Files .claude/agents/test-writer.md and templates/agents/test-writer.md differ
+Files .claude/agents/ui-ux-reviewer.md and templates/agents/ui-ux-reviewer.md differ
+Only in .claude/agents: framework-qa.md
+
+Files .claude/hooks/_lib.sh and templates/hooks/_lib.sh differ
+Files .claude/hooks/guardrails.sh and templates/hooks/guardrails.sh differ
+Files .claude/hooks/post-coding-review.sh and templates/hooks/post-coding-review.sh differ
+Files .claude/hooks/post-edit-sync.sh and templates/hooks/post-edit-sync.sh differ
+Only in templates/hooks: pre-commit.sh
+Only in templates/hooks: session-start.sh
+
+Files .claude/skills/improve/SKILL.md and skills/improve/SKILL.md differ
+Files .claude/skills/team/SKILL.md and skills/team/SKILL.md differ
+Only in skills: _template
+Only in skills: add-reference
+Only in skills: app-blueprint
+Only in skills: ai-update
+Only in skills: check-readiness
+Only in skills: deploy
+Only in skills: develop
+Only in skills: draft-story
+Only in skills: error-analyze
+Only in skills: factory
+Only in skills: fetch-docs
+Only in skills: generate-internal-app
+Only in skills: merge-resolve
+Only in skills: mock-endpoint
+Only in skills: refine-story
+Only in skills: scaffold-design-system
+Only in skills: update-tracker
+Only in skills: validate
+
+Files .claude/settings.local.json and templates/settings.local.json differ
+Files .claude/statusline/statusline-command.sh and templates/statusline/statusline-command.sh differ
+Only in .claude/statusline: README.md

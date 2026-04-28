@@ -17,7 +17,7 @@ Three separable layers:
 | Layer | What | Examples | Portable? |
 |-------|------|----------|-----------|
 | **Workflow skills** | Development lifecycle patterns | `/develop`, `/validate`, `/factory`, `/check-readiness` | Yes — core of this framework |
-| **Integration adapters** | Connect to external systems | ADO/Jira/Linear, Slack/Teams, GitHub Actions/GitLab CI | Swappable — configure per project |
+| **Integration adapters** | Connect to external systems | ADO/Jira/Linear, Slack/Teams, GitHub Actions workflow templates | Swappable — configure per project |
 | **Domain knowledge** | Project-specific references | Object inventories, API specs, business rules | Project-specific — you build these |
 
 ## Quick Start
@@ -49,18 +49,19 @@ cd your-project
 ```
 
 The setup wizard asks:
-- **Project type** (Salesforce, Node.js, React, Python, Go, Java, Rails, Generic)
+- **Project type** (Salesforce, Node.js, React, Internal Next.js Business App, Python, Go, Java, Rails, Generic)
+- **Internal app hosting/storage/Postgres choices** when the internal app preset is selected (local, Vercel, Azure Container Apps, Azurite, Azure Blob, Vercel Blob, local/managed Postgres)
 - **Work item tracker** (Azure DevOps, Jira, Linear, GitHub Issues, None)
-- **CI/CD platform** (GitHub Actions, GitLab CI, CircleCI, Jenkins, None)
+- **CI/CD platform** (GitHub Actions, GitLab CI, CircleCI, None)
 - **Base branch** (main, develop, master — or custom)
 - **Project short name** (used for worktree directories)
 - **Notification system** (Slack, Teams, Discord, None)
-- **Design system** (Material UI, Tailwind, Chakra, Ant Design, shadcn/ui, custom, or None)
+- **Design system** for frontend projects (Untitled UI, shadcn/ui, custom, or None)
 
 Then generates:
-- `.claude/skills/` — 17 workflow skills adapted to your stack (incl. `/team`, `/improve`)
+- `.claude/skills/` — 19 workflow skills adapted to your stack (incl. `/team`, `/improve`, `/app-blueprint`, `/generate-internal-app`)
 - `.claude/agents/` — 12 AI agents covering full team roles (all opus)
-- `.claude/commands/` — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)
+- `.claude/commands/` — 10 quick commands (incl. app-blueprint, generate-internal-app, generate-feature, port-vercel)
 - `.claude/rules/` — 9 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components)
 - `.claude/hooks/` — 6 lifecycle hooks (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit)
 - `.claude/settings.local.json` — project permissions, hooks
@@ -68,6 +69,7 @@ Then generates:
 - `~/.claude/settings.json` — user-level AI factory permissions, team orchestration (safe-by-default)
 - `CLAUDE.md` — project instructions (run `/improve` to auto-fill from project state)
 - `.github/workflows/` — CI/CD templates (if GitHub Actions)
+- Internal app preset files — Next.js/Prisma/auth/blob template, `.env.example`, `docs/setup.md`, and `.claude/internal-app.json` when selected
 
 ### 3. Updating the framework in an existing project
 
@@ -86,7 +88,8 @@ bash ~/claude-code-framework/setup.sh
 **What is preserved:**
 - `CLAUDE.md` at the project root — setup refuses to overwrite if it already exists
 - `.env` — only created if missing
-- Your code, docs, git history — setup never touches anything outside `.claude/`, `.mcp.json`, or `.github/workflows/`
+- Your code, docs, git history for normal project types — setup never touches anything outside `.claude/`, `.mcp.json`, or `.github/workflows/`
+- Internal app preset code is copied only when that project type is selected; use it for new or intentionally scaffolded target repos
 - Files you added under `.claude/skills/{your-domain}/` — setup only copies framework skills, not your custom ones
 
 **Before updating:**
@@ -117,10 +120,14 @@ mkdir -p .claude/skills/my-domain/references/
 | You are a... | Start with | Purpose |
 |--------------|------------|---------|
 | Architect/PM | `/draft-story` | Requirements → implementation-ready stories |
+| Architect/PM | `/app-blueprint` | Business intent → internal app blueprint JSON |
 | Architect/PM | `/team architecture` | Architecture review before implementation |
 | Developer | `/develop TICKET-123` | Full dev cycle: implement, validate, PR |
+| Developer | `/generate-internal-app` | Blueprint → generated internal Next.js app |
+| Developer | `/generate-feature` | Add a bounded internal app feature from the blueprint |
 | Reviewer | `/team review` | Parallel code + security + UX review |
 | DevOps | `/team release` | Release readiness check |
+| DevOps | `/port-vercel` | Prepare Vercel env/deploy guidance without forking the app |
 | Any | `/factory TICKET-123` | End-to-end: readiness → develop → validate → PR → deploy |
 | Any | `/improve` | Auto-evolve CLAUDE.md and .claude/ config from project state |
 
@@ -147,6 +154,8 @@ mkdir -p .claude/skills/my-domain/references/
 | `/fetch-docs` | Fetch and persist external documentation |
 | `/mock-endpoint` | Mock external API integrations |
 | `/scaffold-design-system` | Scaffold design system tokens, components, and theme config |
+| `/app-blueprint` | Convert internal business app intent into structured JSON |
+| `/generate-internal-app` | Adapt the internal Next.js app template from a blueprint |
 
 ### AI Agents (12 specialized teammates)
 
@@ -188,6 +197,10 @@ mkdir -p .claude/skills/my-domain/references/
 | `/branch-status` | Show diff stats, PR status, CI checks |
 | `/changelog` | Generate changelog from commits since last tag |
 | `/dep-check` | Check for outdated or vulnerable dependencies |
+| `/app-blueprint` | Create `docs/app-blueprint.json` from business intent |
+| `/generate-internal-app` | Generate the internal app from a blueprint |
+| `/generate-feature` | Add one blueprint-backed feature slice |
+| `/port-vercel` | Prepare Vercel docs/env guidance without forking the app |
 
 ### Rules (automatic guardrails)
 
@@ -251,39 +264,57 @@ File-pattern-scoped rules that Claude follows automatically when editing matchin
 └──────────┬───────────┘
            ↓ (background)
 ┌──────────────────────┐
-│  FRAMEWORK IMPROVE   │ framework-improver auto-evolves .claude/ config
+│  FRAMEWORK IMPROVE   │ optional /improve or framework-improver pass
 └──────────────────────┘
 ```
 
-> The `framework-improver` agent runs automatically in the background after **any session where files were modified** — not just `/develop` and `/factory`. This is enforced via CLAUDE.md instructions, so documentation and `.claude/` config always stay in sync with the actual project state. Changes are logged to `docs/ai-improvements.md`.
+> The framework does not rely on a hidden mutating hook. `post-edit-sync.sh` prints advisory sync reminders after edits, `/develop` and `/factory` instruct Claude to run `framework-improver` at the end of the workflow, and framework contributors should run `framework-improver` plus `framework-qa` before wrapping up changes. Deterministic tests remain the hard gate.
 
 ## Self-Improvement System
 
-The framework has a closed loop that keeps it honest over time. It's not one thing — it's five mechanisms working together:
+The framework has a closed loop that keeps it honest over time. It's not one thing — it's several mechanisms working together:
 
 | Layer | Component | When | What it does |
 |-------|-----------|------|--------------|
 | Advisory | `post-edit-sync.sh` (hook) | After every Edit/Write | Prints which doc surfaces may need updating based on what changed (e.g. "Agent 'code-reviewer' changed → verify README agents table") |
 | Advisory | `post-coding-review.sh` (hook) | SessionEnd, when >=3 source files or >=50 LOC changed vs base | Nudges `/team review` (code-reviewer + security-auditor + ui-ux-reviewer); cooldown per branch+SHA prevents repeat nudges |
-| Mutating | `framework-improver` (agent) | End of any session with changes — instructed by CLAUDE.md | Updates CLAUDE.md, `.claude/rules/`, settings, agents from project state; fills deferred placeholders (`{{PROJECT_DESCRIPTION}}` etc.) |
-| Verifying | `framework-qa` (agent, framework-repo-only) | End of any session with changes | Validates counts and tables across README, CLAUDE.md, docs are consistent with actual file inventory |
-| Deterministic | `tests/run-all.sh` (5 test suites) | CI + before PR | Hard gates for drift: `check-consistency` (counts), `check-agent-registry` (agent JSON ↔ frontmatter ↔ docs, 72 checks), `check-placeholders` (sh/ps1 parity), `check-guardrails` (55 hook patterns), `check-templates` (structural validity) |
+| Mutating | `framework-improver` (agent) | Explicitly invoked by workflow instructions or contributor action | Updates CLAUDE.md, `.claude/rules/`, settings, agents from project state; fills deferred placeholders (`{{PROJECT_DESCRIPTION}}` etc.) |
+| Verifying | `framework-qa` (agent, framework-repo-only) | Explicitly invoked before wrapping up framework changes | Validates counts and tables across README, CLAUDE.md, docs are consistent with actual file inventory |
+| Deterministic | `tests/run-all.sh` (7 Bash suites) | CI + before PR | Hard gates for drift: `check-consistency` (counts), `check-agent-registry` (agent JSON ↔ frontmatter ↔ docs, 72 checks), `check-placeholders` (sh/ps1 parity), `check-guardrails` (55 hook patterns), `check-templates` (structural validity), `check-setup-smoke` (Bash target install smoke), `check-dogfood-drift` (`.claude/` drift allowlist) |
+| Deterministic | `tests/check-setup-smoke.ps1` | CI on `windows-latest` | PowerShell setup smoke tests for Windows target installs and dry-run behavior |
 
-The advisory layers surface drift as it happens; the mutating layer fixes it; the verifying + deterministic layers prove it landed. Together they make it hard for documentation to drift from the actual state of the framework or your project.
+The advisory layers surface drift as it happens; the mutating agent can fix it when explicitly run; the verifying + deterministic layers prove it landed. Together they make drift visible instead of silently accumulating.
 
 See `docs/contributing.md` for how to extend each layer when adding new skills, agents, rules, or hooks.
 
+## Internal App Bridge
+
+The **Internal Next.js Business App** setup preset is the bridge between Claude workflow and the app-creator template.
+
+The framework owns setup flow, prompts, commands, skills, validation, smoke tests, and orchestration. The app template owns the actual Next.js app: Prisma/Postgres, auth/session, blob provider boundary, AI provider, and generated business code.
+
+When selected, setup copies `templates/internal-nextjs-business-app/` into the target repo while excluding generated/local artifacts:
+
+- `node_modules`
+- `.next`
+- `.env.local`
+- `src/generated/prisma`
+- `tsconfig.tsbuildinfo`
+
+It also creates `.env.example`, `docs/setup.md`, and `.claude/internal-app.json` with the selected hosting, storage, and Postgres guidance. Hosting choices configure docs/env only; they do not fork the app into separate stacks.
+
 ## Integration Configuration
 
-The framework connects to external systems through the **setup wizard** and **environment variables** -- not separate adapter files. During setup, you select your tracker, CI/CD platform, deployment target, and notification system. The wizard writes concrete API calls and commands into your skill files by replacing placeholder tokens (`{{TRACKER_*}}`, `{{CI_*}}`, `{{DEPLOY_*}}`, `{{NOTIFY_*}}`).
+The framework connects to external systems through the **setup wizard** and **environment variables** -- not separate adapter files. During setup, you select your tracker, CI/CD platform, notification system, and frontend design-system preset. The wizard writes concrete tracker, notification, validation, and command defaults into your skill files by replacing placeholder tokens (`{{TRACKER_*}}`, `{{DEPLOY_*}}`, `{{NOTIFY_*}}`, etc.).
 
 ### Setup Wizard Integrations
 
 | Category | Options | What Gets Configured |
 |----------|---------|---------------------|
 | **Work Item Tracker** | Azure DevOps, Jira, Linear, GitHub Issues | Ticket fetch commands, field mappings, state transitions |
-| **CI/CD Platform** | GitHub Actions, GitLab CI, CircleCI | Workflow files in `.github/workflows/` or equivalent |
-| **Deployment Target** | Salesforce, AWS, Vercel, Docker/K8s, Generic | Deploy commands in `/deploy` skill and CI workflows |
+| **CI/CD Platform** | GitHub Actions, GitLab CI, CircleCI | GitHub Actions copies scaffold workflows to `.github/workflows/`; GitLab/CircleCI are selectable but require custom pipeline files today |
+| **Project Type / Validation** | Salesforce, Node.js, React, Internal Next.js Business App, Python, Go, Java, Rails, Generic | Default test, format, type-check, security-audit, and deploy-validation commands in skills and hooks |
+| **Internal App Providers** | Local only, Vercel, Azure Container Apps, Azurite, Azure Blob, Vercel Blob, local/managed Postgres | Copies the app-creator template and writes docs/env guidance without splitting the app into provider-specific stacks |
 | **Notifications** | Slack, Teams, Discord, None | Post-deploy and review notification commands |
 
 ### Credentials via .env
@@ -410,7 +441,12 @@ claude-code-framework/
 │   │   ├── check-types.md
 │   │   ├── branch-status.md
 │   │   ├── changelog.md
-│   │   └── dep-check.md
+│   │   ├── dep-check.md
+│   │   ├── app-blueprint.md
+│   │   ├── generate-internal-app.md
+│   │   ├── generate-feature.md
+│   │   └── port-vercel.md
+│   ├── internal-nextjs-business-app/ # Vendored app-creator template
 │   ├── rules/                   # File-pattern guardrails
 │   │   ├── api-routes.md
 │   │   ├── components.md
@@ -447,7 +483,9 @@ claude-code-framework/
 │   ├── improve/                 # Framework self-improvement
 │   ├── fetch-docs/              # External documentation fetch
 │   ├── mock-endpoint/           # Mock API endpoints
-│   └── scaffold-design-system/  # Design system scaffolding
+│   ├── scaffold-design-system/  # Design system scaffolding
+│   ├── app-blueprint/           # Internal app blueprint JSON
+│   └── generate-internal-app/   # Internal app generation workflow
 ├── workflows/                   # CI/CD templates
 │   ├── factory-validate.yml     # Deploy PR to test env
 │   ├── factory-auto-merge.yml   # Auto-merge after approval

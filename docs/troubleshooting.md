@@ -31,7 +31,7 @@ echo '{"tool_input":{"file_path":"src/foo.ts"}}' | bash .claude/hooks/post-edit-
 
 **Symptom:** The framework's own test suite (`check-*.sh` scripts) reports failures.
 
-The suite runs 5 scripts. Each one targets a specific drift surface:
+The Bash suite runs 7 scripts. Each one targets a specific drift surface:
 
 | Test | What it checks | Most common failure mode |
 |------|---------------|-------------------------|
@@ -40,6 +40,10 @@ The suite runs 5 scripts. Each one targets a specific drift surface:
 | `check-agent-registry.sh` | `config/agents.json` matches agent frontmatter byte-for-byte, every agent referenced in README/CLAUDE.md.template/docs/teams.md/docs/agents-commands-rules.md | Changed an agent description in frontmatter but not the registry (or vice-versa); forgot to name a new agent in a downstream doc |
 | `check-guardrails.sh` | Runs 55 test cases against `templates/hooks/guardrails.sh` (soft-block / hard-block / safe commands + bypass patterns) | Added a new guardrail regex that unintentionally blocks a benign command, or removed a block |
 | `check-templates.sh` | Frontmatter validity, placeholder naming conventions in templates | Added a new agent/skill with malformed YAML |
+| `check-setup-smoke.sh` | Runs `setup.sh` in isolated throwaway projects, including the internal app preset, and verifies generated output | Installer traceback, dry-run mutation, missing generated files, excluded app artifacts copied, or unreplaced operational placeholders |
+| `check-dogfood-drift.sh` | Compares framework-repo `.claude/` files with distributable templates/skills using `config/dogfood-drift-allowlist.txt` | Edited `.claude/` or templates without syncing or explicitly allowlisting intentional drift |
+
+Windows setup is covered separately by `tests/check-setup-smoke.ps1`, which runs in GitHub Actions on `windows-latest`.
 
 **Debug procedure:** Run each failing test in isolation — output tells you exactly which entry mismatched and what the expected value was:
 ```bash

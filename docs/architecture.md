@@ -15,15 +15,15 @@
 │                                                                      │
 │  ┌─────────────────┐  ┌──────────────┐  ┌──────────────────────┐     │
 │  │ Workflow        │  │ Integration  │  │ Domain Knowledge     │     │
-│  │ Skills (17)     │  │ Adapters     │  │ Skills               │     │
+│  │ Skills (19)     │  │ Adapters     │  │ Skills               │     │
 │  │                 │  │              │  │                      │     │
 │  │ /develop        │  │ Tracker:     │  │ /your-domain         │     │
 │  │ /validate       │  │  ADO/Jira/   │  │   references/        │     │
 │  │ /factory        │  │  Linear/GH   │  │     objects.md       │     │
 │  │ /check-ready    │  │              │  │     api-specs.md     │     │
 │  │ /draft-story    │  │ CI/CD:       │  │     patterns.md      │     │
-│  │ /refine-story   │  │  GH Actions/ │  │                      │     │
-│  │ /mock-endpoint  │  │  GitLab CI   │  │ /another-domain      │     │
+│  │ /refine-story   │  │  GitHub      │  │                      │     │
+│  │ /mock-endpoint  │  │  Actions     │  │ /another-domain      │     │
 │  │ /merge-resolve  │  │              │  │   references/        │     │
 │  │ /fetch-docs     │  │ Deploy:      │  │     ...              │     │
 │  │ /update-tracker │  │  SF/AWS/     │  │                      │     │
@@ -34,6 +34,8 @@
 │  │ /improve        │  │              │  │                      │     │
 │  │ /ai-update      │  │              │  │                      │     │
 │  │ /scaffold-ds    │  │              │  │                      │     │
+│  │ /app-blueprint  │  │              │  │                      │     │
+│  │ /gen-internal   │  │              │  │                      │     │
 │  └─────────────────┘  └──────────────┘  └──────────────────────┘     │
 │                                                                      │
 │  ┌──────────────┐  ┌──────────────┐  ┌─────────────────────────┐     │
@@ -46,6 +48,8 @@
 │  │ refactor-    │  │   status     │  │  database               │     │
 │  │   advisor    │  │ /changelog   │  │  error-handling         │     │
 │  │ devops-eng   │  │ /dep-check   │  │  config-files           │     │
+│  │              │  │ /app-blueprnt│  │                         │     │
+│  │              │  │ /gen-app     │  │                         │     │
 │  │ ui-ux-review │  │              │  │  auth-security          │     │
 │  │ perf-optim   │  │ Teams:       │  │  data-protection        │     │
 │  │ api-designer │  │  /team review│  │  design-system          │     │
@@ -75,7 +79,8 @@
 │  └────────────────────────────────────────────────────────────────┘  │
 │                                                                      │
 │  ┌────────────────────────────────────────────────────────────────┐  │
-│  │  CI/CD Workflows — .github/workflows/ (or .gitlab-ci)          │  │
+│  │  CI/CD Workflows — GitHub Actions templates                    │  │
+│  │  Installed under .github/workflows/                            │  │
 │  │  factory-validate → factory-auto-merge → factory-deploy        │  │
 │  └────────────────────────────────────────────────────────────────┘  │
 │                                                                      │
@@ -143,7 +148,7 @@ Each skill is self-contained but aware of the pipeline context via flags:
 |----------|--------|----------------|
 | **Lifecycle** | develop, validate, factory | Multi-phase, long-running, chain other skills |
 | **Planning** | draft-story, refine-story, check-readiness | Analyze content, produce structured reports |
-| **Integration** | update-tracker, deploy, error-analyze, fetch-docs, mock-endpoint, scaffold-design-system | Call external APIs, modify external state, scaffold project assets |
+| **Integration** | update-tracker, deploy, error-analyze, fetch-docs, mock-endpoint, scaffold-design-system, app-blueprint, generate-internal-app | Call external APIs, modify external state, scaffold project assets |
 | **Collaboration** | team, merge-resolve | Orchestrate agents or resolve conflicts |
 | **Meta** | ai-update, add-reference, improve | Modify the AI system itself |
 
@@ -181,6 +186,23 @@ curl -s "https://{domain}.atlassian.net/rest/api/3/issue/{key}" \
 ```bash
 gh issue view {number} --json title,body,state,labels
 ```
+
+## Internal App Bridge
+
+The internal app preset adds one more setup path without changing the framework's ownership boundary:
+
+```
+setup.sh / setup.ps1
+    -> prompt for hosting target, storage provider, Postgres provider
+    -> copy templates/internal-nextjs-business-app/
+    -> exclude node_modules, .next, .env.local, src/generated/prisma, tsconfig.tsbuildinfo
+    -> write .env.example, docs/setup.md, .claude/internal-app.json
+    -> install normal .claude skills, commands, rules, hooks
+```
+
+The framework owns questions, generated guidance, skills, commands, smoke tests, and orchestration. The app template owns the Next.js app, Prisma/Postgres layer, auth/session, blob provider boundary, AI provider, and generated business code.
+
+Hosting selection is intentionally advisory. Local, Vercel, Azure Container Apps, and other targets all use the same app codebase; setup only adjusts docs and environment guidance.
 
 ## Memory System Design
 
@@ -247,9 +269,9 @@ Next conversation → MEMORY.md loaded → accumulated knowledge available
    - Create PR with ticket link
    - Add pipeline label (triggers CI)
 
-6. CI DEPLOY (GitHub Actions / GitLab CI)
+6. CI DEPLOY (scaffolded GitHub Actions templates; customize before relying on it)
+   - Replace placeholder lint/test/deploy commands with project commands
    - Deploy to test environment
-   - Run tests
    - Post environment link as PR comment
 
 7. HUMAN REVIEW
@@ -307,7 +329,11 @@ your-project/
 │   │   ├── check-types.md
 │   │   ├── branch-status.md
 │   │   ├── changelog.md
-│   │   └── dep-check.md
+│   │   ├── dep-check.md
+│   │   ├── app-blueprint.md
+│   │   ├── generate-internal-app.md
+│   │   ├── generate-feature.md
+│   │   └── port-vercel.md
 │   ├── rules/                         # File-pattern-scoped guardrails
 │   │   ├── api-routes.md
 │   │   ├── components.md
@@ -331,6 +357,8 @@ your-project/
 │   │   ├── factory/SKILL.md
 │   │   ├── team/SKILL.md              # Agent team spawning
 │   │   ├── improve/SKILL.md           # Framework self-improvement
+│   │   ├── app-blueprint/SKILL.md     # Internal app blueprint JSON
+│   │   ├── generate-internal-app/SKILL.md
 │   │   ├── your-domain/
 │   │   │   ├── SKILL.md
 │   │   │   └── references/
@@ -339,6 +367,8 @@ your-project/
 ├── .github/workflows/                 # CI/CD
 │   ├── factory-validate.yml
 │   └── ...
+├── .env.example                       # Internal app env guidance when preset selected
+├── docs/setup.md                      # Internal app setup guide when preset selected
 └── docs/stories/                      # Story documentation
     └── TICKET-xxx/
         ├── story.md

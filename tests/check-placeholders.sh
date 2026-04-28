@@ -61,7 +61,7 @@ echo ""
 for placeholder in $ALL_PLACEHOLDERS; do
     # Check if this is a deferred placeholder
     IS_DEFERRED=false
-    for deferred in "${DEFERRED_PLACEHOLDERS[@]}"; do
+    for deferred in ${DEFERRED_PLACEHOLDERS[@]+"${DEFERRED_PLACEHOLDERS[@]}"}; do
         if [ "$placeholder" = "$deferred" ]; then
             IS_DEFERRED=true
             break
@@ -76,7 +76,7 @@ for placeholder in $ALL_PLACEHOLDERS; do
 
     # Check if this is a meta-reference placeholder
     IS_META=false
-    for meta in "${META_PLACEHOLDERS[@]}"; do
+    for meta in ${META_PLACEHOLDERS[@]+"${META_PLACEHOLDERS[@]}"}; do
         if [ "$placeholder" = "$meta" ]; then
             IS_META=true
             break

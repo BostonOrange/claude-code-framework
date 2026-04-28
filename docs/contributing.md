@@ -103,6 +103,9 @@ bash tests/check-placeholders.sh    # every placeholder has replacement in sh+ps
 bash tests/check-agent-registry.sh  # agent JSON + frontmatter + doc refs
 bash tests/check-templates.sh       # template structural validity
 bash tests/check-guardrails.sh      # guardrails.sh hook patterns
+bash tests/check-setup-smoke.sh     # Bash setup end-to-end smoke
+bash tests/check-dogfood-drift.sh   # self-hosted .claude/ drift policy
+pwsh -File tests/check-setup-smoke.ps1  # PowerShell setup smoke (Windows CI)
 ```
 
 For end-to-end validation, run setup against a throwaway directory:
@@ -116,25 +119,27 @@ grep -r "{{" .claude/ CLAUDE.md | grep -v ".git"
 
 ## Self-improvement workflow
 
-When you edit framework files, the `framework-improver` agent (framework-repo-only, not distributed) can update downstream docs automatically. From CLAUDE.md:
+When you edit framework files, the `framework-improver` agent (framework-repo-only, not distributed) can update downstream docs when explicitly invoked. From CLAUDE.md:
 
 > **Before ending any session where framework files were modified**, spawn the `framework-improver` agent in the background. Additionally, run the `framework-qa` agent to validate that all counts and tables are consistent.
-
-Both run automatically under the self-improvement hook if wired. Manually:
 
 ```bash
 # In a Claude Code session:
 # "Run framework-improver and framework-qa on the recent changes."
 ```
 
+No hidden hook mutates files at session end. Hooks only provide guardrails and advisory reminders; the agents are an explicit contributor workflow and `tests/run-all.sh` is the deterministic gate.
+
 ## Known parity drifts (tracked)
 
 - **Dry-run behavior** — `setup.sh` consolidates dry-run output into a preview block at line 269 then exits. `setup.ps1` interleaves `if (-not $DryRun)` checks throughout. Both produce correct output but the shapes differ. Low risk; refactoring deferred until a user hits a real divergence.
+- **Dogfood config** — this repo's own `.claude/` files intentionally differ from distributable templates in a few places (`framework-qa`, framework-specific hooks, and narrowed self-hosted skills). Keep `config/dogfood-drift-allowlist.txt` in sync when a difference is intentional.
 
 ## PR checklist
 
 - [ ] Both `setup.sh` and `setup.ps1` updated if adding prompts / placeholders / copy operations
-- [ ] `tests/run-all.sh` passes locally (all 5 suites green)
+- [ ] `tests/run-all.sh` passes locally (all 7 Bash suites green)
+- [ ] PowerShell setup smoke passes in CI, or locally with `pwsh -File tests/check-setup-smoke.ps1`
 - [ ] Agent/skill/rule/hook count changes reflected in README, CLAUDE.md template, setup summaries, and docs
 - [ ] No literal `{{...}}` in target-project output (run setup in a throwaway dir and grep)
 - [ ] Commit message follows `Add | Fix | Update | Remove` prefix convention

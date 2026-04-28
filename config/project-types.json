@@ -44,6 +44,21 @@
     "database_patterns": ["**/migrations/**/*", "**/models/**/*", "schema.prisma"],
     "source_patterns": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
   },
+  "internal-nextjs-app": {
+    "format_cmd": "npx eslint --fix \"path/to/file\"",
+    "format_verify": "npm run lint",
+    "test_cmd": "npm run typecheck && npm run lint",
+    "deploy_validate": "npm run typecheck && npm run lint && npm run build",
+    "type_check_cmd": "npm run typecheck",
+    "dep_check_cmd": "npm outdated && npm audit",
+    "security_audit_cmd": "npm audit",
+    "error_tracking": "console.error(error)",
+    "api_route_patterns": ["src/app/api/**/*.ts", "app/api/**/*.ts"],
+    "component_patterns": ["src/components/**/*.tsx", "src/app/**/*.tsx"],
+    "test_patterns": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/__tests__/**/*"],
+    "database_patterns": ["prisma/schema.prisma", "prisma/migrations/**/*", "src/lib/**/repository.ts"],
+    "source_patterns": ["src/**/*.ts", "src/**/*.tsx", "prisma/**/*.ts"]
+  },
   "python": {
     "format_cmd": "black path/to/file.py",
     "format_verify": "black --check . && ruff check .",

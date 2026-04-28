@@ -72,7 +72,7 @@ SETUP_AGENTS=$(grep -o '[0-9]\+ AI agents' "$SETUP_SH" | head -1 | grep -o '^[0-
 SETUP_COMMANDS=$(grep -o '[0-9]\+ quick commands' "$SETUP_SH" | head -1 | grep -o '^[0-9]\+' || echo "?")
 SETUP_RULES=$(grep -o '[0-9]\+ coding guardrails' "$SETUP_SH" | head -1 | grep -o '^[0-9]\+' || echo "?")
 SETUP_HOOKS=$(grep -o '[0-9]\+ lifecycle hooks' "$SETUP_SH" | head -1 | grep -o '^[0-9]\+' || echo "?")
-SETUP_WORKFLOWS=$(grep -o '[0-9]\+ CI/CD pipelines' "$SETUP_SH" | head -1 | grep -o '^[0-9]\+' || echo "?")
+SETUP_WORKFLOWS=$(grep -o '[0-9]\+ CI/CD pipelines\|[0-9]\+ GitHub Actions workflow templates' "$SETUP_SH" | head -1 | grep -o '^[0-9]\+' || echo "?")
 
 check_count "Skills (setup.sh)"    "$ACTUAL_SKILLS"    "$SETUP_SKILLS"    "setup.sh"
 check_count "Agents (setup.sh)"    "$ACTUAL_AGENTS"    "$SETUP_AGENTS"    "setup.sh"

@@ -54,13 +54,14 @@ Write-Host "  3) Python"
 Write-Host "  4) Go"
 Write-Host "  5) Java / Spring Boot"
 Write-Host "  6) React / Next.js"
-Write-Host "  7) Ruby on Rails"
-Write-Host "  8) Other"
+Write-Host "  7) Internal Next.js Business App"
+Write-Host "  8) Ruby on Rails"
+Write-Host "  9) Other"
 do {
-    $PROJECT_TYPE = Read-Host "Choice [1-8]"
-    if (-not $PROJECT_TYPE) { $PROJECT_TYPE = "8" }
-    $valid = $PROJECT_TYPE -match '^[1-8]$'
-    if (-not $valid) { Write-Host "Invalid selection. Please enter a number 1-8." }
+    $PROJECT_TYPE = Read-Host "Choice [1-9]"
+    if (-not $PROJECT_TYPE) { $PROJECT_TYPE = "9" }
+    $valid = $PROJECT_TYPE -match '^[1-9]$'
+    if (-not $valid) { Write-Host "Invalid selection. Please enter a number 1-9." }
 } while (-not $valid)
 
 $PROJECT_TYPE_NAME = switch ($PROJECT_TYPE) {
@@ -70,8 +71,74 @@ $PROJECT_TYPE_NAME = switch ($PROJECT_TYPE) {
     "4" { "go" }
     "5" { "java" }
     "6" { "react" }
-    "7" { "rails" }
+    "7" { "internal-nextjs-app" }
+    "8" { "rails" }
     default { "generic" }
+}
+
+$HOSTING_TARGET = "not-applicable"
+$HOSTING_TARGET_LABEL = "N/A"
+$STORAGE_PROVIDER = "not-applicable"
+$STORAGE_PROVIDER_LABEL = "N/A"
+$POSTGRES_PROVIDER = "not-applicable"
+$POSTGRES_PROVIDER_LABEL = "N/A"
+
+if ($PROJECT_TYPE_NAME -eq "internal-nextjs-app") {
+    Write-Host ""
+    Write-Host "Where should this internal app be prepared to run?"
+    Write-Host "  1) Local only"
+    Write-Host "  2) Vercel"
+    Write-Host "  3) Azure Container Apps"
+    Write-Host "  4) Other"
+    do {
+        $HOSTING_TYPE = Read-Host "Choice [1-4]"
+        if (-not $HOSTING_TYPE) { $HOSTING_TYPE = "1" }
+        $valid = $HOSTING_TYPE -match '^[1-4]$'
+        if (-not $valid) { Write-Host "Invalid selection. Please enter a number 1-4." }
+    } while (-not $valid)
+
+    switch ($HOSTING_TYPE) {
+        "1" { $HOSTING_TARGET = "local"; $HOSTING_TARGET_LABEL = "Local only" }
+        "2" { $HOSTING_TARGET = "vercel"; $HOSTING_TARGET_LABEL = "Vercel" }
+        "3" { $HOSTING_TARGET = "azure-container-apps"; $HOSTING_TARGET_LABEL = "Azure Container Apps" }
+        default { $HOSTING_TARGET = "other"; $HOSTING_TARGET_LABEL = "Other" }
+    }
+
+    Write-Host ""
+    Write-Host "Which blob storage provider should setup document first?"
+    Write-Host "  1) Local: Azurite"
+    Write-Host "  2) Azure: Azure Blob"
+    Write-Host "  3) Vercel: Vercel Blob"
+    do {
+        $STORAGE_TYPE = Read-Host "Choice [1-3]"
+        if (-not $STORAGE_TYPE) { $STORAGE_TYPE = "1" }
+        $valid = $STORAGE_TYPE -match '^[1-3]$'
+        if (-not $valid) { Write-Host "Invalid selection. Please enter a number 1-3." }
+    } while (-not $valid)
+
+    switch ($STORAGE_TYPE) {
+        "1" { $STORAGE_PROVIDER = "azurite"; $STORAGE_PROVIDER_LABEL = "Local Azurite" }
+        "2" { $STORAGE_PROVIDER = "azure-blob"; $STORAGE_PROVIDER_LABEL = "Azure Blob" }
+        default { $STORAGE_PROVIDER = "vercel-blob"; $STORAGE_PROVIDER_LABEL = "Vercel Blob" }
+    }
+
+    Write-Host ""
+    Write-Host "Which Postgres provider should setup document first?"
+    Write-Host "  1) Local Docker Postgres"
+    Write-Host "  2) Vercel Marketplace Postgres/Neon/Supabase/etc. through DATABASE_URL"
+    Write-Host "  3) Azure Postgres Flexible Server"
+    do {
+        $POSTGRES_TYPE = Read-Host "Choice [1-3]"
+        if (-not $POSTGRES_TYPE) { $POSTGRES_TYPE = "1" }
+        $valid = $POSTGRES_TYPE -match '^[1-3]$'
+        if (-not $valid) { Write-Host "Invalid selection. Please enter a number 1-3." }
+    } while (-not $valid)
+
+    switch ($POSTGRES_TYPE) {
+        "1" { $POSTGRES_PROVIDER = "local-docker"; $POSTGRES_PROVIDER_LABEL = "Local Docker Postgres" }
+        "2" { $POSTGRES_PROVIDER = "database-url"; $POSTGRES_PROVIDER_LABEL = "Managed Postgres via DATABASE_URL" }
+        default { $POSTGRES_PROVIDER = "azure-postgres-flexible-server"; $POSTGRES_PROVIDER_LABEL = "Azure Postgres Flexible Server" }
+    }
 }
 
 # -- 2. Work Item Tracker --
@@ -193,6 +260,9 @@ if ($PROJECT_TYPE_NAME -in "react", "nodejs") {
         "3" { "custom" }
         default { "none" }
     }
+} elseif ($PROJECT_TYPE_NAME -eq "internal-nextjs-app") {
+    # The vendored internal app starter ships with its own plain CSS baseline.
+    $DESIGN_SYSTEM_NAME = "none"
 } else {
     # Non-frontend projects use the _backend preset
     $DESIGN_SYSTEM_NAME = "_backend"
@@ -208,6 +278,209 @@ $DESIGN_COMPONENT_IMPORTS = $designCfg.component_imports
 $DESIGN_ICON_USAGE = $designCfg.icon_usage
 $DESIGN_CARD_PATTERNS = $designCfg.card_patterns
 $DESIGN_DARK_MODE = $designCfg.dark_mode
+
+function Copy-InternalAppTemplate {
+    if ($PROJECT_TYPE_NAME -ne "internal-nextjs-app") { return }
+
+    $templateDir = Join-Path $FRAMEWORK_DIR "templates/internal-nextjs-business-app"
+    if (-not (Test-Path $templateDir)) {
+        throw "Internal app template missing: $templateDir"
+    }
+
+    Write-Host "Copying internal Next.js business app template..."
+    if ($DryRun) {
+        Write-Host "[DRY-RUN] Would copy internal Next.js app template from $templateDir"
+        Write-Host "[DRY-RUN] Would create .env.example, docs/setup.md, and .claude/internal-app.json"
+        return
+    }
+
+    $excludedNames = @(".git", ".github", ".next", ".env.local", "CLAUDE.md", "node_modules", "tsconfig.tsbuildinfo")
+    Get-ChildItem -Path $templateDir -Force | Where-Object { $excludedNames -notcontains $_.Name } | ForEach-Object {
+        $destination = Join-Path $PROJECT_DIR $_.Name
+        Copy-Item -Path $_.FullName -Destination $destination -Recurse -Force
+    }
+
+    $generatedPrisma = Join-Path $PROJECT_DIR "src/generated/prisma"
+    if (Test-Path $generatedPrisma) {
+        Remove-Item -Recurse -Force $generatedPrisma
+    }
+
+    $packagePath = Join-Path $PROJECT_DIR "package.json"
+    $safeName = ($PROJECT_NAME.ToLowerInvariant() -replace '[^a-z0-9-]+', '-').Trim('-')
+    if (-not $safeName) { $safeName = "internal-business-app" }
+    if (Test-Path $packagePath) {
+        $package = Get-Content $packagePath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $package.name = $safeName
+        $package | ConvertTo-Json -Depth 20 | Set-Content $packagePath -Encoding UTF8
+    }
+
+    $lockPath = Join-Path $PROJECT_DIR "package-lock.json"
+    if (Test-Path $lockPath) {
+        $lock = Get-Content $lockPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $lock.name = $safeName
+        $rootPackageProperty = $null
+        if ($lock.packages) {
+            $rootPackageProperty = $lock.packages.PSObject.Properties[""]
+        }
+        if ($rootPackageProperty -and $rootPackageProperty.Value) {
+            $rootPackageProperty.Value.name = $safeName
+        }
+        $lock | ConvertTo-Json -Depth 100 | Set-Content $lockPath -Encoding UTF8
+    }
+
+    Write-Host "  + Next.js App Router, Prisma/Postgres, auth, blob boundary, Docker, and Azure starter files"
+}
+
+function Write-InternalAppGuidance {
+    if ($PROJECT_TYPE_NAME -ne "internal-nextjs-app") { return }
+
+    Write-Host "Writing internal app setup guidance..."
+    if ($DryRun) { return }
+
+    New-Item -ItemType Directory -Force -Path "docs", ".claude" | Out-Null
+
+    $envExample = @'
+# Internal Next.js Business App - Environment Variables
+# Copy to .env.local for local development or configure as platform secrets when hosted.
+
+# Framework setup choices
+# Hosting target: __HOSTING_TARGET_LABEL__
+# Storage provider: __STORAGE_PROVIDER_LABEL__
+# Postgres provider: __POSTGRES_PROVIDER_LABEL__
+
+# App
+APP_URL=http://localhost:3000
+PORT=3000
+NODE_ENV=development
+
+# Auth
+# Use AUTH_MODE=dev locally. Use AUTH_MODE=oidc in hosted environments.
+AUTH_MODE=dev
+SESSION_SECRET=replace-with-long-random-secret
+OIDC_ISSUER=
+OIDC_CLIENT_ID=
+OIDC_CLIENT_SECRET=
+OIDC_ALLOWED_EMAIL_DOMAINS=
+
+# Postgres
+# Local Docker Postgres:
+DATABASE_URL=postgresql://app:app@localhost:55432/app_creator?schema=public
+# Vercel/Neon/Supabase/other managed Postgres: set DATABASE_URL from the provider.
+# Azure Postgres Flexible Server: set DATABASE_URL with sslmode=require.
+
+# Blob storage
+# Local Azurite and Azure Blob use the Azure Storage compatible boundary:
+AZURE_STORAGE_CONNECTION_STRING=UseDevelopmentStorage=true
+AZURE_STORAGE_CONTAINER=app-files
+# Vercel Blob: keep application code behind src/lib/blob/client.ts and provide the
+# Vercel Blob token once the app template/generator has the Vercel adapter enabled.
+BLOB_READ_WRITE_TOKEN=
+
+# AI
+AI_PROVIDER=mock
+OPENAI_API_KEY=
+OPENAI_MODEL=
+
+# Hosting notes
+# Vercel: configure APP_URL, AUTH_MODE=oidc, SESSION_SECRET, OIDC_*, DATABASE_URL,
+# and BLOB_READ_WRITE_TOKEN or the storage adapter env required by app-creator.
+# Azure Container Apps: configure APP_URL, AUTH_MODE=oidc, SESSION_SECRET, OIDC_*,
+# DATABASE_URL, AZURE_STORAGE_CONNECTION_STRING, and AZURE_STORAGE_CONTAINER as secrets.
+'@
+    $envExample = $envExample.Replace("__HOSTING_TARGET_LABEL__", $HOSTING_TARGET_LABEL)
+    $envExample = $envExample.Replace("__STORAGE_PROVIDER_LABEL__", $STORAGE_PROVIDER_LABEL)
+    $envExample = $envExample.Replace("__POSTGRES_PROVIDER_LABEL__", $POSTGRES_PROVIDER_LABEL)
+    Set-Content ".env.example" $envExample -Encoding UTF8
+
+    $setupDoc = @'
+# Internal App Setup
+
+This repository was initialized with the Claude Code Framework internal Next.js business app preset.
+
+## Framework Choices
+
+| Area | Prepared Option |
+|------|-----------------|
+| Hosting target | __HOSTING_TARGET_LABEL__ |
+| Storage provider | __STORAGE_PROVIDER_LABEL__ |
+| Postgres provider | __POSTGRES_PROVIDER_LABEL__ |
+
+These choices configure setup notes and environment guidance only. The app remains one Next.js/Prisma codebase; do not fork it into hosting-specific stacks.
+
+## Local Development
+
+1. Run `npm install`.
+2. Copy `.env.example` to `.env.local` or let `npm run setup` create local defaults.
+3. Start local services and the app with `npm run dev`.
+4. Run `npm run typecheck` after dependencies are installed.
+
+Local development uses Docker Postgres and Azurite through `docker-compose.yml`.
+
+## Storage Boundary
+
+Application code should call the single storage boundary at `src/lib/blob/client.ts`. Provider-specific implementation belongs behind that boundary:
+
+| Provider | Environment Guidance |
+|----------|----------------------|
+| Local Azurite | `AZURE_STORAGE_CONNECTION_STRING=UseDevelopmentStorage=true`, `AZURE_STORAGE_CONTAINER=app-files` |
+| Azure Blob | Use a production Azure Storage connection string and container name. Store both as hosted secrets. |
+| Vercel Blob | Use Vercel Blob project secrets such as `BLOB_READ_WRITE_TOKEN`; keep route and repository code provider-neutral. |
+
+## Postgres Boundary
+
+Keep Prisma as the persistence tool. Managed providers are interchangeable as long as `DATABASE_URL` is valid:
+
+| Provider | Environment Guidance |
+|----------|----------------------|
+| Local Docker Postgres | `postgresql://app:app@localhost:55432/app_creator?schema=public` |
+| Vercel Marketplace / Neon / Supabase | Use the marketplace-provided `DATABASE_URL`. |
+| Azure Postgres Flexible Server | Use the Azure connection string with `sslmode=require`. |
+
+## Generation Workflow
+
+1. Run `/app-blueprint` to convert business intent into `docs/app-blueprint.json`.
+2. Run `/generate-internal-app docs/app-blueprint.json` to adapt the app template.
+3. Use `/generate-feature` for later additions after the first app generation.
+4. Use `/port-vercel` when preparing Vercel environment guidance.
+
+'@
+    $setupDoc = $setupDoc.Replace("__HOSTING_TARGET_LABEL__", $HOSTING_TARGET_LABEL)
+    $setupDoc = $setupDoc.Replace("__STORAGE_PROVIDER_LABEL__", $STORAGE_PROVIDER_LABEL)
+    $setupDoc = $setupDoc.Replace("__POSTGRES_PROVIDER_LABEL__", $POSTGRES_PROVIDER_LABEL)
+    Set-Content "docs/setup.md" $setupDoc -Encoding UTF8
+
+    $internalConfig = [ordered]@{
+        preset = "internal-nextjs-business-app"
+        template = "templates/internal-nextjs-business-app"
+        hostingTarget = $HOSTING_TARGET
+        storageProvider = $STORAGE_PROVIDER
+        postgresProvider = $POSTGRES_PROVIDER
+    }
+    $internalConfig | ConvertTo-Json -Depth 5 | Set-Content ".claude/internal-app.json" -Encoding UTF8
+
+    $envFile = Join-Path $PROJECT_DIR ".env"
+    if (Test-Path $envFile) {
+        $existingEnv = Get-Content $envFile -Raw -Encoding UTF8 -ErrorAction SilentlyContinue
+        if (-not ($existingEnv -match "Internal app runtime")) {
+            Add-Content $envFile @'
+
+# Internal app runtime
+# See .env.example and docs/setup.md for Vercel and Azure hosting notes.
+APP_URL=http://localhost:3000
+AUTH_MODE=dev
+SESSION_SECRET=replace-with-long-random-secret
+DATABASE_URL=postgresql://app:app@localhost:55432/app_creator?schema=public
+AZURE_STORAGE_CONNECTION_STRING=UseDevelopmentStorage=true
+AZURE_STORAGE_CONTAINER=app-files
+AI_PROVIDER=mock
+'@
+        }
+    }
+
+    Write-Host "  + .env.example (local, Vercel, Azure, storage, and Postgres notes)"
+    Write-Host "  + docs/setup.md"
+    Write-Host "  + .claude/internal-app.json"
+}
 
 # ============================================================
 # Generate project files
@@ -252,6 +525,8 @@ if ($isGitRepo) {
         }
     }
 }
+
+Copy-InternalAppTemplate
 
 # -- Create directories --
 
@@ -734,6 +1009,8 @@ if (-not (Test-Path $envFile)) {
     }
 }
 
+Write-InternalAppGuidance
+
 # ============================================================
 # Summary
 # ============================================================
@@ -750,19 +1027,30 @@ Write-Host "CI/CD:       $CI_NAME"
 Write-Host "Base branch: $BASE_BRANCH"
 Write-Host "Notify:      $NOTIFY_NAME"
 Write-Host "Design:      $DESIGN_SYSTEM_NAME"
+if ($PROJECT_TYPE_NAME -eq "internal-nextjs-app") {
+    Write-Host "Hosting:     $HOSTING_TARGET_LABEL"
+    Write-Host "Storage:     $STORAGE_PROVIDER_LABEL"
+    Write-Host "Postgres:    $POSTGRES_PROVIDER_LABEL"
+}
 Write-Host ""
 Write-Host "Files created:"
-Write-Host "  .claude/skills/         - 17 workflow skills (incl. /team, /improve, /scaffold-design-system)"
+Write-Host "  .claude/skills/         - 19 workflow skills (incl. /team, /improve, /app-blueprint, /generate-internal-app)"
 Write-Host "  .claude/agents/         - 12 AI agents (full team: architect to framework-improver)"
-Write-Host "  .claude/commands/       - 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)"
+Write-Host "  .claude/commands/       - 10 quick commands (incl. app-blueprint, generate-internal-app, generate-feature, port-vercel)"
 Write-Host "  .claude/rules/          - 9 coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components)"
 Write-Host "  .claude/hooks/          - 6 lifecycle hooks (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit)"
 Write-Host "  .claude/settings.local.json - project permissions, hooks"
 Write-Host "  .mcp.json               - MCP servers (Context7 documentation)"
 Write-Host "  ~/.claude/settings.json - user-level AI factory permissions (team orchestration enabled)"
 Write-Host "  .claude/statusline/"
+if ($PROJECT_TYPE_NAME -eq "internal-nextjs-app") {
+    Write-Host "  Next.js internal app   - app-creator template (generated/local artifacts excluded)"
+    Write-Host "  .env.example           - local, Vercel, Azure, storage, and Postgres guidance"
+    Write-Host "  docs/setup.md          - internal app setup and generation workflow"
+    Write-Host "  .claude/internal-app.json - selected internal app setup choices"
+}
 if ($CI_NAME -eq "github-actions") {
-    Write-Host "  .github/workflows/      - 4 CI/CD pipelines"
+    Write-Host "  .github/workflows/      - 4 GitHub Actions workflow templates (customize before relying on them)"
 }
 Write-Host "  docs/stories/           - story documentation folder"
 Write-Host ""
@@ -772,4 +1060,7 @@ Write-Host "  2. Configure .env with your credentials"
 Write-Host "  3. Try /team review for a full codebase assessment"
 Write-Host "  4. Add domain knowledge: /add-reference my-domain topic"
 Write-Host "  5. Start developing: /develop TICKET-123"
+if ($PROJECT_TYPE_NAME -eq "internal-nextjs-app") {
+    Write-Host "  6. For internal apps: run /app-blueprint, then /generate-internal-app docs/app-blueprint.json"
+}
 Write-Host ""

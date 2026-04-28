@@ -1,0 +1,31 @@
+name: Framework Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  bash:
+    name: Bash framework tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shell syntax
+        run: bash -n setup.sh tests/*.sh templates/hooks/*.sh
+
+      - name: Run test suite
+        run: bash tests/run-all.sh
+
+  powershell:
+    name: PowerShell setup smoke
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run PowerShell setup smoke tests
+        shell: pwsh
+        run: ./tests/check-setup-smoke.ps1

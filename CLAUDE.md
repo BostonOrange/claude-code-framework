@@ -33,11 +33,12 @@ claude-code-framework/
 │   ├── settings.local.json      # Project-level permissions
 │   ├── mcp.json                 # MCP server config (→ .mcp.json)
 │   ├── agents/                  # 12 AI agent definitions
-│   ├── commands/                # 6 quick command definitions
+│   ├── commands/                # 10 quick command definitions
+│   ├── internal-nextjs-business-app/ # Vendored app-creator template
 │   ├── rules/                   # 9 file-pattern guardrails
 │   ├── hooks/                   # 6 lifecycle scripts
 │   └── statusline/              # Status bar config
-├── skills/                      # 17 workflow skills + 1 template
+├── skills/                      # 19 workflow skills + 1 template
 ├── workflows/                   # 4 GitHub Actions CI/CD templates
 ├── memory/                      # Memory system templates
 └── docs/                        # Framework documentation
@@ -86,12 +87,12 @@ Create a `.sh` file in `templates/hooks/`. Wire it up in `templates/settings.loc
 
 Both `setup.sh` and `setup.ps1` follow the same flow:
 
-1. **Prompt** — project type, tracker, CI/CD, base branch, notification system, project short name, design system
+1. **Prompt** — project type, internal app hosting/storage/Postgres choices when applicable, tracker, CI/CD, base branch, notification system, project short name, design system
 2. **Build placeholders** — map project type to commands (test, format, deploy, type-check, etc.)
 3. **Copy files** — skills, agents, commands, rules, hooks, settings
 4. **Replace placeholders** — sed (bash) or .Replace() (PowerShell) in all copied files
 5. **Conditional logic** — skip `components.md` and `design-system.md` rules for backend-only projects or when no design system is configured
-6. **Generate extras** — .env template, GitHub Actions workflows, CLAUDE.md
+6. **Generate extras** — .env template, GitHub Actions workflows, CLAUDE.md, internal app `.env.example` and setup docs when selected
 
 When modifying `setup.sh`, always mirror changes to `setup.ps1`.
 
@@ -146,13 +147,13 @@ grep -r "{{" .claude/ CLAUDE.md | grep -v ".git"
 - Commit messages follow conventional format: `Add`, `Fix`, `Update`, `Remove`
 - Co-author attribution for AI-assisted commits
 
-## Self-Improvement (always active)
+## Self-Improvement
 
-**Before ending any session where framework files were modified**, spawn the `framework-improver` agent in the background. This keeps CLAUDE.md, README.md, docs, and setup scripts in sync with the actual framework state.
+**Before ending any session where framework files were modified**, run the `framework-improver` agent. This keeps CLAUDE.md, README.md, docs, and setup scripts in sync with the actual framework state.
 
 Additionally, run the `framework-qa` agent to validate that all counts and tables are consistent across README, CLAUDE.md template, setup scripts, and docs.
 
-**This is not optional.** If files changed during the session, run the improver and QA agent before wrapping up.
+These agents are not launched by a hidden mutating hook. They are an explicit contributor workflow enforced by this repo's instructions, with deterministic tests as the hard gate.
 
 ### How the self-improvement system works
 
@@ -160,6 +161,7 @@ Additionally, run the `framework-qa` agent to validate that all counts and table
 |-------|-----------|------|------|
 | **Hook** | `guardrails.sh` (PreToolUse) | Before every Bash command | Blocks dangerous ops (deploys, migrations, force push) |
 | **Hook** | `post-edit-sync.sh` (PostToolUse) | After every Edit/Write | Flags which docs need updating based on what changed |
-| **Agent** | `framework-improver` | End of every session with changes | Updates CLAUDE.md, rules, settings from project state |
-| **Agent** | `framework-qa` | End of every session with changes | Validates all doc counts and tables match actual files |
-| **CLAUDE.md** | This instruction | Always | Enforces the above as non-optional behavior |
+| **Agent** | `framework-improver` | Explicitly before wrapping up framework changes | Updates CLAUDE.md, rules, settings from project state |
+| **Agent** | `framework-qa` | Explicitly before wrapping up framework changes | Validates all doc counts and tables match actual files |
+| **Tests** | `tests/run-all.sh` | Before PR / CI | Deterministic hard gate for counts, placeholders, templates, guardrails, setup smoke, and dogfood drift |
+| **CLAUDE.md** | This instruction | Always | Defines the contributor workflow |

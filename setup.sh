@@ -23,6 +23,7 @@ fi
 FRAMEWORK_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(pwd)"
 PROJECT_NAME="$(basename "$PROJECT_DIR")"
+export FRAMEWORK_DIR
 
 # ── Reset mode ─────────────────────────────────────────────────────
 if [ "$RESET" = true ]; then
@@ -60,13 +61,14 @@ echo "  3) Python"
 echo "  4) Go"
 echo "  5) Java / Spring Boot"
 echo "  6) React / Next.js"
-echo "  7) Ruby on Rails"
-echo "  8) Other"
+echo "  7) Internal Next.js Business App"
+echo "  8) Ruby on Rails"
+echo "  9) Other"
 while true; do
-    read -p "Choice [1-8]: " PROJECT_TYPE
+    read -p "Choice [1-9]: " PROJECT_TYPE
     case "$PROJECT_TYPE" in
-        1|2|3|4|5|6|7|8) break ;;
-        *) echo "Invalid selection. Please enter a number between 1 and 8." ;;
+        1|2|3|4|5|6|7|8|9) break ;;
+        *) echo "Invalid selection. Please enter a number between 1 and 9." ;;
     esac
 done
 
@@ -77,9 +79,78 @@ case $PROJECT_TYPE in
     4) PROJECT_TYPE_NAME="go" ;;
     5) PROJECT_TYPE_NAME="java" ;;
     6) PROJECT_TYPE_NAME="react" ;;
-    7) PROJECT_TYPE_NAME="rails" ;;
-    8) PROJECT_TYPE_NAME="generic" ;;
+    7) PROJECT_TYPE_NAME="internal-nextjs-app" ;;
+    8) PROJECT_TYPE_NAME="rails" ;;
+    9) PROJECT_TYPE_NAME="generic" ;;
 esac
+
+HOSTING_TARGET="not-applicable"
+HOSTING_TARGET_LABEL="N/A"
+STORAGE_PROVIDER="not-applicable"
+STORAGE_PROVIDER_LABEL="N/A"
+POSTGRES_PROVIDER="not-applicable"
+POSTGRES_PROVIDER_LABEL="N/A"
+
+if [ "$PROJECT_TYPE_NAME" = "internal-nextjs-app" ]; then
+    echo ""
+    echo "Where should this internal app be prepared to run?"
+    echo "  1) Local only"
+    echo "  2) Vercel"
+    echo "  3) Azure Container Apps"
+    echo "  4) Other"
+    while true; do
+        read -p "Choice [1-4]: " HOSTING_TYPE
+        case "$HOSTING_TYPE" in
+            1|2|3|4) break ;;
+            *) echo "Invalid selection. Please enter a number between 1 and 4." ;;
+        esac
+    done
+
+    case $HOSTING_TYPE in
+        1) HOSTING_TARGET="local"; HOSTING_TARGET_LABEL="Local only" ;;
+        2) HOSTING_TARGET="vercel"; HOSTING_TARGET_LABEL="Vercel" ;;
+        3) HOSTING_TARGET="azure-container-apps"; HOSTING_TARGET_LABEL="Azure Container Apps" ;;
+        4) HOSTING_TARGET="other"; HOSTING_TARGET_LABEL="Other" ;;
+    esac
+
+    echo ""
+    echo "Which blob storage provider should setup document first?"
+    echo "  1) Local: Azurite"
+    echo "  2) Azure: Azure Blob"
+    echo "  3) Vercel: Vercel Blob"
+    while true; do
+        read -p "Choice [1-3]: " STORAGE_TYPE
+        case "$STORAGE_TYPE" in
+            1|2|3) break ;;
+            *) echo "Invalid selection. Please enter a number between 1 and 3." ;;
+        esac
+    done
+
+    case $STORAGE_TYPE in
+        1) STORAGE_PROVIDER="azurite"; STORAGE_PROVIDER_LABEL="Local Azurite" ;;
+        2) STORAGE_PROVIDER="azure-blob"; STORAGE_PROVIDER_LABEL="Azure Blob" ;;
+        3) STORAGE_PROVIDER="vercel-blob"; STORAGE_PROVIDER_LABEL="Vercel Blob" ;;
+    esac
+
+    echo ""
+    echo "Which Postgres provider should setup document first?"
+    echo "  1) Local Docker Postgres"
+    echo "  2) Vercel Marketplace Postgres/Neon/Supabase/etc. through DATABASE_URL"
+    echo "  3) Azure Postgres Flexible Server"
+    while true; do
+        read -p "Choice [1-3]: " POSTGRES_TYPE
+        case "$POSTGRES_TYPE" in
+            1|2|3) break ;;
+            *) echo "Invalid selection. Please enter a number between 1 and 3." ;;
+        esac
+    done
+
+    case $POSTGRES_TYPE in
+        1) POSTGRES_PROVIDER="local-docker"; POSTGRES_PROVIDER_LABEL="Local Docker Postgres" ;;
+        2) POSTGRES_PROVIDER="database-url"; POSTGRES_PROVIDER_LABEL="Managed Postgres via DATABASE_URL" ;;
+        3) POSTGRES_PROVIDER="azure-postgres-flexible-server"; POSTGRES_PROVIDER_LABEL="Azure Postgres Flexible Server" ;;
+    esac
+fi
 
 # ── 2. Work Item Tracker ────────────────────────────────────────
 
@@ -158,18 +229,25 @@ if [ -n "$currentBranch" ] && [ "$currentBranch" != "$BASE_BRANCH" ]; then
         echo "Skipping branch rename. Using '$currentBranch' as-is."
         BASE_BRANCH="$currentBranch"
     else
-        git branch -m "$currentBranch" "$BASE_BRANCH"
-        echo "Renamed local branch '$currentBranch' to '$BASE_BRANCH'."
-        if git remote get-url origin &>/dev/null; then
-            # Safe sequence: push the new branch first, flip default on the remote,
-            # then delete the old branch. Reversing the order can leave the repo
-            # with no default branch if the remote default was the old name.
-            git push -u origin "$BASE_BRANCH" 2>/dev/null || true
-            if command -v gh &>/dev/null; then
-                gh repo edit --default-branch "$BASE_BRANCH" 2>/dev/null || true
+        if [ "$DRY_RUN" = true ]; then
+            echo "[DRY-RUN] Would rename local branch '$currentBranch' to '$BASE_BRANCH'."
+            if git remote get-url origin &>/dev/null; then
+                echo "[DRY-RUN] Would push '$BASE_BRANCH', update remote default if possible, and delete '$currentBranch'."
             fi
-            git push origin --delete "$currentBranch" 2>/dev/null || true
-            echo "Updated remote branch."
+        else
+            git branch -m "$currentBranch" "$BASE_BRANCH"
+            echo "Renamed local branch '$currentBranch' to '$BASE_BRANCH'."
+            if git remote get-url origin &>/dev/null; then
+                # Safe sequence: push the new branch first, flip default on the remote,
+                # then delete the old branch. Reversing the order can leave the repo
+                # with no default branch if the remote default was the old name.
+                git push -u origin "$BASE_BRANCH" 2>/dev/null || true
+                if command -v gh &>/dev/null; then
+                    gh repo edit --default-branch "$BASE_BRANCH" 2>/dev/null || true
+                fi
+                git push origin --delete "$currentBranch" 2>/dev/null || true
+                echo "Updated remote branch."
+            fi
         fi
     fi
 fi
@@ -235,6 +313,10 @@ case $PROJECT_TYPE_NAME in
             4|*) DESIGN_SYSTEM_NAME="none" ;;
         esac
         ;;
+    internal-nextjs-app)
+        # The vendored internal app starter ships with its own plain CSS baseline.
+        DESIGN_SYSTEM_NAME="none"
+        ;;
     *)
         # Non-frontend projects use the _backend preset
         DESIGN_SYSTEM_NAME="_backend"
@@ -268,6 +350,237 @@ for var, key in [
 DESIGN_EOF
 )"
 
+copy_internal_app_template() {
+    [ "$PROJECT_TYPE_NAME" = "internal-nextjs-app" ] || return 0
+
+    local template_dir="$FRAMEWORK_DIR/templates/internal-nextjs-business-app"
+    if [ ! -d "$template_dir" ]; then
+        echo "ERROR: Internal app template missing: $template_dir"
+        exit 1
+    fi
+
+    echo "Copying internal Next.js business app template..."
+    export PROJECT_DIR PROJECT_NAME
+    export INTERNAL_APP_TEMPLATE_DIR="$template_dir"
+    python3 << 'INTERNAL_COPY_EOF'
+import json
+import os
+import re
+import shutil
+
+source = os.environ["INTERNAL_APP_TEMPLATE_DIR"]
+target = os.environ["PROJECT_DIR"]
+project_name = os.environ["PROJECT_NAME"]
+
+excluded_names = {
+    ".git",
+    ".github",
+    ".next",
+    ".env.local",
+    "CLAUDE.md",
+    "node_modules",
+    "tsconfig.tsbuildinfo",
+}
+excluded_paths = {
+    os.path.normpath("src/generated/prisma"),
+}
+
+def is_excluded(rel_path: str, name: str) -> bool:
+    return name in excluded_names or os.path.normpath(rel_path) in excluded_paths
+
+for root, dirs, files in os.walk(source):
+    rel_root = os.path.relpath(root, source)
+    if rel_root == ".":
+        rel_root = ""
+
+    dirs[:] = [
+        d for d in dirs
+        if not is_excluded(os.path.join(rel_root, d), d)
+    ]
+
+    dest_root = os.path.join(target, rel_root)
+    os.makedirs(dest_root, exist_ok=True)
+
+    for filename in files:
+        rel_file = os.path.join(rel_root, filename)
+        if is_excluded(rel_file, filename):
+            continue
+        shutil.copy2(os.path.join(root, filename), os.path.join(dest_root, filename))
+
+package_path = os.path.join(target, "package.json")
+safe_package_name = re.sub(r"[^a-z0-9-]+", "-", project_name.lower()).strip("-") or "internal-business-app"
+if os.path.exists(package_path):
+    with open(package_path, "r", encoding="utf-8") as f:
+        package = json.load(f)
+    package["name"] = safe_package_name
+    with open(package_path, "w", encoding="utf-8") as f:
+        json.dump(package, f, indent=2)
+        f.write("\n")
+
+lock_path = os.path.join(target, "package-lock.json")
+if os.path.exists(lock_path):
+    with open(lock_path, "r", encoding="utf-8") as f:
+        lock = json.load(f)
+    lock["name"] = safe_package_name
+    root_package = lock.get("packages", {}).get("")
+    if isinstance(root_package, dict):
+        root_package["name"] = safe_package_name
+    with open(lock_path, "w", encoding="utf-8") as f:
+        json.dump(lock, f, indent=2)
+        f.write("\n")
+INTERNAL_COPY_EOF
+    echo "  + Next.js App Router, Prisma/Postgres, auth, blob boundary, Docker, and Azure starter files"
+}
+
+write_internal_app_guidance() {
+    [ "$PROJECT_TYPE_NAME" = "internal-nextjs-app" ] || return 0
+
+    echo "Writing internal app setup guidance..."
+    mkdir -p "$PROJECT_DIR/docs" "$PROJECT_DIR/.claude"
+    export PROJECT_DIR
+
+    cat > "$PROJECT_DIR/.env.example" << ENV_EXAMPLE_EOF
+# Internal Next.js Business App - Environment Variables
+# Copy to .env.local for local development or configure as platform secrets when hosted.
+
+# Framework setup choices
+# Hosting target: $HOSTING_TARGET_LABEL
+# Storage provider: $STORAGE_PROVIDER_LABEL
+# Postgres provider: $POSTGRES_PROVIDER_LABEL
+
+# App
+APP_URL=http://localhost:3000
+PORT=3000
+NODE_ENV=development
+
+# Auth
+# Use AUTH_MODE=dev locally. Use AUTH_MODE=oidc in hosted environments.
+AUTH_MODE=dev
+SESSION_SECRET=replace-with-long-random-secret
+OIDC_ISSUER=
+OIDC_CLIENT_ID=
+OIDC_CLIENT_SECRET=
+OIDC_ALLOWED_EMAIL_DOMAINS=
+
+# Postgres
+# Local Docker Postgres:
+DATABASE_URL=postgresql://app:app@localhost:55432/app_creator?schema=public
+# Vercel/Neon/Supabase/other managed Postgres: set DATABASE_URL from the provider.
+# Azure Postgres Flexible Server: set DATABASE_URL with sslmode=require.
+
+# Blob storage
+# Local Azurite and Azure Blob use the Azure Storage compatible boundary:
+AZURE_STORAGE_CONNECTION_STRING=UseDevelopmentStorage=true
+AZURE_STORAGE_CONTAINER=app-files
+# Vercel Blob: keep application code behind src/lib/blob/client.ts and provide the
+# Vercel Blob token once the app template/generator has the Vercel adapter enabled.
+BLOB_READ_WRITE_TOKEN=
+
+# AI
+AI_PROVIDER=mock
+OPENAI_API_KEY=
+OPENAI_MODEL=
+
+# Hosting notes
+# Vercel: configure APP_URL, AUTH_MODE=oidc, SESSION_SECRET, OIDC_*, DATABASE_URL,
+# and BLOB_READ_WRITE_TOKEN or the storage adapter env required by app-creator.
+# Azure Container Apps: configure APP_URL, AUTH_MODE=oidc, SESSION_SECRET, OIDC_*,
+# DATABASE_URL, AZURE_STORAGE_CONNECTION_STRING, and AZURE_STORAGE_CONTAINER as secrets.
+ENV_EXAMPLE_EOF
+
+    cat > "$PROJECT_DIR/docs/setup.md" << SETUP_DOC_EOF
+# Internal App Setup
+
+This repository was initialized with the Claude Code Framework internal Next.js business app preset.
+
+## Framework Choices
+
+| Area | Prepared Option |
+|------|-----------------|
+| Hosting target | $HOSTING_TARGET_LABEL |
+| Storage provider | $STORAGE_PROVIDER_LABEL |
+| Postgres provider | $POSTGRES_PROVIDER_LABEL |
+
+These choices configure setup notes and environment guidance only. The app remains one Next.js/Prisma codebase; do not fork it into hosting-specific stacks.
+
+## Local Development
+
+1. Run \`npm install\`.
+2. Copy \`.env.example\` to \`.env.local\` or let \`npm run setup\` create local defaults.
+3. Start local services and the app with \`npm run dev\`.
+4. Run \`npm run typecheck\` after dependencies are installed.
+
+Local development uses Docker Postgres and Azurite through \`docker-compose.yml\`.
+
+## Storage Boundary
+
+Application code should call the single storage boundary at \`src/lib/blob/client.ts\`. Provider-specific implementation belongs behind that boundary:
+
+| Provider | Environment Guidance |
+|----------|----------------------|
+| Local Azurite | \`AZURE_STORAGE_CONNECTION_STRING=UseDevelopmentStorage=true\`, \`AZURE_STORAGE_CONTAINER=app-files\` |
+| Azure Blob | Use a production Azure Storage connection string and container name. Store both as hosted secrets. |
+| Vercel Blob | Use Vercel Blob project secrets such as \`BLOB_READ_WRITE_TOKEN\`; keep route and repository code provider-neutral. |
+
+## Postgres Boundary
+
+Keep Prisma as the persistence tool. Managed providers are interchangeable as long as \`DATABASE_URL\` is valid:
+
+| Provider | Environment Guidance |
+|----------|----------------------|
+| Local Docker Postgres | \`postgresql://app:app@localhost:55432/app_creator?schema=public\` |
+| Vercel Marketplace / Neon / Supabase | Use the marketplace-provided \`DATABASE_URL\`. |
+| Azure Postgres Flexible Server | Use the Azure connection string with \`sslmode=require\`. |
+
+## Generation Workflow
+
+1. Run \`/app-blueprint\` to convert business intent into \`docs/app-blueprint.json\`.
+2. Run \`/generate-internal-app docs/app-blueprint.json\` to adapt the app template.
+3. Use \`/generate-feature\` for later additions after the first app generation.
+4. Use \`/port-vercel\` when preparing Vercel environment guidance.
+
+SETUP_DOC_EOF
+
+    export HOSTING_TARGET STORAGE_PROVIDER POSTGRES_PROVIDER
+    python3 << 'INTERNAL_JSON_EOF'
+import json
+import os
+
+project_dir = os.environ["PROJECT_DIR"]
+data = {
+    "preset": "internal-nextjs-business-app",
+    "template": "templates/internal-nextjs-business-app",
+    "hostingTarget": os.environ.get("HOSTING_TARGET", "not-applicable"),
+    "storageProvider": os.environ.get("STORAGE_PROVIDER", "not-applicable"),
+    "postgresProvider": os.environ.get("POSTGRES_PROVIDER", "not-applicable"),
+}
+with open(os.path.join(project_dir, ".claude", "internal-app.json"), "w", encoding="utf-8") as f:
+    json.dump(data, f, indent=2)
+    f.write("\n")
+INTERNAL_JSON_EOF
+
+    if [ -f "$PROJECT_DIR/.env" ]; then
+        if ! grep -q "Internal app runtime" "$PROJECT_DIR/.env"; then
+            cat >> "$PROJECT_DIR/.env" << 'ENV_APPEND_EOF'
+
+# Internal app runtime
+# See .env.example and docs/setup.md for Vercel and Azure hosting notes.
+APP_URL=http://localhost:3000
+AUTH_MODE=dev
+SESSION_SECRET=replace-with-long-random-secret
+DATABASE_URL=postgresql://app:app@localhost:55432/app_creator?schema=public
+AZURE_STORAGE_CONNECTION_STRING=UseDevelopmentStorage=true
+AZURE_STORAGE_CONTAINER=app-files
+AI_PROVIDER=mock
+ENV_APPEND_EOF
+        fi
+    fi
+
+    echo "  + .env.example (local, Vercel, Azure, storage, and Postgres notes)"
+    echo "  + docs/setup.md"
+    echo "  + .claude/internal-app.json"
+}
+
 # ═══════════════════════════════════════════════════════════════
 # Generate project files
 # ═══════════════════════════════════════════════════════════════
@@ -281,6 +594,10 @@ if [ "$DRY_RUN" = true ]; then
     echo "[DRY-RUN] Would copy commands from $FRAMEWORK_DIR/templates/commands/"
     echo "[DRY-RUN] Would copy rules from $FRAMEWORK_DIR/templates/rules/"
     echo "[DRY-RUN] Would copy hooks from $FRAMEWORK_DIR/templates/hooks/"
+    if [ "$PROJECT_TYPE_NAME" = "internal-nextjs-app" ]; then
+        echo "[DRY-RUN] Would copy internal Next.js app template from $FRAMEWORK_DIR/templates/internal-nextjs-business-app/"
+        echo "[DRY-RUN] Would create .env.example, docs/setup.md, and .claude/internal-app.json"
+    fi
     echo "[DRY-RUN] Would replace all {{PLACEHOLDER}} values in copied files"
     echo "[DRY-RUN] Would copy settings.local.json, .mcp.json, statusline"
     if [ ! -f "$PROJECT_DIR/CLAUDE.md" ]; then
@@ -303,6 +620,11 @@ if [ "$DRY_RUN" = true ]; then
     echo "  Base branch: $BASE_BRANCH"
     echo "  Notify:      $NOTIFY_NAME"
     echo "  Design:      $DESIGN_SYSTEM_NAME"
+    if [ "$PROJECT_TYPE_NAME" = "internal-nextjs-app" ]; then
+        echo "  Hosting:     $HOSTING_TARGET_LABEL"
+        echo "  Storage:     $STORAGE_PROVIDER_LABEL"
+        echo "  Postgres:    $POSTGRES_PROVIDER_LABEL"
+    fi
     echo ""
     echo "No files were modified. Run without --dry-run to apply."
     exit 0
@@ -311,6 +633,8 @@ fi
 echo ""
 echo "Setting up Claude Code framework..."
 echo ""
+
+copy_internal_app_template
 
 # ── Create .claude directory ─────────────────────────────────────
 
@@ -532,7 +856,7 @@ export DATABASE_PATTERNS SOURCE_PATTERNS
 export DESIGN_COLOR_RULES DESIGN_COMPONENT_IMPORTS DESIGN_ICON_USAGE
 export DESIGN_CARD_PATTERNS DESIGN_DARK_MODE
 
-export FRAMEWORK_DIR  # for the python block to find config/placeholders.json
+# FRAMEWORK_DIR is exported near initialization for all Python config loaders.
 python3 << 'REPLACE_ALL_EOF'
 import os, glob, json
 
@@ -863,6 +1187,8 @@ elif [ -d "$PROJECT_DIR/.git" ]; then
     echo ".claude/state/" > "$PROJECT_DIR/.gitignore"
 fi
 
+write_internal_app_guidance
+
 # ═══════════════════════════════════════════════════════════════
 # Summary
 # ═══════════════════════════════════════════════════════════════
@@ -879,19 +1205,30 @@ echo "CI/CD:      $CI_NAME"
 echo "Base branch: $BASE_BRANCH"
 echo "Notify:     $NOTIFY_NAME"
 echo "Design:     $DESIGN_SYSTEM_NAME"
+if [ "$PROJECT_TYPE_NAME" = "internal-nextjs-app" ]; then
+    echo "Hosting:    $HOSTING_TARGET_LABEL"
+    echo "Storage:    $STORAGE_PROVIDER_LABEL"
+    echo "Postgres:   $POSTGRES_PROVIDER_LABEL"
+fi
 echo ""
 echo "Files created:"
-echo "  .claude/skills/         — 17 workflow skills (incl. /team, /improve, /scaffold-design-system)"
+echo "  .claude/skills/         — 19 workflow skills (incl. /team, /improve, /app-blueprint, /generate-internal-app)"
 echo "  .claude/agents/         — 12 AI agents (full team: architect to framework-improver)"
-echo "  .claude/commands/       — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)"
+echo "  .claude/commands/       — 10 quick commands (incl. app-blueprint, generate-internal-app, generate-feature, port-vercel)"
 echo "  .claude/rules/          — 9 coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components)"
 echo "  .claude/hooks/          — 6 lifecycle hooks (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit)"
 echo "  .claude/settings.local.json — project permissions, hooks"
 echo "  .mcp.json               — MCP servers (Context7 documentation)"
 echo "  ~/.claude/settings.json — user-level AI factory permissions (team orchestration enabled)"
 echo "  .claude/statusline/"
+if [ "$PROJECT_TYPE_NAME" = "internal-nextjs-app" ]; then
+    echo "  Next.js internal app   — app-creator template (generated/local artifacts excluded)"
+    echo "  .env.example           — local, Vercel, Azure, storage, and Postgres guidance"
+    echo "  docs/setup.md          — internal app setup and generation workflow"
+    echo "  .claude/internal-app.json — selected internal app setup choices"
+fi
 if [ "$CI_NAME" = "github-actions" ]; then
-    echo "  .github/workflows/      — 4 CI/CD pipelines (validate, auto-merge, deploy, cleanup)"
+    echo "  .github/workflows/      — 4 GitHub Actions workflow templates (customize before relying on them)"
 fi
 echo "  docs/stories/            — story documentation folder"
 if [ ! -f "$PROJECT_DIR/CLAUDE.md.bak" ]; then
@@ -904,4 +1241,7 @@ echo "  2. Configure .env with your credentials"
 echo "  3. Try /team review for a full codebase assessment"
 echo "  4. Add domain knowledge: /add-reference my-domain topic"
 echo "  5. Start developing: /develop TICKET-123"
+if [ "$PROJECT_TYPE_NAME" = "internal-nextjs-app" ]; then
+    echo "  6. For internal apps: run /app-blueprint, then /generate-internal-app docs/app-blueprint.json"
+fi
 echo ""

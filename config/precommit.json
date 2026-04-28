@@ -34,6 +34,23 @@
       "  \"lint-staged\": { \"*.{js,jsx,ts,tsx,json,css,md}\": \"prettier --write\" }"
     ]
   },
+  "internal-nextjs-app": {
+    "detect": {
+      "mode": "file_contains",
+      "file": "package.json",
+      "needle": "\"husky\""
+    },
+    "if_detected_message": "husky already configured",
+    "if_missing_messages": [
+      "Install pre-commit hooks with:",
+      "  npx husky init",
+      "  npm install --save-dev lint-staged",
+      "  echo \"npx lint-staged\" > .husky/pre-commit",
+      "",
+      "Add to package.json:",
+      "  \"lint-staged\": { \"*.{js,jsx,ts,tsx,json,css,md}\": \"eslint --fix\" }"
+    ]
+  },
   "salesforce": {
     "detect": {
       "mode": "file_contains",

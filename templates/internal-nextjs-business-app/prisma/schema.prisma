@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  owner
+  admin
+  member
+  viewer
+}
+
+enum TaskStatus {
+  todo
+  doing
+  done
+}
+
+model User {
+  id          String    @id @default(uuid())
+  email       String    @unique
+  name        String
+  role        UserRole  @default(member)
+  tenantId    String    @default("default")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+  tasks       Task[]
+  files       FileObject[]
+  auditLogs   AuditLog[]
+
+  @@index([tenantId])
+  @@map("users")
+}
+
+model Task {
+  id          String     @id @default(uuid())
+  title       String
+  summary     String?
+  status      TaskStatus @default(todo)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  createdById String
+  createdBy   User       @relation(fields: [createdById], references: [id])
+
+  @@index([status])
+  @@index([createdById])
+  @@map("tasks")
+}
+
+model FileObject {
+  id           String   @id @default(uuid())
+  blobName     String   @unique
+  filename     String
+  contentType  String
+  size         Int
+  uploadedAt   DateTime @default(now())
+  uploadedById String
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+
+  @@index([uploadedById])
+  @@map("file_objects")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String
+  actor     User     @relation(fields: [actorId], references: [id])
+  action    String
+  target    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

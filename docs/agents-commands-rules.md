@@ -23,7 +23,7 @@ This guide explains the four Claude Code native features the framework templates
 ### Use a **Command** when:
 - The task is a single action with a clear output
 - It wraps one or two shell commands with formatting
-- It takes less than 30 seconds
+- It takes less than 30 seconds, or it is a thin entry point into a named skill
 - Example: `/quick-test` (run tests on changed files, report results)
 
 ### Use an **Agent** when:
@@ -170,7 +170,7 @@ The framework maintains a canonical registry of all distributable agents at `con
 |-------|-------|-------|---------|
 | `framework-improver` | Read, Glob, Grep, Edit, Write, Bash | opus | Updates CLAUDE.md, rules, settings, agents |
 
-### Commands (6)
+### Commands (10)
 
 | Command | Purpose |
 |---------|---------|
@@ -180,6 +180,10 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `/branch-status` | Show diff stats, PR, CI status |
 | `/changelog` | Generate changelog from commits |
 | `/dep-check` | Check for outdated dependencies |
+| `/app-blueprint` | Create `docs/app-blueprint.json` from business intent |
+| `/generate-internal-app` | Generate the internal app from a blueprint |
+| `/generate-feature` | Add one blueprint-backed feature slice |
+| `/port-vercel` | Prepare Vercel docs/env guidance without forking the app |
 
 ### Rules (9)
 
