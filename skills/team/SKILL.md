@@ -34,7 +34,6 @@ Spawn a team of specialized agents to work in parallel on the current codebase.
 | `complexity-reviewer` | Function length, cyclomatic complexity, nesting, parameters (cites `complexity` rule) | opus | Read-only |
 | `security-auditor` | OWASP audit, credentials, dependencies | opus | Read-only |
 | `test-writer` | Generate tests for changed code | opus | Read/Write |
-| `refactor-advisor` | Cross-cutting refactor opportunities (broader than `dry-reviewer`) | opus | Read-only |
 | `devops-engineer` | CI/CD, infra, deployment readiness | opus | Read-only |
 | `ui-ux-reviewer` | Accessibility, design, responsiveness | opus | Read-only |
 | `performance-optimizer` | Bundle, queries, rendering, caching | opus | Read-only |
@@ -59,7 +58,7 @@ Parse the team name from the command argument. Map to agent list:
 | `release` | security-auditor, devops-engineer, performance-optimizer |
 | `quality` | code-reviewer, test-writer, performance-optimizer |
 | `quality-deep` | code-smell-reviewer, dry-reviewer, purity-reviewer, complexity-reviewer |
-| `design` | ui-ux-reviewer, performance-optimizer, refactor-advisor |
+| `design` | ui-ux-reviewer, performance-optimizer, frontend-architecture-reviewer |
 | `documentation` | documentation-writer, api-designer |
 | `full` | all 16 review/implementation agents (excludes meta-agents like `review-coordinator`, the `framework-improver-*` pair, and the `project-setup-*` pair) |
 | `custom` | agents listed after "custom" keyword |

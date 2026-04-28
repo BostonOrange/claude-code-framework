@@ -288,7 +288,7 @@ your-project/
 ├── .mcp.json                          # MCP servers (Context7 docs)
 ├── .claude/
 │   ├── settings.local.json            # Permissions & model config
-│   ├── agents/                        # 40 AI teammate definitions
+│   ├── agents/                        # 39 AI teammate definitions
 │   │   ├── architect.md               # System design, patterns
 │   │   ├── code-reviewer.md           # Bugs, security in diffs (broad sweep)
 │   │   ├── code-smell-reviewer.md     # Smells specialist — cites `code-smells`
@@ -304,7 +304,6 @@ your-project/
 │   │   ├── observability-reviewer.md          # OWASP A09 — cites `observability`
 │   │   ├── supply-chain-reviewer.md           # OWASP A06+A08 — cites `supply-chain`
 │   │   ├── security-auditor.md        # OWASP audit
-│   │   ├── refactor-advisor.md        # Cross-cutting refactor (broader than dry-reviewer)
 │   │   ├── devops-engineer.md         # CI/CD, infrastructure
 │   │   ├── ui-ux-reviewer.md          # Accessibility, design
 │   │   ├── performance-optimizer.md   # Bundle, queries, caching

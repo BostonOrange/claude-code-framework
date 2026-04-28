@@ -27,7 +27,6 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents â
 | `observability-reviewer` | Observability (OWASP A09) | opus | Structured logging, log levels, metrics, tracing, audit logs, alerting, correlation (cites `observability`) |
 | `supply-chain-reviewer` | Supply Chain (OWASP A06+A08) | opus | Lockfiles, pinning, CVE reachability, signing, dev/prod separation, CI pipeline integrity (cites `supply-chain`) |
 | `security-auditor` | Security (broad) | opus | OWASP audit, credentials, dependencies; cites `secrets-management` for storage findings |
-| `refactor-advisor` | Code Structure (broad) | opus | Cross-cutting refactor opportunities â€” broader than `dry-reviewer` |
 | `devops-engineer` | Operations | opus | CI/CD, containers, infrastructure, monitoring |
 | `ui-ux-reviewer` | Design Quality | opus | Accessibility, consistency, responsive, UX patterns |
 | `performance-optimizer` | Performance | opus | Bundle size, queries, rendering, caching, memory |
@@ -101,7 +100,7 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents â
 **Output:** Four narrow perspectives in parallel â€” each cites its rule (`code-smells`, `dry`, `purity`, `complexity`). Findings are easy to triage because each is single-concern.
 
 ### `/team design` â€” Design Review Team
-**Agents:** ui-ux-reviewer + performance-optimizer + refactor-advisor
+**Agents:** ui-ux-reviewer + performance-optimizer + frontend-architecture-reviewer
 **When:** After UI changes, design system updates, component refactoring
 **Output:** UX review, performance analysis, refactoring recommendations
 

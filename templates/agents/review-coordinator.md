@@ -185,7 +185,6 @@ Concatenate all sub-agent JSONL output. Then:
    | `code-smell-reviewer` (Long Method) + `complexity-reviewer` (function length) | `complexity-reviewer` (numeric threshold is more actionable) |
    | `code-smell-reviewer` (Long Parameter List) + `complexity-reviewer` (param count) | `complexity-reviewer` |
    | `code-smell-reviewer` (Magic Numbers) + `code-reviewer` (constants) | `code-smell-reviewer` |
-   | `dry-reviewer` (extraction) + `refactor-advisor` (extraction) | `dry-reviewer` (more specific rule) |
    | `purity-reviewer` (SRP function-level) + `code-reviewer` (SRP) | `purity-reviewer` |
    | `security-auditor` + `code-reviewer` on the same security finding | `security-auditor` |
    | `ui-ux-reviewer` (component too big) + `frontend-architecture-reviewer` (composition) | `frontend-architecture-reviewer` (structural is more specific than visual) |

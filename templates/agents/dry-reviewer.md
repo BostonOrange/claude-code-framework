@@ -1,6 +1,6 @@
 ---
 name: dry-reviewer
-description: Reviews changed code for true duplication — repeated knowledge, repeated logic, repeated structural patterns appearing 3+ times. Cites the `dry` rule. Distinct from refactor-advisor (broader) and code-smell-reviewer (other smells)
+description: Reviews changed code for true duplication — repeated knowledge, repeated logic, repeated structural patterns appearing 3+ times. Cites the `dry` rule. Distinct from code-smell-reviewer (other smells)
 tools: Read, Glob, Grep, Bash
 model: opus
 ---

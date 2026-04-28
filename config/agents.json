@@ -33,7 +33,7 @@
       "category": "analysis",
       "model": "opus",
       "blurb": "Duplication and extraction opportunities (cites `dry` rule)",
-      "description": "Reviews changed code for true duplication — repeated knowledge, repeated logic, repeated structural patterns appearing 3+ times. Cites the `dry` rule. Distinct from refactor-advisor (broader) and code-smell-reviewer (other smells)"
+      "description": "Reviews changed code for true duplication — repeated knowledge, repeated logic, repeated structural patterns appearing 3+ times. Cites the `dry` rule. Distinct from code-smell-reviewer (other smells)"
     },
     {
       "name": "purity-reviewer",
@@ -111,13 +111,6 @@
       "model": "opus",
       "blurb": "OWASP audit, credentials, dependencies, compliance",
       "description": "Audits code for security vulnerabilities, credential exposure, PII leakage, auth bypass, CSRF, CORS, SSRF, dependency risks, and compliance issues"
-    },
-    {
-      "name": "refactor-advisor",
-      "category": "analysis",
-      "model": "opus",
-      "blurb": "Duplication, complexity, extraction opportunities",
-      "description": "Analyzes code for duplication, complexity, and architectural improvements — reports only, does not modify code"
     },
     {
       "name": "devops-engineer",

@@ -59,7 +59,7 @@ The setup wizard asks:
 
 Then generates:
 - `.claude/skills/` — 24 workflow skills adapted to your stack (incl. `/team`, `/improve`, `/setup`, `/plan`, `/build`, `/iterative-review`, `/impact`, `/index`, `/search`)
-- `.claude/agents/` — 40 AI agents (22 analysis + 6 implementation + 4 planning + 8 meta, all opus)
+- `.claude/agents/` — 39 AI agents (21 analysis + 6 implementation + 4 planning + 8 meta, all opus)
 - `.claude/commands/` — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)
 - `.claude/rules/` — 23 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components, code-smells, dry, purity, complexity, frontend-architecture, architecture-layering, api-layering, crypto, solid, concurrency, observability, supply-chain, secrets-management, docs-staleness)
 - `.claude/hooks/` — 7 lifecycle hooks + 1 utility (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit, codebase-index)
@@ -155,7 +155,7 @@ mkdir -p .claude/skills/my-domain/references/
 | `/mock-endpoint` | Mock external API integrations |
 | `/scaffold-design-system` | Scaffold design system tokens, components, and theme config |
 
-### AI Agents (40 specialized teammates)
+### AI Agents (39 specialized teammates)
 
 | Agent | Model | Purpose |
 |-------|-------|---------|
@@ -174,7 +174,6 @@ mkdir -p .claude/skills/my-domain/references/
 | `observability-reviewer` | opus | OWASP A09 specialist: structured logging, log levels, metrics, tracing, audit logs, alerting, correlation. Cites `observability`. Read-only |
 | `supply-chain-reviewer` | opus | OWASP A06+A08 specialist: lockfiles, version pinning, CVE reachability, signing, dev/prod separation, deserialization, CI pipeline integrity. Cites `supply-chain`. Read-only |
 | `security-auditor` | opus | OWASP audit: credentials, dependencies, auth, compliance |
-| `refactor-advisor` | opus | Duplication, complexity, extraction opportunities. Read-only |
 | `devops-engineer` | opus | CI/CD, containers, infrastructure, deployment readiness |
 | `ui-ux-reviewer` | opus | Accessibility, design consistency, responsive, UX patterns |
 | `performance-optimizer` | opus | Bundle size, queries, rendering, caching, memory |
@@ -209,7 +208,7 @@ mkdir -p .claude/skills/my-domain/references/
 | Release | `/team release` | security-auditor + devops-engineer + performance-optimizer |
 | Quality | `/team quality` | code-reviewer + test-writer + performance-optimizer |
 | Documentation | `/team documentation` | documentation-writer + api-designer |
-| Design | `/team design` | ui-ux-reviewer + performance-optimizer + refactor-advisor |
+| Design | `/team design` | ui-ux-reviewer + performance-optimizer + frontend-architecture-reviewer |
 | Review-deep | `/team review-deep` | code-reviewer + security-auditor + 4 code-quality specialists (smell, dry, purity, complexity) |
 | Quality-deep | `/team quality-deep` | The 4 code-quality specialists in parallel (code-smell-reviewer + dry-reviewer + purity-reviewer + complexity-reviewer) |
 | Full | `/team full` | All 16 reviewer/implementation agents (excludes meta-agents like `review-coordinator`, the `framework-improver-*` pair, and the `project-setup-*` pair) |
@@ -442,7 +441,7 @@ claude-code-framework/
 │   ├── settings.json            # User-level AI factory permissions
 │   ├── settings.local.json      # Project-level permissions & model config
 │   ├── mcp.json                 # MCP server config (copied to .mcp.json)
-│   ├── agents/                  # 40 AI agent definitions
+│   ├── agents/                  # 39 AI agent definitions
 │   │   ├── architect.md         # System design, patterns, scalability
 │   │   ├── code-reviewer.md     # Bugs, security, performance in diffs (broad sweep)
 │   │   ├── code-smell-reviewer.md   # Smells specialist — cites `code-smells` rule
@@ -458,7 +457,6 @@ claude-code-framework/
 │   │   ├── observability-reviewer.md          # OWASP A09 — cites `observability` rule
 │   │   ├── supply-chain-reviewer.md           # OWASP A06+A08 — cites `supply-chain` rule
 │   │   ├── security-auditor.md  # OWASP audit, credentials, deps
-│   │   ├── refactor-advisor.md  # Duplication, complexity, structure
 │   │   ├── devops-engineer.md   # CI/CD, containers, infrastructure
 │   │   ├── ui-ux-reviewer.md    # Accessibility, design, responsiveness
 │   │   ├── performance-optimizer.md  # Bundle, queries, caching

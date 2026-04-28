@@ -162,7 +162,6 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `observability-reviewer` | Read, Glob, Grep, Bash | opus | OWASP A09 — structured logging, metrics, tracing, audit logs, alerting (cites `observability`) |
 | `supply-chain-reviewer` | Read, Glob, Grep, Bash | opus | OWASP A06+A08 — lockfiles, pinning, CVE reachability, signing, CI pipeline integrity (cites `supply-chain`) |
 | `security-auditor` | Read, Glob, Grep, Bash | opus | OWASP-categorized security audit; cites `secrets-management` for storage findings |
-| `refactor-advisor` | Read, Glob, Grep, Bash | opus | Cross-cutting refactor opportunities (broader than `dry-reviewer`) |
 | `devops-engineer` | Read, Glob, Grep, Bash | opus | CI/CD, containers, infrastructure |
 | `ui-ux-reviewer` | Read, Glob, Grep, Bash | opus | Accessibility, design, responsiveness |
 | `performance-optimizer` | Read, Glob, Grep, Bash | opus | Bundle, queries, rendering, caching |

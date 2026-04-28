@@ -32,7 +32,7 @@ claude-code-framework/
 │   ├── settings.json            # User-level permissions (~/.claude/)
 │   ├── settings.local.json      # Project-level permissions
 │   ├── mcp.json                 # MCP server config (→ .mcp.json)
-│   ├── agents/                  # 40 AI agent definitions
+│   ├── agents/                  # 39 AI agent definitions
 │   ├── commands/                # 6 quick command definitions
 │   ├── rules/                   # 23 file-pattern guardrails
 │   ├── hooks/                   # 7 lifecycle scripts + 1 utility (codebase-index.sh)
@@ -106,7 +106,7 @@ Spawn pre-configured teams for parallel analysis of the framework:
 | **Release** | `/team release` | security-auditor, devops-engineer, performance-optimizer |
 | **Quality** | `/team quality` | code-reviewer, test-writer, performance-optimizer |
 | **Documentation** | `/team documentation` | documentation-writer, api-designer |
-| **Design** | `/team design` | ui-ux-reviewer, performance-optimizer, refactor-advisor |
+| **Design** | `/team design` | ui-ux-reviewer, performance-optimizer, frontend-architecture-reviewer |
 | **Full** | `/team full` | All 12 agents |
 | **Custom** | `/team custom a b c` | Any combination |
 
@@ -121,7 +121,6 @@ Spawn pre-configured teams for parallel analysis of the framework:
 | `purity-reviewer` | Pure functions, side effects, query/command separation, SRP (cites `purity` rule) | opus |
 | `complexity-reviewer` | Function length, cyclomatic complexity, nesting, parameter count (cites `complexity` rule) | opus |
 | `security-auditor` | OWASP audit, credentials, dependencies | opus |
-| `refactor-advisor` | Duplication, complexity, extraction | opus |
 | `devops-engineer` | CI/CD, containers, infrastructure | opus |
 | `ui-ux-reviewer` | Accessibility, design, responsiveness | opus |
 | `performance-optimizer` | Bundle, queries, caching, memory | opus |
