@@ -146,6 +146,7 @@ Spawn pre-configured teams of specialized agents for parallel analysis:
 | `project-setup-detector` | First-time onboarding (read-only) — inventories repo, runs 17-layer detection, writes proposal (invoked by `/setup` Phase 1) | opus |
 | `project-setup-applier` | First-time onboarding (write) — reads confirmed proposal, validates allowlist, snapshots, applies substitutions (invoked by `/setup` Phase 4) | opus |
 | `impact-analyzer` | On-demand cascade analysis for a symbol/file — greps callers, classifies (direct/type/test), scores confidence (invoked by `/impact`) | opus |
+| `docs-staleness-reviewer` | Reviews diffs for material changes (lockfile/test/build/framework swaps, directory restructure, env vars, CI workflows, breaking API) without accompanying CLAUDE.md updates. Cites `docs-staleness` rule | opus |
 
 ## Work Item Tracker
 

@@ -201,6 +201,7 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `project-setup-detector` | Read, Glob, Grep, Bash | opus | First-time onboarding (read-only) — 17-layer stack detection, writes proposal (invoked by `/setup` Phase 1) |
 | `project-setup-applier` | Read, Edit, Write, Bash | opus | First-time onboarding (write) — applies confirmed proposal with allowlist + backup + audit log (invoked by `/setup` Phase 4) |
 | `impact-analyzer` | Read, Glob, Grep, Bash | opus | On-demand cascade analysis — greps callers, classifies, scores confidence (invoked by `/impact`) |
+| `docs-staleness-reviewer` | Read, Glob, Grep, Bash | opus | Reviews diffs for material changes without CLAUDE.md / AGENTS.md updates (cites `docs-staleness` rule) |
 
 ### Commands (6)
 
@@ -213,7 +214,7 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `/changelog` | Generate changelog from commits |
 | `/dep-check` | Check for outdated dependencies |
 
-### Rules (22)
+### Rules (23)
 
 | Rule | Patterns | Key Standards |
 |------|----------|---------------|

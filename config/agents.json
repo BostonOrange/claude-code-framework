@@ -279,6 +279,13 @@
       "model": "opus",
       "blurb": "On-demand precise impact analysis: greps callers, classifies cascade, scores confidence, writes per-symbol report (invoked by `/impact`)",
       "description": "On-demand precise impact analysis for a symbol or file. Greps for callers, reads them, classifies the cascade (direct/indirect/test-only), and writes a structured report at `.claude/state/impact-<hash>.md`. Used by `/impact` and callable by review/refactor agents before suggesting changes"
+    },
+    {
+      "name": "docs-staleness-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Reviews diffs for material changes (lockfile/test/build/framework/ORM/auth swaps, directory restructure, env vars, CI workflows, breaking API) without accompanying CLAUDE.md/AGENTS.md updates. Cites `docs-staleness` rule",
+      "description": "Reviews diffs for material changes (package manager, test framework, build tool, directory layout, env vars, CI workflows, framework/ORM/auth provider swaps, breaking API changes) that landed without a corresponding CLAUDE.md / AGENTS.md / README update. Cites the `docs-staleness` rule. Read-only. Distinct from `framework-improver-detector` which catches drift after-the-fact; this catches it at review time"
     }
   ]
 }

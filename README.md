@@ -59,9 +59,9 @@ The setup wizard asks:
 
 Then generates:
 - `.claude/skills/` — 24 workflow skills adapted to your stack (incl. `/team`, `/improve`, `/setup`, `/plan`, `/build`, `/iterative-review`, `/impact`, `/index`, `/search`)
-- `.claude/agents/` — 39 AI agents (21 analysis + 6 implementation + 4 planning + 8 meta, all opus)
+- `.claude/agents/` — 40 AI agents (22 analysis + 6 implementation + 4 planning + 8 meta, all opus)
 - `.claude/commands/` — 6 quick commands (quick-test, lint-fix, check-types, branch-status, changelog, dep-check)
-- `.claude/rules/` — 22 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components, code-smells, dry, purity, complexity, frontend-architecture, architecture-layering, api-layering, crypto, solid, concurrency, observability, supply-chain, secrets-management)
+- `.claude/rules/` — 23 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components, code-smells, dry, purity, complexity, frontend-architecture, architecture-layering, api-layering, crypto, solid, concurrency, observability, supply-chain, secrets-management, docs-staleness)
 - `.claude/hooks/` — 7 lifecycle hooks + 1 utility (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit, codebase-index)
 - `.claude/settings.local.json` — project permissions, hooks
 - `.mcp.json` — MCP servers (Context7 documentation)
@@ -155,7 +155,7 @@ mkdir -p .claude/skills/my-domain/references/
 | `/mock-endpoint` | Mock external API integrations |
 | `/scaffold-design-system` | Scaffold design system tokens, components, and theme config |
 
-### AI Agents (39 specialized teammates)
+### AI Agents (40 specialized teammates)
 
 | Agent | Model | Purpose |
 |-------|-------|---------|
@@ -198,6 +198,7 @@ mkdir -p .claude/skills/my-domain/references/
 | `project-setup-detector` | opus | Meta: first-time onboarding (read-only) — inventories repo, runs 17-layer detection, writes proposal (invoked by `/setup` Phase 1) |
 | `project-setup-applier` | opus | Meta: first-time onboarding (write) — reads confirmed proposal, validates allowlist, snapshots, applies substitutions, writes audit log (invoked by `/setup` Phase 4) |
 | `impact-analyzer` | opus | Meta: on-demand precise cascade analysis — greps callers, classifies, scores confidence, writes per-symbol report (invoked by `/impact`) |
+| `docs-staleness-reviewer` | opus | Reviews diffs for material changes (lockfile/test/build/framework swaps, directory restructure, env vars, CI workflows, breaking API) without accompanying CLAUDE.md updates. Cites `docs-staleness` rule. Read-only |
 
 ### Agent Teams (pre-configured groups)
 
@@ -253,6 +254,7 @@ File-pattern-scoped rules that Claude follows automatically when editing matchin
 | `observability` | Source files | Structured logging, log levels, metrics, tracing, audit logs, alerting, correlation (cited by `observability-reviewer`; OWASP A09) |
 | `supply-chain` | Manifests/Dockerfiles/CI workflows | Lockfile hygiene, pinning, CVE reachability, signing, dev/prod separation, deserialization, pipeline integrity (cited by `supply-chain-reviewer`; OWASP A06+A08) |
 | `secrets-management` | Source files | Storage, loading, rotation, scanning, in-code discipline, service identity (cited by `security-auditor`) |
+| `docs-staleness` | All files | Material changes (lockfile/test/build/framework/ORM/auth swaps, directory restructure, env vars, CI workflows, breaking API) require accompanying CLAUDE.md / AGENTS.md updates (cited by `docs-staleness-reviewer`) |
 
 ### Hooks (lifecycle quality gates)
 
@@ -440,7 +442,7 @@ claude-code-framework/
 │   ├── settings.json            # User-level AI factory permissions
 │   ├── settings.local.json      # Project-level permissions & model config
 │   ├── mcp.json                 # MCP server config (copied to .mcp.json)
-│   ├── agents/                  # 39 AI agent definitions
+│   ├── agents/                  # 40 AI agent definitions
 │   │   ├── architect.md         # System design, patterns, scalability
 │   │   ├── code-reviewer.md     # Bugs, security, performance in diffs (broad sweep)
 │   │   ├── code-smell-reviewer.md   # Smells specialist — cites `code-smells` rule
@@ -479,7 +481,8 @@ claude-code-framework/
 │   │   ├── build-coordinator.md               # Meta: orchestrates build phases
 │   │   ├── project-setup-detector.md          # Meta: first-time onboarding read-only (17-layer detection)
 │   │   ├── project-setup-applier.md           # Meta: first-time onboarding write (allowlist + backup + audit log)
-│   │   └── impact-analyzer.md                 # Meta: on-demand cascade analysis (grep callers, score confidence, per-symbol report)
+│   │   ├── impact-analyzer.md                 # Meta: on-demand cascade analysis (grep callers, score confidence, per-symbol report)
+│   │   └── docs-staleness-reviewer.md          # Analysis: catches material changes without CLAUDE.md updates at review time
 │   ├── commands/                # One-word automations
 │   │   ├── quick-test.md
 │   │   ├── lint-fix.md
@@ -509,7 +512,8 @@ claude-code-framework/
 │   │   ├── concurrency.md                # Cited by `concurrency-reviewer`
 │   │   ├── observability.md              # Cited by `observability-reviewer` (OWASP A09)
 │   │   ├── supply-chain.md               # Cited by `supply-chain-reviewer` (OWASP A06+A08)
-│   │   └── secrets-management.md         # Cited by `security-auditor`
+│   │   ├── secrets-management.md         # Cited by `security-auditor`
+│   │   └── docs-staleness.md             # Cited by `docs-staleness-reviewer`
 │   ├── hooks/                   # Lifecycle scripts
 │   │   ├── guardrails.sh        # PreToolUse: block dangerous ops
 │   │   ├── post-edit-sync.sh    # PostToolUse: flag docs needing sync

@@ -66,6 +66,7 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents �
 | `project-setup-detector` | Onboarding (read-only) | opus | First-time setup — 17-layer stack detection with tradeoff-explained options; writes proposal (invoked by `/setup` Phase 1) |
 | `project-setup-applier` | Onboarding (write) | opus | First-time setup — validates allowlist, snapshots, applies substitutions, writes audit log (invoked by `/setup` Phase 4) |
 | `impact-analyzer` | Cascade Analysis | opus | On-demand precise impact analysis — greps callers, classifies, scores confidence, writes per-symbol report (invoked by `/impact`) |
+| `docs-staleness-reviewer` | Docs-Drift Review | opus | Catches material changes (framework/test/build swaps, restructures, env vars, CI workflows, breaking API) without CLAUDE.md updates at review time. Cites `docs-staleness` rule |
 
 ## Pre-Configured Teams
 

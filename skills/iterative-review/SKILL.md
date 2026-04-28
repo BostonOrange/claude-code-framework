@@ -22,7 +22,12 @@ This is the framework's primary inner loop for non-trivial work. Use `/team revi
 /iterative-review --plan-only          — produce/refresh the plan; do not implement or review
 /iterative-review --review-only        — skip planning + coding; just spawn coordinator
 /iterative-review --reset              — discard state for this branch and start fresh
+/iterative-review --override [reason]  — break glass; force APPROVE without review (tracked)
 ```
+
+**Break-glass override.** For hotfixes when a real review would block a critical merge, `--override` tells `review-coordinator` to skip Steps 2–6, write a single APPROVE iteration to state with `"override": "break-glass"`, and exit. The override is tracked in `review-state-<branch>.json` for retrospective analysis. The next iteration without `--override` runs the full review normally.
+
+Equivalent: a comment containing `break glass` in the user's prompt to the skill triggers the same path. Use sparingly; review-coordinator's verdict rubric already biases toward APPROVE for legitimate cases.
 
 ## State Files
 

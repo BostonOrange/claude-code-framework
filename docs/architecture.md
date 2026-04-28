@@ -288,7 +288,7 @@ your-project/
 ├── .mcp.json                          # MCP servers (Context7 docs)
 ├── .claude/
 │   ├── settings.local.json            # Permissions & model config
-│   ├── agents/                        # 39 AI teammate definitions
+│   ├── agents/                        # 40 AI teammate definitions
 │   │   ├── architect.md               # System design, patterns
 │   │   ├── code-reviewer.md           # Bugs, security in diffs (broad sweep)
 │   │   ├── code-smell-reviewer.md     # Smells specialist — cites `code-smells`
@@ -327,7 +327,8 @@ your-project/
 │   │   ├── review-coordinator.md              # Meta: synthesizes reviewer findings, persists state
 │   │   ├── project-setup-detector.md          # Meta: first-time onboarding read-only (17-layer detection)
 │   │   ├── project-setup-applier.md           # Meta: first-time onboarding write (allowlist + backup + audit log)
-│   │   └── impact-analyzer.md                 # Meta: on-demand cascade analysis (grep callers, score confidence)
+│   │   ├── impact-analyzer.md                 # Meta: on-demand cascade analysis (grep callers, score confidence)
+│   │   └── docs-staleness-reviewer.md          # Analysis: catches material changes without CLAUDE.md updates at review time
 │   ├── commands/                      # One-word automations
 │   │   ├── quick-test.md
 │   │   ├── lint-fix.md
