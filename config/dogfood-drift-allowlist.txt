@@ -13,11 +13,13 @@ Files .claude/agents/security-auditor.md and templates/agents/security-auditor.m
 Files .claude/agents/test-writer.md and templates/agents/test-writer.md differ
 Files .claude/agents/ui-ux-reviewer.md and templates/agents/ui-ux-reviewer.md differ
 Only in .claude/agents: framework-qa.md
+Only in .claude/agents: framework-improver.md
 
 Files .claude/hooks/_lib.sh and templates/hooks/_lib.sh differ
 Files .claude/hooks/guardrails.sh and templates/hooks/guardrails.sh differ
 Files .claude/hooks/post-coding-review.sh and templates/hooks/post-coding-review.sh differ
 Files .claude/hooks/post-edit-sync.sh and templates/hooks/post-edit-sync.sh differ
+Only in templates/hooks: codebase-index.sh
 Only in templates/hooks: pre-commit.sh
 Only in templates/hooks: session-start.sh
 
@@ -27,6 +29,7 @@ Only in skills: _template
 Only in skills: add-reference
 Only in skills: app-blueprint
 Only in skills: ai-update
+Only in skills: build
 Only in skills: check-readiness
 Only in skills: deploy
 Only in skills: develop
@@ -35,12 +38,48 @@ Only in skills: error-analyze
 Only in skills: factory
 Only in skills: fetch-docs
 Only in skills: generate-internal-app
+Only in skills: impact
+Only in skills: index
+Only in skills: iterative-review
 Only in skills: merge-resolve
 Only in skills: mock-endpoint
+Only in skills: plan
 Only in skills: refine-story
 Only in skills: scaffold-design-system
+Only in skills: search
+Only in skills: setup
 Only in skills: update-tracker
 Only in skills: validate
+
+Only in templates/agents: api-layering-reviewer.md
+Only in templates/agents: architecture-reviewer.md
+Only in templates/agents: build-coordinator.md
+Only in templates/agents: code-smell-reviewer.md
+Only in templates/agents: complexity-reviewer.md
+Only in templates/agents: concurrency-reviewer.md
+Only in templates/agents: crypto-reviewer.md
+Only in templates/agents: docs-staleness-reviewer.md
+Only in templates/agents: dry-reviewer.md
+Only in templates/agents: edge-case-implementer.md
+Only in templates/agents: framework-improver-applier.md
+Only in templates/agents: framework-improver-detector.md
+Only in templates/agents: frontend-architecture-reviewer.md
+Only in templates/agents: happy-path-implementer.md
+Only in templates/agents: impact-analyzer.md
+Only in templates/agents: observability-reviewer.md
+Only in templates/agents: planner-coordinator.md
+Only in templates/agents: project-setup-applier.md
+Only in templates/agents: project-setup-detector.md
+Only in templates/agents: purity-reviewer.md
+Only in templates/agents: refactor-pass-implementer.md
+Only in templates/agents: requirements-clarifier.md
+Only in templates/agents: review-coordinator.md
+Only in templates/agents: risk-assessor.md
+Only in templates/agents: scaffold-implementer.md
+Only in templates/agents: scope-decomposer.md
+Only in templates/agents: solid-reviewer.md
+Only in templates/agents: supply-chain-reviewer.md
+Only in templates/agents: test-strategy-planner.md
 
 Files .claude/settings.local.json and templates/settings.local.json differ
 Files .claude/statusline/statusline-command.sh and templates/statusline/statusline-command.sh differ

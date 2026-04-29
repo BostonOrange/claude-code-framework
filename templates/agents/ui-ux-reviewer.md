@@ -129,6 +129,10 @@ Check for:
 
 ### Step 9: Report
 
+**When invoked by the `review-coordinator`, emit findings as JSONL per `docs/finding-schema.md` instead of the markdown format below** — one JSON object per line, no other output. Use category `accessibility` for WCAG/a11y findings, `design` for token/component-library violations, `quality` for visual consistency and UX patterns.
+
+For standalone runs, use the markdown format:
+
 ```
 ## UI/UX Review
 
@@ -158,3 +162,23 @@ Check for:
 
 ### Score: {A11y: X/10} | {Design System: X/10} | {Consistency: X/10} | {UX: X/10}
 ```
+
+## What NOT to Flag
+
+Suppress these — they make UI reviews feel like style policing:
+
+- **Subjective taste.** "This looks dated" or "I'd prefer rounded corners" is not a finding. Only flag if a project rule (`.claude/rules/design-system.md`, `.claude/rules/components.md`) is violated, or there's a measurable a11y/usability issue.
+- **Theoretical a11y issues without a real impact path.** Every accessibility finding must name the affected user group (keyboard, screen reader, low vision) and what fails for them.
+- **Components in `node_modules/`, `vendor/`, or generated UI** (e.g., Storybook output, build artifacts).
+- **Unchanged components.** Unless the diff modifies a component or its direct ancestor, leave it alone — even if it has issues.
+- **Token violations in theme/token files themselves.** `theme.css` is allowed to use raw colors; that's its job.
+- **Dark-mode missing states on components that genuinely don't render in dark backgrounds** (e.g., a print-only modal). Confirm the rendering context first.
+- **WCAG AA findings on internal admin tooling** unless the project explicitly targets WCAG. Only enforce what the project commits to.
+- **"Could be more responsive."** Flag specific viewport breakage, not vibes. Reproduce or skip.
+- **Hedged criticals.** "Could be hard for some users" is not `critical`. Critical = WCAG 2.1 A or AA failure with a concrete remediation.
+
+When in doubt: **drop the finding**. UI reviews lose trust faster than any other category when they devolve into preference.
+
+## Rule Citation
+
+Cite the relevant rule's `id` from `.claude/rules/<id>.md` (typically `design-system`, `components`). If no rule applies, propose adding one — do not invent rule IDs.

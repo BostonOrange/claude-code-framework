@@ -40,7 +40,7 @@ Developer Terminal (Claude Code)     │     CI/CD (automatic)
   ├─ Fix code standards issues       │
   ├─ Commit + push                   │
   ├─ Create PR (factory label)  ─────┼──► CI validate workflow
-  └─ framework-improver (background) │
+  └─ /improve (background)           │
                                      │      ├─ Deploy to test environment
                                      │      ├─ Run tests
                                      │      └─ Post PR comment with env link
@@ -169,7 +169,7 @@ After merge:
 
 ### Step 9: Framework Improvement (Background)
 
-Spawn the `framework-improver` agent in the background per the pattern in `/develop` Phase 9. This never blocks the factory pipeline — it runs after the completion report.
+Spawn `/improve` in the background per the pattern in `/develop` Phase 9. This never blocks the factory pipeline — it runs after the completion report.
 
 ## Execution Logging
 

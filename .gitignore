@@ -17,9 +17,9 @@ node_modules/
 .env.local
 .env.*.local
 
-# Build artifacts
-dist/
-build/
+# Build artifacts (top-level only — `skills/build/` is the build skill, not output)
+/dist/
+/build/
 *.pyc
 __pycache__/
 .sfdx
@@ -27,3 +27,6 @@ __pycache__/
 # Temp files
 /tmp/
 *.tmp
+
+# Local hook state (per-machine, not project content)
+.claude/state/

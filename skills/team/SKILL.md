@@ -10,13 +10,15 @@ Spawn a team of specialized agents to work in parallel on the current codebase.
 ## Usage
 
 ```
-/team review          — Code reviewer + Security auditor + UI/UX reviewer
-/team architecture    — Architect + API designer + Database architect
-/team release         — Security auditor + DevOps engineer + Performance optimizer
-/team quality         — Code reviewer + Test writer + Performance optimizer
-/team design          — UI/UX reviewer + Performance optimizer + Refactor advisor
-/team documentation   — Documentation writer + API designer
-/team full            — All agents (12)
+/team review           — Code reviewer + Security auditor + UI/UX reviewer
+/team review-deep      — Code reviewer + Security auditor + 4 code-quality specialists (smell, dry, purity, complexity)
+/team architecture     — Architect + API designer + Database architect
+/team release          — Security auditor + DevOps engineer + Performance optimizer
+/team quality          — Code reviewer + Test writer + Performance optimizer
+/team quality-deep     — code-smell-reviewer + dry-reviewer + purity-reviewer + complexity-reviewer (the 4 code-quality specialists in parallel)
+/team design           — UI/UX reviewer + Performance optimizer + Refactor advisor
+/team documentation    — Documentation writer + API designer
+/team full             — All 16 review/implementation agents (excludes meta-agents)
 /team custom agent1 agent2 agent3   — Pick specific agents
 ```
 
@@ -25,17 +27,22 @@ Spawn a team of specialized agents to work in parallel on the current codebase.
 | Agent | Role | Model | Tools |
 |-------|------|-------|-------|
 | `architect` | System design, patterns, structural risks | opus | Read-only |
-| `code-reviewer` | Bugs, security, performance in diff | opus | Read-only |
+| `code-reviewer` | Bugs, security, performance in diff (broad sweep) | opus | Read-only |
+| `code-smell-reviewer` | Code smells: long methods, magic numbers, primitive obsession, dead code, etc. (cites `code-smells` rule) | opus | Read-only |
+| `dry-reviewer` | Duplication and extraction opportunities (cites `dry` rule) | opus | Read-only |
+| `purity-reviewer` | Pure functions, side effects, query/command separation, SRP (cites `purity` rule) | opus | Read-only |
+| `complexity-reviewer` | Function length, cyclomatic complexity, nesting, parameters (cites `complexity` rule) | opus | Read-only |
 | `security-auditor` | OWASP audit, credentials, dependencies | opus | Read-only |
 | `test-writer` | Generate tests for changed code | opus | Read/Write |
-| `refactor-advisor` | Duplication, complexity, extraction | opus | Read-only |
 | `devops-engineer` | CI/CD, infra, deployment readiness | opus | Read-only |
 | `ui-ux-reviewer` | Accessibility, design, responsiveness | opus | Read-only |
 | `performance-optimizer` | Bundle, queries, rendering, caching | opus | Read-only |
 | `documentation-writer` | API docs, READMEs, architecture docs | opus | Read/Write |
 | `api-designer` | Endpoint design, schemas, consistency | opus | Read-only |
 | `database-architect` | Schema, migrations, indexes, queries | opus | Read-only |
-| `framework-improver` | Self-improvement of .claude/ config | opus | Read/Write |
+| `framework-improver-detector` | Self-improvement (read-only): scan + skip-list + proposal (invoked by `/improve`, not `/team`) | opus | Read-only |
+| `framework-improver-applier` | Self-improvement (write): re-validates skip-list, applies improvements (invoked by `/improve`, not `/team`) | opus | Read/Write |
+| `review-coordinator` | Synthesizes parallel reviewer findings, persists state across iterations (invoked by `/iterative-review`, not `/team`) | opus | Read + Agent spawning |
 
 ## Process
 
@@ -46,13 +53,17 @@ Parse the team name from the command argument. Map to agent list:
 | Team | Agents |
 |------|--------|
 | `review` | code-reviewer, security-auditor, ui-ux-reviewer |
+| `review-deep` | code-reviewer, security-auditor, code-smell-reviewer, dry-reviewer, purity-reviewer, complexity-reviewer |
 | `architecture` | architect, api-designer, database-architect |
 | `release` | security-auditor, devops-engineer, performance-optimizer |
 | `quality` | code-reviewer, test-writer, performance-optimizer |
-| `design` | ui-ux-reviewer, performance-optimizer, refactor-advisor |
+| `quality-deep` | code-smell-reviewer, dry-reviewer, purity-reviewer, complexity-reviewer |
+| `design` | ui-ux-reviewer, performance-optimizer, frontend-architecture-reviewer |
 | `documentation` | documentation-writer, api-designer |
-| `full` | all 12 agents |
+| `full` | all 16 review/implementation agents (excludes meta-agents like `review-coordinator`, the `framework-improver-*` pair, and the `project-setup-*` pair) |
 | `custom` | agents listed after "custom" keyword |
+
+`review-coordinator`, `framework-improver-detector`/`-applier`, and `project-setup-detector`/`-applier` are meta-agents — the review-coordinator orchestrates other reviewers (use `/iterative-review` for the full feedback loop); the improver pair updates the framework itself (use `/improve`); the setup pair runs first-time onboarding (use `/setup`). None are `/team` members.
 
 If no argument provided, show usage and available teams.
 
@@ -104,5 +115,5 @@ Combine individual reports into a unified team report:
 
 ## Related Skills
 
-- `/improve` — Uses framework-improver agent to update .claude/ configuration
+- `/improve` — Uses framework-improver-detector + framework-improver-applier to update .claude/ configuration
 - `/validate` — Code validation (more focused than /team review)

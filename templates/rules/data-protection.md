@@ -1,4 +1,5 @@
 ---
+id: data-protection
 patterns:
   - {{SOURCE_PATTERNS}}
 ---

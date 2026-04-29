@@ -27,7 +27,6 @@ Spawn a team of specialized agents to work in parallel on the current codebase.
 | `code-reviewer` | Bugs, security, performance in diff | opus | Read-only |
 | `security-auditor` | OWASP audit, credentials, dependencies | opus | Read-only |
 | `test-writer` | Generate tests for changed code | opus | Read/Write |
-| `refactor-advisor` | Duplication, complexity, extraction | opus | Read-only |
 | `devops-engineer` | CI/CD, infra, deployment readiness | opus | Read-only |
 | `ui-ux-reviewer` | Accessibility, design, responsiveness | opus | Read-only |
 | `performance-optimizer` | Bundle, queries, rendering, caching | opus | Read-only |

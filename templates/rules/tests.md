@@ -1,4 +1,5 @@
 ---
+id: tests
 patterns:
   - {{TEST_PATTERNS}}
 ---

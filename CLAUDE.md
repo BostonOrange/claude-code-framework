@@ -32,13 +32,13 @@ claude-code-framework/
 │   ├── settings.json            # User-level permissions (~/.claude/)
 │   ├── settings.local.json      # Project-level permissions
 │   ├── mcp.json                 # MCP server config (→ .mcp.json)
-│   ├── agents/                  # 12 AI agent definitions
+│   ├── agents/                  # 39 AI agent definitions
 │   ├── commands/                # 10 quick command definitions
 │   ├── internal-nextjs-business-app/ # Vendored app-creator template
-│   ├── rules/                   # 9 file-pattern guardrails
-│   ├── hooks/                   # 6 lifecycle scripts
+│   ├── rules/                   # 23 file-pattern guardrails
+│   ├── hooks/                   # 7 lifecycle scripts + 1 utility (codebase-index.sh)
 │   └── statusline/              # Status bar config
-├── skills/                      # 19 workflow skills + 1 template
+├── skills/                      # 26 workflow skills + 1 template
 ├── workflows/                   # 4 GitHub Actions CI/CD templates
 ├── memory/                      # Memory system templates
 └── docs/                        # Framework documentation
@@ -107,7 +107,7 @@ Spawn pre-configured teams for parallel analysis of the framework:
 | **Release** | `/team release` | security-auditor, devops-engineer, performance-optimizer |
 | **Quality** | `/team quality` | code-reviewer, test-writer, performance-optimizer |
 | **Documentation** | `/team documentation` | documentation-writer, api-designer |
-| **Design** | `/team design` | ui-ux-reviewer, performance-optimizer, refactor-advisor |
+| **Design** | `/team design` | ui-ux-reviewer, performance-optimizer, frontend-architecture-reviewer |
 | **Full** | `/team full` | All 12 agents |
 | **Custom** | `/team custom a b c` | Any combination |
 
@@ -116,9 +116,12 @@ Spawn pre-configured teams for parallel analysis of the framework:
 | Agent | Purpose | Model |
 |-------|---------|-------|
 | `architect` | System design, patterns, scalability | opus |
-| `code-reviewer` | Bugs, security, performance in diffs | opus |
+| `code-reviewer` | Bugs, security, performance in diffs (broad sweep) | opus |
+| `code-smell-reviewer` | Code smells: long methods, magic numbers, primitive obsession, dead code (cites `code-smells` rule) | opus |
+| `dry-reviewer` | Duplication: 3+ repeated logic (cites `dry` rule) | opus |
+| `purity-reviewer` | Pure functions, side effects, query/command separation, SRP (cites `purity` rule) | opus |
+| `complexity-reviewer` | Function length, cyclomatic complexity, nesting, parameter count (cites `complexity` rule) | opus |
 | `security-auditor` | OWASP audit, credentials, dependencies | opus |
-| `refactor-advisor` | Duplication, complexity, extraction | opus |
 | `devops-engineer` | CI/CD, containers, infrastructure | opus |
 | `ui-ux-reviewer` | Accessibility, design, responsiveness | opus |
 | `performance-optimizer` | Bundle, queries, caching, memory | opus |
@@ -126,7 +129,31 @@ Spawn pre-configured teams for parallel analysis of the framework:
 | `database-architect` | Schema, indexes, migrations | opus |
 | `test-writer` | Test generation following conventions | opus |
 | `documentation-writer` | API docs, READMEs, guides | opus |
-| `framework-improver` | Self-improvement of .claude/ config | opus |
+| `frontend-architecture-reviewer` | FE structure: composition, state, hooks, data flow, render-perf (cites `frontend-architecture` rule) | opus |
+| `architecture-reviewer` | Layering: dependency direction, cross-module reach, circular deps, god modules (cites `architecture-layering` rule) | opus |
+| `api-layering-reviewer` | API structure: controller/service/repo separation, validation placement, error contract (cites `api-layering` rule) | opus |
+| `crypto-reviewer` | OWASP A02: weak hashes, password storage, RNG, encryption modes/IV, JWT, TLS (cites `crypto` rule) | opus |
+| `solid-reviewer` | OCP/LSP/ISP/DIP (cites `solid` rule); SRP is purity-reviewer's domain | opus |
+| `concurrency-reviewer` | Race conditions, TOCTOU, async/lock discipline, mutable shared state, background workers (cites `concurrency` rule) | opus |
+| `observability-reviewer` | OWASP A09: structured logging, log levels, metrics, tracing, audit logs, alerting (cites `observability` rule) | opus |
+| `supply-chain-reviewer` | OWASP A06+A08: lockfiles, pinning, CVE reachability, signing, dev/prod separation, CI integrity (cites `supply-chain` rule) | opus |
+| `requirements-clarifier` | Planning specialist: ambiguity hunt, open questions, missing AC | opus |
+| `scope-decomposer` | Planning specialist: atomic steps, sequencing, parallelism groups | opus |
+| `risk-assessor` | Planning specialist: rollback paths, blast radius, migration risk + mitigations | opus |
+| `test-strategy-planner` | Planning specialist: test levels per planned step | opus |
+| `scaffold-implementer` | Build phase 1: skeleton (file structure, types, signatures, stubs) | opus |
+| `happy-path-implementer` | Build phase 2: core successful flow (defers errors and edges) | opus |
+| `edge-case-implementer` | Build phase 3: validation, errors, edge data (binds error-handling, auth-security, data-protection) | opus |
+| `refactor-pass-implementer` | Build phase 6 (final): actively applies code-smells/dry/purity/complexity rules | opus |
+| `framework-improver-detector` | Self-improvement read-only (invoked by `/improve` Phase 1); scans + builds /setup-aware skip-list + writes proposal | opus |
+| `framework-improver-applier` | Self-improvement write (invoked by `/improve` Phase 3); skip-list re-validation + apply + audit log | opus |
+| `review-coordinator` | Synthesizes parallel reviewer output (dedupe, filter, risk-tier classify, cross-iteration state) | opus |
+| `planner-coordinator` | Orchestrates planning specialists, classifies scope, synthesizes one plan | opus |
+| `build-coordinator` | Orchestrates build phases sequentially (scaffold → happy-path → edge-case → tests → docs → refactor) | opus |
+| `project-setup-detector` | First-time onboarding read-only (invoked by `/setup` Phase 1); 17-layer detection + writes proposal | opus |
+| `project-setup-applier` | First-time onboarding write (invoked by `/setup` Phase 4); allowlist + backup + substitutions + audit log | opus |
+| `impact-analyzer` | On-demand cascade analysis for a symbol/file (invoked by `/impact`); greps callers, classifies, scores confidence | opus |
+| `docs-staleness-reviewer` | Reviews diffs for material changes without CLAUDE.md / AGENTS.md updates; cites `docs-staleness` rule | opus |
 
 > `framework-qa` is available in this repo's own `.claude/agents/` but is not a distributable template agent.
 
@@ -149,7 +176,7 @@ grep -r "{{" .claude/ CLAUDE.md | grep -v ".git"
 
 ## Self-Improvement
 
-**Before ending any session where framework files were modified**, run the `framework-improver` agent. This keeps CLAUDE.md, README.md, docs, and setup scripts in sync with the actual framework state.
+**Before ending any session where framework files were modified**, spawn `/improve` (which orchestrates `framework-improver-detector` → `framework-improver-applier`) in the background. This keeps CLAUDE.md, README.md, docs, and setup scripts in sync with the actual framework state.
 
 Additionally, run the `framework-qa` agent to validate that all counts and tables are consistent across README, CLAUDE.md template, setup scripts, and docs.
 
@@ -161,7 +188,7 @@ These agents are not launched by a hidden mutating hook. They are an explicit co
 |-------|-----------|------|------|
 | **Hook** | `guardrails.sh` (PreToolUse) | Before every Bash command | Blocks dangerous ops (deploys, migrations, force push) |
 | **Hook** | `post-edit-sync.sh` (PostToolUse) | After every Edit/Write | Flags which docs need updating based on what changed |
-| **Agent** | `framework-improver` | Explicitly before wrapping up framework changes | Updates CLAUDE.md, rules, settings from project state |
-| **Agent** | `framework-qa` | Explicitly before wrapping up framework changes | Validates all doc counts and tables match actual files |
+| **Agent** | `framework-improver-detector` + `framework-improver-applier` (via `/improve`) | End of every session with changes | Detector scans + builds skip-list (read-only); applier validates skip-list + applies + audit log |
+| **Agent** | `framework-qa` | End of every session with changes | Validates all doc counts and tables match actual files |
 | **Tests** | `tests/run-all.sh` | Before PR / CI | Deterministic hard gate for counts, placeholders, templates, guardrails, setup smoke, and dogfood drift |
-| **CLAUDE.md** | This instruction | Always | Defines the contributor workflow |
+| **CLAUDE.md** | This instruction | Always | Enforces the above as non-optional behavior |

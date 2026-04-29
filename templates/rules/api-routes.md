@@ -1,4 +1,5 @@
 ---
+id: api-routes
 patterns:
   - {{API_ROUTE_PATTERNS}}
 ---

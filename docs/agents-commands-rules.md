@@ -139,7 +139,7 @@ The framework maintains a canonical registry of all distributable agents at `con
 
 ## Included Templates
 
-### Agents (12)
+### Agents (39)
 
 > **MCP tools:** In addition to the tools listed below, all agents have access to project-level MCP servers configured in `.mcp.json`. The `architect`, `api-designer`, `documentation-writer`, `performance-optimizer`, and `test-writer` agents actively use Context7 (`resolve-library-id` / `get-library-docs`) to fetch current library documentation before making recommendations.
 
@@ -148,27 +148,59 @@ The framework maintains a canonical registry of all distributable agents at `con
 | Agent | Tools | Model | Purpose |
 |-------|-------|-------|---------|
 | `architect` | Read, Glob, Grep, Bash | opus | System design, patterns, scalability |
-| `code-reviewer` | Read, Glob, Grep, Bash | opus | Reviews diff for bugs, security, performance, design, smells |
-| `security-auditor` | Read, Glob, Grep, Bash | opus | OWASP-categorized security audit |
-| `refactor-advisor` | Read, Glob, Grep, Bash | opus | Duplication, complexity, extraction |
+| `code-reviewer` | Read, Glob, Grep, Bash | opus | Reviews diff for bugs, security, performance, design, smells (broad sweep) |
+| `code-smell-reviewer` | Read, Glob, Grep, Bash | opus | Code smells specialist — long methods, magic numbers, primitive obsession, dead code (cites `code-smells`) |
+| `dry-reviewer` | Read, Glob, Grep, Bash | opus | Duplication specialist — 3+ repeated logic, structural patterns (cites `dry`) |
+| `purity-reviewer` | Read, Glob, Grep, Bash | opus | Pure-function specialist — side effects, query/command separation, hidden state, SRP (cites `purity`) |
+| `complexity-reviewer` | Read, Glob, Grep, Bash | opus | Complexity specialist — function length, cyclomatic complexity, nesting, params (cites `complexity`) |
+| `frontend-architecture-reviewer` | Read, Glob, Grep, Bash | opus | FE structure — composition, state, hooks, data flow, render-perf (cites `frontend-architecture`) |
+| `architecture-reviewer` | Read, Glob, Grep, Bash | opus | Layering — dependency direction, cross-module reach, circular deps, god modules (cites `architecture-layering`) |
+| `api-layering-reviewer` | Read, Glob, Grep, Bash | opus | API structure — controller/service/repo separation, validation placement, error contract (cites `api-layering`) |
+| `crypto-reviewer` | Read, Glob, Grep, Bash | opus | OWASP A02 — weak hashes, password storage, RNG, encryption modes, JWT, TLS, key derivation (cites `crypto`) |
+| `solid-reviewer` | Read, Glob, Grep, Bash | opus | OCP/LSP/ISP/DIP (cites `solid`); SRP is `purity-reviewer`'s domain |
+| `concurrency-reviewer` | Read, Glob, Grep, Bash | opus | Races, TOCTOU, async/lock discipline, mutable shared state, background workers (cites `concurrency`) |
+| `observability-reviewer` | Read, Glob, Grep, Bash | opus | OWASP A09 — structured logging, metrics, tracing, audit logs, alerting (cites `observability`) |
+| `supply-chain-reviewer` | Read, Glob, Grep, Bash | opus | OWASP A06+A08 — lockfiles, pinning, CVE reachability, signing, CI pipeline integrity (cites `supply-chain`) |
+| `security-auditor` | Read, Glob, Grep, Bash | opus | OWASP-categorized security audit; cites `secrets-management` for storage findings |
 | `devops-engineer` | Read, Glob, Grep, Bash | opus | CI/CD, containers, infrastructure |
 | `ui-ux-reviewer` | Read, Glob, Grep, Bash | opus | Accessibility, design, responsiveness |
 | `performance-optimizer` | Read, Glob, Grep, Bash | opus | Bundle, queries, rendering, caching |
 | `api-designer` | Read, Glob, Grep, Bash | opus | Endpoint design, schemas, versioning |
 | `database-architect` | Read, Glob, Grep, Bash | opus | Schema, indexes, migrations, queries |
 
+**Planning Agents (read-only — used by `/plan`)**
+
+| Agent | Tools | Model | Purpose |
+|-------|-------|-------|---------|
+| `requirements-clarifier` | Read, Glob, Grep, Bash | opus | Hunts ambiguity in story before planning starts |
+| `scope-decomposer` | Read, Glob, Grep, Bash | opus | Breaks story into atomic, sequenced steps with parallelism groups |
+| `risk-assessor` | Read, Glob, Grep, Bash | opus | Identifies rollback paths, blast radius, breaking-change & migration risk |
+| `test-strategy-planner` | Read, Glob, Grep, Bash | opus | Decides test levels per planned step |
+
 **Implementation Agents (read/write)**
 
 | Agent | Tools | Model | Purpose |
 |-------|-------|-------|---------|
-| `test-writer` | Read, Glob, Grep, Edit, Write, Bash | opus | Generates tests for changed code |
-| `documentation-writer` | Read, Glob, Grep, Edit, Write, Bash | opus | API docs, READMEs, architecture docs |
+| `scaffold-implementer` | Read, Glob, Grep, Edit, Write, Bash | opus | Build phase 1 — file structure, types, signatures, stubs (no logic) |
+| `happy-path-implementer` | Read, Glob, Grep, Edit, Write, Bash | opus | Build phase 2 — core successful flow logic |
+| `edge-case-implementer` | Read, Glob, Grep, Edit, Write, Bash | opus | Build phase 3 — validation, errors, edge data |
+| `refactor-pass-implementer` | Read, Glob, Grep, Edit, Write, Bash | opus | Build phase 6 (final) — apply code-quality rules actively |
+| `test-writer` | Read, Glob, Grep, Edit, Write, Bash | opus | Generates tests for changed code (build phase 4) |
+| `documentation-writer` | Read, Glob, Grep, Edit, Write, Bash | opus | API docs, READMEs, architecture docs (build phase 5) |
 
-**Meta Agents (modify framework)**
+**Meta Agents (orchestrate other agents)**
 
 | Agent | Tools | Model | Purpose |
 |-------|-------|-------|---------|
-| `framework-improver` | Read, Glob, Grep, Edit, Write, Bash | opus | Updates CLAUDE.md, rules, settings, agents |
+| `framework-improver-detector` | Read, Glob, Grep, Bash | opus | Self-improvement (read-only) — scans, builds skip-list, writes proposal (invoked by `/improve` Phase 1) |
+| `framework-improver-applier` | Read, Edit, Write, Bash | opus | Self-improvement (write) — validates skip-list, applies improvements with backup + audit log (invoked by `/improve` Phase 3) |
+| `planner-coordinator` | Read, Glob, Grep, Bash, Agent | opus | Orchestrates planning specialists (invoked by `/plan`) |
+| `build-coordinator` | Read, Glob, Grep, Bash, Agent | opus | Orchestrates build phases sequentially (invoked by `/build`) |
+| `review-coordinator` | Read, Glob, Grep, Bash, Agent | opus | Synthesizes parallel reviewer output (invoked by `/iterative-review`) |
+| `project-setup-detector` | Read, Glob, Grep, Bash | opus | First-time onboarding (read-only) — 17-layer stack detection, writes proposal (invoked by `/setup` Phase 1) |
+| `project-setup-applier` | Read, Edit, Write, Bash | opus | First-time onboarding (write) — applies confirmed proposal with allowlist + backup + audit log (invoked by `/setup` Phase 4) |
+| `impact-analyzer` | Read, Glob, Grep, Bash | opus | On-demand cascade analysis — greps callers, classifies, scores confidence (invoked by `/impact`) |
+| `docs-staleness-reviewer` | Read, Glob, Grep, Bash | opus | Reviews diffs for material changes without CLAUDE.md / AGENTS.md updates (cites `docs-staleness` rule) |
 
 ### Commands (10)
 
@@ -185,7 +217,7 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `/generate-feature` | Add one blueprint-backed feature slice |
 | `/port-vercel` | Prepare Vercel docs/env guidance without forking the app |
 
-### Rules (9)
+### Rules (23)
 
 | Rule | Patterns | Key Standards |
 |------|----------|---------------|
@@ -198,8 +230,21 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `auth-security` | Source files | Fail-closed auth, CSRF, RBAC, session security, SSRF |
 | `data-protection` | Source files | No PII in git, credentials, log redaction, third-party data |
 | `design-system` | UI components | Semantic tokens, spacing, typography, theme compliance |
+| `code-smells` | Source files | Long methods, magic numbers, primitive obsession, dead code, data clumps, feature envy (cited by `code-smell-reviewer`) |
+| `dry` | Source files | True duplication threshold (3+ sites), what to extract / what NOT (cited by `dry-reviewer`) |
+| `purity` | Source files | Pure-function discipline, query/command separation, hidden state, input mutation, SRP (cited by `purity-reviewer`) |
+| `complexity` | Source files | Function length, cyclomatic complexity, nesting, parameter count thresholds (cited by `complexity-reviewer`) |
+| `frontend-architecture` | UI components | Component composition, state, hook discipline, data flow, render-perf architecture (cited by `frontend-architecture-reviewer`) |
+| `architecture-layering` | Source files | Layer dependency direction, cross-module reach, circular deps, god modules (cited by `architecture-reviewer`) |
+| `api-layering` | API handlers | Controller/service/repo separation, validation placement, error contract, idempotency (cited by `api-layering-reviewer`) |
+| `crypto` | Source files | Hash algorithms, password storage, RNG, encryption modes/IV, JWT, TLS, key derivation, constant-time compare (cited by `crypto-reviewer`; OWASP A02) |
+| `solid` | Source files | OCP/LSP/ISP/DIP (cited by `solid-reviewer`); SRP is `purity`'s domain |
+| `concurrency` | Source files | Race conditions, TOCTOU, async discipline, locks, mutable shared state, background workers, channels (cited by `concurrency-reviewer`) |
+| `observability` | Source files | Structured logging, log levels, metrics, tracing, audit logs, alerting, correlation (cited by `observability-reviewer`; OWASP A09) |
+| `supply-chain` | Manifests / Dockerfiles / CI workflows | Lockfile hygiene, pinning, CVE reachability, signing, dev/prod separation, deserialization, pipeline integrity (cited by `supply-chain-reviewer`; OWASP A06+A08) |
+| `secrets-management` | Source files | Storage, loading, rotation, scanning, in-code discipline, service identity (cited by `security-auditor`) |
 
-### Hooks (6)
+### Hooks (7 lifecycle hooks + 1 utility)
 
 | Hook | Event | Purpose |
 |------|-------|---------|
@@ -209,6 +254,7 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `session-stop.sh` | SessionEnd | Audio notification |
 | `post-coding-review.sh` | SessionEnd | Nudges `/team review` when substantial source changes exist |
 | `pre-commit.sh` | Git pre-commit | Type/lint check (if configured), secret scan, large-file guard |
+| `codebase-index.sh` | Utility | Builds a local codebase index used by `/index`, `/search`, and `/impact` |
 
 ## Adding Custom Entries
 

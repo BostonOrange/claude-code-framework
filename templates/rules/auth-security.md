@@ -1,4 +1,5 @@
 ---
+id: auth-security
 patterns:
   - {{SOURCE_PATTERNS}}
 ---

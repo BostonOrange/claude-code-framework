@@ -2,8 +2,9 @@
   "_description": "Canonical agent registry. The 'description' field mirrors the full frontmatter description in templates/agents/{name}.md and is the source of truth. Short 'blurb' is what appears in README/CLAUDE.md tables. Update both places together, then run tests/check-agent-registry.sh.",
   "categories": {
     "analysis": "Read-only review agents — produce structured reports, do not modify code",
-    "implementation": "Can modify files (tests, documentation)",
-    "meta": "Operates on the framework itself"
+    "planning": "Read-only planning specialists — analyze a story and produce structured plan inputs (questions, work breakdown, risks, test strategy)",
+    "implementation": "Can modify files (build phases, tests, documentation, refactor pass)",
+    "meta": "Operates on the framework itself OR orchestrates other agents (coordinators)"
   },
   "agents": [
     {
@@ -21,18 +22,95 @@
       "description": "Reviews code changes for bugs, security issues, performance problems, design principles (pure functions, SRP), code smells, and convention violations before merge"
     },
     {
+      "name": "code-smell-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Code smells: long methods, magic numbers, primitive obsession, dead code (cites `code-smells` rule)",
+      "description": "Reviews changed code for classic code smells — long methods, magic numbers, primitive obsession, data clumps, feature envy, dead code, comments-as-deodorant, speculative generality. Cites the `code-smells` rule"
+    },
+    {
+      "name": "dry-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Duplication and extraction opportunities (cites `dry` rule)",
+      "description": "Reviews changed code for true duplication — repeated knowledge, repeated logic, repeated structural patterns appearing 3+ times. Cites the `dry` rule. Distinct from code-smell-reviewer (other smells)"
+    },
+    {
+      "name": "purity-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Pure functions, side effects, query/command separation, SRP (cites `purity` rule)",
+      "description": "Reviews changed code for impure functions, hidden side effects, query/command separation violations, input mutation, hidden state reads, and SRP violations at function and class level. Cites the `purity` rule"
+    },
+    {
+      "name": "complexity-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Function length, cyclomatic complexity, nesting, parameters (cites `complexity` rule)",
+      "description": "Reviews changed code for excessive function length, cyclomatic complexity, nesting depth, parameter count, and branch density. Cites the `complexity` rule"
+    },
+    {
+      "name": "frontend-architecture-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Component composition, state management, hook discipline, data flow, render-perf architecture (cites `frontend-architecture` rule)",
+      "description": "Reviews changed frontend code for component composition, state management, hook discipline, data flow, render performance, module boundaries, and SSR/hydration concerns. Cites the `frontend-architecture` rule. Distinct from ui-ux-reviewer (visual/a11y/design system)"
+    },
+    {
+      "name": "architecture-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Layer dependency direction, cross-module reach, circular deps, god modules, public-API leaks (cites `architecture-layering` rule)",
+      "description": "Reviews changed code for layer-dependency violations, cross-module reach, circular dependencies, god modules, public-API leaks, and structural patterns. Cites the `architecture-layering` rule. Distinct from `architect` (which plans) — this agent reviews code against architectural rules"
+    },
+    {
+      "name": "api-layering-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Controller/service/repository separation, validation placement, error contract, idempotency (cites `api-layering` rule)",
+      "description": "Reviews API code for controller/service/repository separation, validation layer placement, error contract consistency, idempotency, and versioning discipline. Cites the `api-layering` rule. Distinct from `api-designer` (designs API surface) and `api-routes` rule (per-route concerns)"
+    },
+    {
+      "name": "crypto-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Crypto failures: weak hashes, password storage, RNG, encryption modes, JWT, TLS, key derivation, constant-time compare (cites `crypto`). OWASP A02",
+      "description": "Reviews changed code for cryptographic failures — weak hashes, password storage, RNG misuse, encryption mode/IV mistakes, JWT pitfalls, TLS config, key derivation, constant-time comparison. Cites the `crypto` rule. Covers OWASP A02:2021"
+    },
+    {
+      "name": "solid-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "SOLID: Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion (cites `solid`). SRP is purity-reviewer's domain",
+      "description": "Reviews changed code for SOLID principle violations — Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion. Cites the `solid` rule. SRP (the S of SOLID) is owned by purity-reviewer"
+    },
+    {
+      "name": "concurrency-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Race conditions, TOCTOU, async discipline, lock discipline, mutable shared state, background-work safety, channels (cites `concurrency`)",
+      "description": "Reviews changed code for race conditions, TOCTOU bugs, async discipline, lock discipline, mutable shared state, background-work safety, and channel/queue discipline. Cites the `concurrency` rule"
+    },
+    {
+      "name": "observability-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Structured logging, log levels, metrics, tracing, audit logs, alerting, correlation (cites `observability`). OWASP A09",
+      "description": "Reviews changed code for structured logging discipline, log levels, metrics coverage, tracing propagation, audit logs, alerting, and correlation. Cites the `observability` rule. Covers OWASP A09:2021"
+    },
+    {
+      "name": "supply-chain-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Dependencies, lockfiles, Dockerfiles, CI workflows: pinning, CVEs, signing, dev/prod separation, deserialization, pipeline integrity (cites `supply-chain`). OWASP A06+A08",
+      "description": "Reviews changed dependency manifests, lockfiles, Dockerfiles, and CI workflow files for OWASP A06 (vulnerable components) and A08 (integrity failures). Covers lockfile hygiene, version pinning, CVE reachability, package signing, dev/prod separation, deserialization risks, CI pipeline integrity, build reproducibility, license compliance. Cites the `supply-chain` rule"
+    },
+    {
       "name": "security-auditor",
       "category": "analysis",
       "model": "opus",
       "blurb": "OWASP audit, credentials, dependencies, compliance",
       "description": "Audits code for security vulnerabilities, credential exposure, PII leakage, auth bypass, CSRF, CORS, SSRF, dependency risks, and compliance issues"
-    },
-    {
-      "name": "refactor-advisor",
-      "category": "analysis",
-      "model": "opus",
-      "blurb": "Duplication, complexity, extraction opportunities",
-      "description": "Analyzes code for duplication, complexity, and architectural improvements — reports only, does not modify code"
     },
     {
       "name": "devops-engineer",
@@ -84,11 +162,123 @@
       "description": "Generates and updates project documentation — API docs, architecture overviews, setup guides, and inline documentation"
     },
     {
-      "name": "framework-improver",
+      "name": "requirements-clarifier",
+      "category": "planning",
+      "model": "opus",
+      "blurb": "Hunts ambiguity in story before planning — surfaces open questions, undefined terms, missing AC, conflicting requirements",
+      "description": "Hunts ambiguity in a story or task description before planning starts. Surfaces open questions, undefined terms, missing acceptance criteria, conflicting requirements, and assumed-but-unstated constraints"
+    },
+    {
+      "name": "scope-decomposer",
+      "category": "planning",
+      "model": "opus",
+      "blurb": "Breaks a story into atomic, sequenced steps with parallelism groups and dependencies",
+      "description": "Breaks a story or task into atomic, independently-testable steps with explicit sequencing and dependencies. Identifies what can run in parallel and what must happen in order"
+    },
+    {
+      "name": "risk-assessor",
+      "category": "planning",
+      "model": "opus",
+      "blurb": "Identifies rollback paths, blast radius, breaking-change and migration risk; proposes mitigations",
+      "description": "Identifies rollback paths, blast radius, breaking-change risk, data-migration danger, and operational risk for a planned change. Output feeds into the plan so risky steps get extra scrutiny"
+    },
+    {
+      "name": "test-strategy-planner",
+      "category": "planning",
+      "model": "opus",
+      "blurb": "Decides what tests at what level (unit / integration / e2e / contract / property) per planned step",
+      "description": "Decides what tests at what level (unit / integration / e2e / contract / property) for a planned change. Output feeds into the plan so the build phase generates the right tests"
+    },
+    {
+      "name": "scaffold-implementer",
+      "category": "implementation",
+      "model": "opus",
+      "blurb": "Build phase 1 — file structure, types, signatures, stubs (no logic)",
+      "description": "Build phase 1 specialist — creates the file structure, types/interfaces, function signatures, and empty stubs for a planned change. Does not implement logic; produces the skeleton the next phases fill in. Constrained by all relevant `.claude/rules/`"
+    },
+    {
+      "name": "happy-path-implementer",
+      "category": "implementation",
+      "model": "opus",
+      "blurb": "Build phase 2 — core successful flow logic (defers errors and edges)",
+      "description": "Build phase 2 specialist — fills in the core successful flow for stubs created by scaffold-implementer. Implements the \"everything works\" version. Defers error handling, edge cases, and validation to the edge-case-implementer phase. Constrained by all relevant `.claude/rules/`"
+    },
+    {
+      "name": "edge-case-implementer",
+      "category": "implementation",
+      "model": "opus",
+      "blurb": "Build phase 3 — input validation, error handling, edge data, defensive code",
+      "description": "Build phase 3 specialist — adds input validation, error handling, edge-case handling, and defensive code to the happy-path implementation. Tightly bound to the `error-handling`, `auth-security`, and `data-protection` rules. Constrained by all relevant `.claude/rules/`"
+    },
+    {
+      "name": "refactor-pass-implementer",
+      "category": "implementation",
+      "model": "opus",
+      "blurb": "Build phase 6 (final) — actively applies code-smells/dry/purity/complexity rules; preempts review findings",
+      "description": "Build phase 5 specialist (final pass before review) — actively applies code-quality rules to the just-implemented code: simplifies, extracts, dedupes, reduces complexity. Tightly bound to `code-smells`, `dry`, `purity`, `complexity` rules. Goal is that the review-coordinator finds little to flag"
+    },
+    {
+      "name": "framework-improver-detector",
       "category": "meta",
       "model": "opus",
-      "blurb": "Self-improvement — update CLAUDE.md, rules, settings, agents",
-      "description": "Self-improvement agent — analyzes project patterns and updates CLAUDE.md, rules, settings, and agent configurations to improve AI effectiveness"
+      "blurb": "Self-improvement (read-only): scans, builds /setup-aware skip-list, writes proposal (invoked by `/improve` Phase 1)",
+      "description": "Self-improvement detector — scans the project, identifies improvements to CLAUDE.md placeholders, .claude/rules patterns, settings, and agent configs. Read-only by tool restriction. Builds the `/setup`-owned skip-list before scanning so improvements respecting onboarding decisions are filtered out at proposal time. Paired with `framework-improver-applier` and orchestrated by `/improve`"
+    },
+    {
+      "name": "framework-improver-applier",
+      "category": "meta",
+      "model": "opus",
+      "blurb": "Self-improvement (write): re-validates skip-list, applies improvements with backup + audit log (invoked by `/improve` Phase 3)",
+      "description": "Self-improvement applier — reads `.claude/state/improve-proposal.md`, re-validates against the `/setup`-owned skip-list, applies improvements (CLAUDE.md placeholder fills, rule pattern updates, settings tweaks), writes audit log to `.claude/state/improve-applied.md`. Refuses to apply items in the skip-list. Paired with `framework-improver-detector` and orchestrated by `/improve`"
+    },
+    {
+      "name": "review-coordinator",
+      "category": "meta",
+      "model": "opus",
+      "blurb": "Synthesizes parallel reviewer output — dedupes, filters, persists state across iterations",
+      "description": "Synthesizes findings from parallel reviewer agents into one consolidated report — dedupes, filters false positives, applies cross-iteration state, classifies the diff into a risk tier, and decides which sub-agents to spawn"
+    },
+    {
+      "name": "planner-coordinator",
+      "category": "meta",
+      "model": "opus",
+      "blurb": "Orchestrates planning specialists — classifies scope, spawns parallel waves, synthesizes one plan",
+      "description": "Orchestrates planning specialists (requirements-clarifier, scope-decomposer, risk-assessor, test-strategy-planner, plus architect/api-designer/database-architect when relevant) and synthesizes their outputs into a single implementation plan"
+    },
+    {
+      "name": "build-coordinator",
+      "category": "meta",
+      "model": "opus",
+      "blurb": "Orchestrates build phases sequentially — scaffold → happy-path → edge-case → tests → docs → refactor",
+      "description": "Orchestrates build phases sequentially — scaffold → happy-path → edge-case → tests → docs → refactor — using the plan from planner-coordinator. Each phase is one specialist; the coordinator manages sequencing, state, and resumption"
+    },
+    {
+      "name": "project-setup-detector",
+      "category": "meta",
+      "model": "opus",
+      "blurb": "First-time onboarding (read-only): inventories repo, runs 17-layer detection, writes proposal (invoked by `/setup` Phase 1)",
+      "description": "First-time onboarding detector — inventories the repo (greenfield vs brownfield), runs 17-layer stack detection with tradeoff-explained options + recommended defaults, writes `.claude/state/setup-proposal.md`. Read-only by tool restriction. Paired with `project-setup-applier` and orchestrated by `/setup`. Distinct from `/improve` (ongoing evolution via the framework-improver detector/applier pair); this owns first-run shape decisions"
+    },
+    {
+      "name": "project-setup-applier",
+      "category": "meta",
+      "model": "opus",
+      "blurb": "First-time onboarding (write): reads confirmed proposal, validates allowlist, snapshots, applies substitutions, writes audit log (invoked by `/setup` Phase 4)",
+      "description": "First-time onboarding applier — reads `.claude/state/setup-proposal.md` (with user-confirmed values), validates the apply allowlist, snapshots existing files, then applies placeholder substitutions to CLAUDE.md, .claude/rules/, .claude/skills/, settings, and .gitignore. Refuses to run if `## Confirmed by user` is empty. Paired with `project-setup-detector` and orchestrated by `/setup`"
+    },
+    {
+      "name": "impact-analyzer",
+      "category": "meta",
+      "model": "opus",
+      "blurb": "On-demand precise impact analysis: greps callers, classifies cascade, scores confidence, writes per-symbol report (invoked by `/impact`)",
+      "description": "On-demand precise impact analysis for a symbol or file. Greps for callers, reads them, classifies the cascade (direct/indirect/test-only), and writes a structured report at `.claude/state/impact-<hash>.md`. Used by `/impact` and callable by review/refactor agents before suggesting changes"
+    },
+    {
+      "name": "docs-staleness-reviewer",
+      "category": "analysis",
+      "model": "opus",
+      "blurb": "Reviews diffs for material changes (lockfile/test/build/framework/ORM/auth swaps, directory restructure, env vars, CI workflows, breaking API) without accompanying CLAUDE.md/AGENTS.md updates. Cites `docs-staleness` rule",
+      "description": "Reviews diffs for material changes (package manager, test framework, build tool, directory layout, env vars, CI workflows, framework/ORM/auth provider swaps, breaking API changes) that landed without a corresponding CLAUDE.md / AGENTS.md / README update. Cites the `docs-staleness` rule. Read-only. Distinct from `framework-improver-detector` which catches drift after-the-fact; this catches it at review time"
     }
   ]
 }
