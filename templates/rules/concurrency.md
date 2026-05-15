@@ -103,6 +103,85 @@ The principle: **concurrency bugs are deterministic — they're only rare.** Mos
 - Idempotency keys (cited by `api-layering`) for workers that may double-process
 - Cron jobs: lock with timeout, or single-instance scheduler
 
+For DB-backed queue tables (transactional outbox, work tables, polling dispatchers) the producer-side atomic claim pattern below is mandatory in addition to consumer-side idempotency.
+
+## Producer → Queue → Worker Dispatch
+
+The pattern: an application writes work items to a queue (DB table, message broker, file system, etc.); a worker reads pending items and produces side effects (HTTP call, message publish, payment, email, file write, etc.). The race lives in the gap between read and side-effect.
+
+**The trap:** "we have idempotency keys, so duplicates are fine" is true for the *receiver* and false for the *producer*. If two workers both read the same item and both emit the side effect, the consumer needs to dedup. If the consumer's dedup is misconfigured, racy itself, or simply absent (a common state for in-progress middleware), duplicates land downstream as customer-visible errors — duplicate invoices, duplicate emails, duplicate charges. The fix has two layers and both are non-negotiable for production-grade systems:
+
+1. **Producer atomically claims the work item before the side effect.**
+2. **Consumer dedupes by idempotency key.**
+
+Both layers, every time. Skipping either is a future incident.
+
+### Atomic claim — make the read-then-side-effect single-owner
+
+**Detect:**
+- Background worker (cron, queueable, scheduled job, daemon, lambda triggered by polling) reading from a queue/outbox table by status filter and dispatching to an external system, with no row lock or claim mechanism
+- `SELECT ... WHERE status = 'pending' LIMIT N` followed by an HTTP/RPC/message-send call — no `FOR UPDATE`, no status flip-and-commit, no `Lock_Owner__c`-style field
+- Multiple instances of the worker can run on different processes / pods / app servers / nodes
+- Code or comments saying "we rely on the consumer to dedup" — fine for the receiver, but it offers zero protection if the producer emits twice and the receiver's dedup races or is missing
+- Worker that reads → mutates in-memory → side-effect → DML, where the DML is after the side-effect (the in-memory mutation is invisible to a contending worker)
+
+**Fix (DB-backed queue):**
+- `SELECT ... FOR UPDATE` (PostgreSQL, MySQL, Oracle, Apex SOQL) — row lock held until the transaction commits or rolls back
+- `SELECT ... FOR UPDATE SKIP LOCKED` (PostgreSQL 9.5+, MySQL 8.0+, Oracle 12c+) — skip rows another worker has claimed; ideal for parallel-worker scale-out
+- `SELECT ... WITH (UPDLOCK, ROWLOCK, READPAST)` (SQL Server) — equivalent intent
+- `findAndModify` / `findOneAndUpdate` with `$set: { status: 'in_flight', owner_id: <workerId>, claimed_at: now }` (MongoDB) — atomic claim in a single round trip
+- For dialects where `FOR UPDATE` conflicts with `ORDER BY` (Apex SOQL is the notable case): two-pass query — Pass 1 picks the candidate Id ordered, no lock; Pass 2 re-fetches by Id with `FOR UPDATE` + re-validates the status filter. The loser's catch handler exits silently; the chain handles the rest.
+- The lock is intentionally held across the side-effect call. Yes, this is the right design: the lock IS what serializes the row across processes.
+
+**Fix (external queue with native at-least-once delivery):**
+- Most brokers handle the producer-side claim natively — one consumer per partition (Kafka), one visibility timeout per message (SQS), one peek-lock holder (Azure Service Bus), one delivery tag (RabbitMQ). Rely on the broker's contract; don't roll your own DB-backed queue when a real broker is available.
+- Prefer `peekLock` over `receiveAndDelete` semantics; explicit `complete` on success, `abandon` on failure → broker redelivers to the next consumer.
+
+**Fix (distributed coordination across instances):**
+- Redis `SETNX` with TTL, Redlock for multi-node Redis
+- etcd / ZooKeeper leases for stronger consistency
+- PostgreSQL `pg_advisory_lock` / MySQL `GET_LOCK` for in-database mutexes
+- Single-instance dispatcher pattern (one leader runs the dispatcher; replicas warm-standby) — k8s leader election, AWS Step Functions, GCP Cloud Scheduler with concurrency=1
+
+### Idempotency at the receiver — defense in depth
+
+The producer's atomic claim prevents your service from emitting duplicates. Receiver idempotency catches duplicates from network retries, replays, manual reprocessing, schema migrations that re-run jobs, and future producer regressions. Both layers, every time.
+
+**Detect:**
+- Receiver inserts/upserts work without an idempotency-key column or unique constraint
+- Idempotency key passed in the request body / message but logged-only, not enforced by a DB unique index or broker dedup setting
+- Receiver's "is this a duplicate" check is a `SELECT` followed by `INSERT` — racy without a unique constraint
+- Broker queue with `requiresDuplicateDetection: false` despite producers sending stable `MessageId`s
+- HTTP receiver that doesn't cache responses by idempotency key — retries with the same key recompute the side effect
+
+**Fix:**
+- Unique index on `idempotency_key` at the receiver's persistence layer
+- `INSERT ... ON CONFLICT DO NOTHING` (PostgreSQL) / `INSERT IGNORE` (MySQL) / `MERGE` (SQL Server) — push the dedup into one atomic statement
+- For HTTP receivers: cache the response keyed by idempotency-key for a window (5–60 min); return the cached response on retries (Stripe-style `Idempotency-Key` header)
+- For message brokers: enable native deduplication (Azure Service Bus `requiresDuplicateDetection` + producer sets `MessageId`; SQS FIFO with `MessageDeduplicationId`; Kafka idempotent producer)
+
+### Transactional outbox specifically
+
+When your service needs to atomically commit a domain change AND publish an event/message to another system:
+
+**Anti-pattern:** commit DB → then publish to broker. The broker publish can fail (network, broker down, timeout). DB and broker drift. Customers see "the action says it succeeded but the downstream didn't get the event."
+
+**Pattern:** in the same DB transaction as the domain change, insert a row into an `outbox` table holding the event payload. A separate worker (cron, scheduled job, change-data-capture stream) reads pending outbox rows and publishes them — using the atomic claim pattern from above.
+
+The outbox dispatcher MUST use atomic claim. A producer-side race in the dispatcher produces duplicate downstream effects even though the original domain change committed exactly once.
+
+### Cross-cutting test approach
+
+Real concurrency cannot be simulated inside most test frameworks' single-transaction test runners. Pragmatic coverage:
+- Unit-test the `is-this-a-contention-error` helper deterministically with a synthesized exception or stub
+- Unit-test the status-filter re-validation path (Pass 2 returning empty when status has advanced)
+- Sandbox or staging: rapid concurrent invocations (two terminals, ApacheBench, k6) — assert exactly-once side effects downstream
+- Production observability: count of distinct work-item IDs in downstream logs per 24h window equals expected dispatched count; alert on drift
+
+### Hit in production
+
+Pattern hit on May 11, 2026 in a Salesforce → Azure Logic App → Billecta invoicing integration: two SF app servers concurrently SELECTed the same Pending row from `Integration_Outbox__c` and both POSTed to the Logic App, producing duplicate invoices in Billecta. The producer's SOQL had no `FOR UPDATE`. The receiver (Logic App) didn't set a `MessageId` on the Service Bus send. The Service Bus queue had `requiresDuplicateDetection: false`. The consumer service had no DB unique index on the idempotency key. *Every* layer of defense was missing — single fix at any layer would have caught the duplicate.
+
 ## Channel / Queue Discipline
 
 **Detect:**
