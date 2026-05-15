@@ -100,6 +100,51 @@ For each new background task / worker / cron:
 - Idempotency for queue consumers?
 - Cron jobs with overlap protection?
 
+#### Pass F2: Producer → Queue → Worker Dispatch (critical)
+
+This pass is the highest-severity check in the agent. The pattern is responsible for a class of bugs that are invisible in dev/test (single instance, no concurrency) and customer-visible in prod (duplicate invoices, duplicate emails, double-charges).
+
+**Search for the producer-side race:**
+
+```bash
+# DB-backed queue tables: SELECT by status filter followed by a side-effect call
+grep -rnE "SELECT.*status.*=.*['\"](pending|new|queued)" {changed-files} 2>/dev/null
+grep -rnE "(findOne|find).*\{.*status.*pending" {changed-files} 2>/dev/null  # Mongoose/Prisma
+grep -rnE "Queueable|Schedulable|@Scheduled|@Cron|cron\.schedule" {changed-files} 2>/dev/null
+grep -rnE "outbox|work_queue|job_queue|task_queue" {changed-files} 2>/dev/null
+```
+
+For each hit, walk the code: does the worker SELECT pending rows and then make an HTTP / RPC / message-send / payment / email call?
+
+**Critical findings (flag as `critical` severity):**
+
+- Worker reads pending rows from a DB table by status filter, then produces a side effect, WITHOUT one of:
+  - `SELECT ... FOR UPDATE` (PostgreSQL/MySQL/Oracle/Apex SOQL) or dialect equivalent
+  - `findOneAndUpdate` atomic claim (MongoDB)
+  - Distributed lock / advisory lock / leader election that guarantees single-owner
+- Worker comment / docstring says "we rely on the consumer to dedup" — this is half the contract; the producer side is missing
+- Outbox dispatcher reads rows and publishes them without claiming first
+- Cron job that polls a queue table and acts on rows without singleton-flight protection
+
+**Important findings (flag as `important` severity):**
+
+- Receiver has no DB unique constraint on `idempotency_key` despite producers sending one — the dedup signal is sent but not enforced
+- Broker has `requiresDuplicateDetection: false` / no `MessageId`-based dedup
+- HTTP receiver doesn't cache responses by idempotency key
+
+**What to look for in the WRONG implementations:**
+
+- `SELECT` followed by in-memory status mutation (`row.status = 'in_flight'`) followed by side effect followed by `UPDATE` — the in-memory mutation is invisible to a contending reader, race remains
+- `SELECT ... WHERE status = 'pending' ORDER BY created_at LIMIT 1` (no lock hint) called from a worker that runs on multiple pods
+- Apex SOQL with `ORDER BY ... FOR UPDATE` — invalid combination; the dialect requires a two-pass query, see `database` rule
+- `claimed_by` field set via `UPDATE` after a non-locking `SELECT` — the SELECT and UPDATE are non-atomic; two workers stamp themselves
+
+**Common false positives (don't flag):**
+
+- Worker that processes a specific Id passed in by the caller (no SELECT scan, no race possible by construction)
+- Worker that consumes from a managed broker (SQS, RabbitMQ, Kafka, Service Bus, Cloud Pub/Sub) — the broker handles producer-side claiming via visibility timeout / peek-lock / consumer-group partitioning
+- Single-instance worker explicitly documented as single-instance (k8s deployment with `replicas: 1` and `Recreate` strategy; cron with `concurrencyPolicy: Forbid`) — confirm the deployment manifest before deciding it's safe
+
 #### Pass G: Channel / Queue Discipline (if used)
 
 For each channel / queue creation:
