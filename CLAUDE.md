@@ -27,6 +27,10 @@ claude-code-framework/
 ├── README.md                    # User-facing documentation
 ├── setup.sh                     # Bash setup wizard
 ├── setup.ps1                    # PowerShell setup wizard
+├── install-global-skill.sh      # Installs global skills into ~/.claude/skills/
+├── install-global-skill.ps1     # PowerShell equivalent
+├── global-skills/               # Account-level skills (→ ~/.claude/skills/), NOT per-repo
+│   └── install-framework/       # /install-framework — bootstrap framework into any repo
 ├── templates/                   # Files copied to target projects
 │   ├── CLAUDE.md.template       # Target project's CLAUDE.md
 │   ├── settings.json            # User-level permissions (~/.claude/)
@@ -62,6 +66,24 @@ Common placeholders:
 - `{{DATABASE_PATTERNS}}` — glob patterns for DB files
 - `{{DEFAULT_MODEL}}` — default Claude model (sonnet)
 - `{{DESIGN_COLOR_RULES}}`, `{{DESIGN_COMPONENT_IMPORTS}}`, `{{DESIGN_ICON_USAGE}}`, `{{DESIGN_CARD_PATTERNS}}`, `{{DESIGN_DARK_MODE}}` — design system conventions
+
+### Non-Interactive Setup (`CCF_*` env vars)
+
+`setup.sh --non-interactive` and `setup.ps1 -NonInteractive` read answers from `CCF_*`
+environment variables instead of prompting. This is what the global `/install-framework` skill
+drives. Interactive mode remains the default. Variables: `CCF_PROJECT_TYPE` (required),
+`CCF_TRACKER`, `CCF_CICD`, `CCF_BASE_BRANCH`, `CCF_NOTIFICATION`, `CCF_PROJECT_SHORT_NAME`,
+`CCF_DESIGN_SYSTEM`, plus `CCF_HOSTING_TARGET` / `CCF_STORAGE_PROVIDER` / `CCF_POSTGRES_PROVIDER`
+for `internal-nextjs-app`. Non-interactive mode never renames git branches. When adding a new
+prompt to the installers, also add its `CCF_*` variable to both the `--non-interactive` resolver
+in `setup.sh` and the resolver in `setup.ps1`.
+
+### Global Skills (`global-skills/`)
+
+`global-skills/` holds account-level skills installed into `~/.claude/skills/` (via
+`install-global-skill.sh` / `.ps1`), NOT copied into target repos by `setup.sh`. Currently:
+`install-framework`. Because these are not per-repo template skills, they do not count toward the
+"26 workflow skills" total.
 
 ### Adding New Skills
 

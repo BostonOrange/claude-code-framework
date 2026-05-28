@@ -102,6 +102,34 @@ bash ~/claude-code-framework/setup.sh
 
 **To roll back:** restore the previous commit of `.claude/` — the installer is idempotent, so the previous state re-applies cleanly if you re-run the older framework's setup script.
 
+## Global `/install-framework` skill
+
+Install the framework into ANY repo without referencing a local clone path — it pulls from GitHub.
+
+One-time setup (registers the skill into `~/.claude/skills/`, where Claude Code CLI/desktop/web pick it up):
+
+```bash
+# from a clone of this repo
+bash install-global-skill.sh        # macOS/Linux/Git Bash
+pwsh -File install-global-skill.ps1 # Windows (PowerShell)
+```
+
+Or fetch just the skill without cloning:
+
+```bash
+mkdir -p ~/.claude/skills/install-framework
+curl -fsSL https://raw.githubusercontent.com/BostonOrange/claude-code-framework/main/global-skills/install-framework/SKILL.md \
+  -o ~/.claude/skills/install-framework/SKILL.md
+```
+
+Then, in any repo, run `/install-framework`. It detects your project type, asks a few questions,
+clones the framework to a temp dir, runs the installer non-interactively, verifies the result, and
+cleans up. Afterward, run the per-repo `/setup` for deep configuration.
+
+**`/install-framework` (global) vs `/setup` (per-repo):** `/install-framework` puts the framework
+into a repo for the first time. `/setup` refines an already-installed framework (17-layer
+detection). They do not overlap.
+
 ### 4. Add Domain Knowledge
 
 Create domain skills with references:
