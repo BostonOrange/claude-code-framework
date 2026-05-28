@@ -1,4 +1,4 @@
-# Claude Code Framework — Interactive Setup Wizard (Windows PowerShell)
+﻿# Claude Code Framework — Interactive Setup Wizard (Windows PowerShell)
 # Usage: cd your-project/ ; & ~/Developer/claude-code-framework/setup.ps1
 
 param(
