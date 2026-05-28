@@ -4,6 +4,7 @@
 param(
     [switch]$DryRun,
     [switch]$Reset,
+    [switch]$NonInteractive,
     [switch]$Help
 )
 
@@ -44,6 +45,90 @@ Write-Host "Project: $PROJECT_NAME"
 Write-Host "Directory: $PROJECT_DIR"
 if ($DryRun) { Write-Host "Mode:    DRY RUN (no changes will be made)" }
 Write-Host ""
+
+# -- Collect configuration (non-interactive resolver OR interactive prompts) --
+
+if ($NonInteractive) {
+    Write-Host "Running in non-interactive mode (reading CCF_* environment variables)."
+
+    $PROJECT_TYPE_NAME = $env:CCF_PROJECT_TYPE
+    if (-not $PROJECT_TYPE_NAME) {
+        Write-Host "ERROR: CCF_PROJECT_TYPE is required in non-interactive mode."
+        exit 1
+    }
+    if ($PROJECT_TYPE_NAME -notin "salesforce", "nodejs", "python", "go", "java", "react", "internal-nextjs-app", "rails", "generic") {
+        Write-Host "ERROR: invalid CCF_PROJECT_TYPE '$PROJECT_TYPE_NAME'."
+        exit 1
+    }
+
+    $HOSTING_TARGET = "not-applicable"; $HOSTING_TARGET_LABEL = "N/A"
+    $STORAGE_PROVIDER = "not-applicable"; $STORAGE_PROVIDER_LABEL = "N/A"
+    $POSTGRES_PROVIDER = "not-applicable"; $POSTGRES_PROVIDER_LABEL = "N/A"
+
+    if ($PROJECT_TYPE_NAME -eq "internal-nextjs-app") {
+        $HOSTING_TARGET = if ($env:CCF_HOSTING_TARGET) { $env:CCF_HOSTING_TARGET } else { "local" }
+        switch ($HOSTING_TARGET) {
+            "local" { $HOSTING_TARGET_LABEL = "Local only" }
+            "vercel" { $HOSTING_TARGET_LABEL = "Vercel" }
+            "azure-container-apps" { $HOSTING_TARGET_LABEL = "Azure Container Apps" }
+            "other" { $HOSTING_TARGET_LABEL = "Other" }
+            default { Write-Host "ERROR: invalid CCF_HOSTING_TARGET '$HOSTING_TARGET'."; exit 1 }
+        }
+        $STORAGE_PROVIDER = if ($env:CCF_STORAGE_PROVIDER) { $env:CCF_STORAGE_PROVIDER } else { "azurite" }
+        switch ($STORAGE_PROVIDER) {
+            "azurite" { $STORAGE_PROVIDER_LABEL = "Local Azurite" }
+            "azure-blob" { $STORAGE_PROVIDER_LABEL = "Azure Blob" }
+            "vercel-blob" { $STORAGE_PROVIDER_LABEL = "Vercel Blob" }
+            default { Write-Host "ERROR: invalid CCF_STORAGE_PROVIDER '$STORAGE_PROVIDER'."; exit 1 }
+        }
+        $POSTGRES_PROVIDER = if ($env:CCF_POSTGRES_PROVIDER) { $env:CCF_POSTGRES_PROVIDER } else { "local-docker" }
+        switch ($POSTGRES_PROVIDER) {
+            "local-docker" { $POSTGRES_PROVIDER_LABEL = "Local Docker Postgres" }
+            "database-url" { $POSTGRES_PROVIDER_LABEL = "Managed Postgres via DATABASE_URL" }
+            "azure-postgres-flexible-server" { $POSTGRES_PROVIDER_LABEL = "Azure Postgres Flexible Server" }
+            default { Write-Host "ERROR: invalid CCF_POSTGRES_PROVIDER '$POSTGRES_PROVIDER'."; exit 1 }
+        }
+    }
+
+    $TRACKER_NAME = if ($env:CCF_TRACKER) { $env:CCF_TRACKER } else { "none" }
+    if ($TRACKER_NAME -notin "ado", "jira", "linear", "github", "none") {
+        Write-Host "ERROR: invalid CCF_TRACKER '$TRACKER_NAME'."
+        exit 1
+    }
+    $ADO_ORG = $env:CCF_ADO_ORG
+    $ADO_PROJECT = $env:CCF_ADO_PROJECT
+    $JIRA_DOMAIN = $env:CCF_JIRA_DOMAIN
+    $JIRA_PROJECT = $env:CCF_JIRA_PROJECT
+    $LINEAR_TEAM = $env:CCF_LINEAR_TEAM
+
+    $CI_NAME = if ($env:CCF_CICD) { $env:CCF_CICD } else { "none" }
+    if ($CI_NAME -notin "github-actions", "gitlab-ci", "circleci", "none") {
+        Write-Host "ERROR: invalid CCF_CICD '$CI_NAME'."
+        exit 1
+    }
+
+    $BASE_BRANCH = if ($env:CCF_BASE_BRANCH) { $env:CCF_BASE_BRANCH } else { "main" }
+
+    $NOTIFY_NAME = if ($env:CCF_NOTIFICATION) { $env:CCF_NOTIFICATION } else { "none" }
+    if ($NOTIFY_NAME -notin "slack", "teams", "discord", "none") {
+        Write-Host "ERROR: invalid CCF_NOTIFICATION '$NOTIFY_NAME'."
+        exit 1
+    }
+
+    $PROJECT_SHORT = if ($env:CCF_PROJECT_SHORT_NAME) { $env:CCF_PROJECT_SHORT_NAME } else { $PROJECT_NAME }
+
+    if ($PROJECT_TYPE_NAME -in "react", "nodejs") {
+        $DESIGN_SYSTEM_NAME = if ($env:CCF_DESIGN_SYSTEM) { $env:CCF_DESIGN_SYSTEM } else { "none" }
+        if ($DESIGN_SYSTEM_NAME -notin "untitled-ui", "shadcn", "custom", "none") {
+            Write-Host "ERROR: invalid CCF_DESIGN_SYSTEM '$DESIGN_SYSTEM_NAME'."
+            exit 1
+        }
+    } elseif ($PROJECT_TYPE_NAME -eq "internal-nextjs-app") {
+        $DESIGN_SYSTEM_NAME = "none"
+    } else {
+        $DESIGN_SYSTEM_NAME = "_backend"
+    }
+} else {
 
 # -- 1. Project Type --
 
@@ -267,6 +352,8 @@ if ($PROJECT_TYPE_NAME -in "react", "nodejs") {
     # Non-frontend projects use the _backend preset
     $DESIGN_SYSTEM_NAME = "_backend"
 }
+
+}  # end non-interactive resolver vs interactive prompts
 
 # Load design system values from config/design-systems.json
 $designSystems = Get-Content "$FRAMEWORK_DIR/config/design-systems.json" -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -493,7 +580,7 @@ Write-Host ""
 # -- Ensure base branch exists --
 
 $isGitRepo = git rev-parse --git-dir 2>$null
-if ($isGitRepo) {
+if ($isGitRepo -and -not $NonInteractive) {
     $currentBranch = git rev-parse --abbrev-ref HEAD 2>$null
     if ($currentBranch -and $currentBranch -ne $BASE_BRANCH) {
         $confirm = Read-Host "Current branch is '$currentBranch'. Rename to '$BASE_BRANCH' and update remote? [y/N]"

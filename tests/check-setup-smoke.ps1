@@ -48,7 +48,7 @@ function Assert-Contains($Path, $Pattern, $Label) {
     }
 }
 
-function Invoke-SetupProcess($Target, $Home, $InputText, [switch]$DryRun) {
+function Invoke-SetupProcess($Target, $Home, $InputText, [switch]$DryRun, [switch]$NonInteractive) {
     New-Item -ItemType Directory -Force -Path $Target, $Home | Out-Null
 
     $inputFile = Join-Path $TmpRoot ([System.Guid]::NewGuid().ToString("N") + ".in")
@@ -59,6 +59,7 @@ function Invoke-SetupProcess($Target, $Home, $InputText, [switch]$DryRun) {
     $pwsh = (Get-Command pwsh -ErrorAction Stop).Source
     $args = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $SetupScript)
     if ($DryRun) { $args += "-DryRun" }
+    if ($NonInteractive) { $args += "-NonInteractive" }
 
     $oldUserProfile = $env:USERPROFILE
     $env:USERPROFILE = $Home
@@ -250,6 +251,36 @@ Assert-Absent (Join-Path $dryTarget "CLAUDE.md") "dry-run does not create CLAUDE
 if ($dryResult.Output -match "Would rename branch 'old' -> 'new'") { Pass "dry-run reports branch rename preview" } else { Fail "dry-run reports branch rename preview" }
 $dryStatus = git -C $dryTarget status --short
 if (-not $dryStatus) { Pass "dry-run leaves git status clean" } else { Fail "dry-run leaves git status clean"; Write-Host $dryStatus }
+
+Write-Host ""
+Write-Host "Non-interactive Node.js target..."
+$niTarget = Join-Path $TmpRoot "ni-node"
+$niHome = Join-Path $TmpRoot "home-ni-node"
+$env:CCF_PROJECT_TYPE = "nodejs"
+$env:CCF_TRACKER = "none"
+$env:CCF_CICD = "none"
+$env:CCF_NOTIFICATION = "none"
+$env:CCF_DESIGN_SYSTEM = "none"
+$env:CCF_BASE_BRANCH = "main"
+$env:CCF_PROJECT_SHORT_NAME = "sample"
+try {
+    $niResult = Invoke-SetupProcess -Target $niTarget -Home $niHome -InputText "" -NonInteractive
+} finally {
+    Remove-Item Env:\CCF_PROJECT_TYPE, Env:\CCF_TRACKER, Env:\CCF_CICD, Env:\CCF_NOTIFICATION, Env:\CCF_DESIGN_SYSTEM, Env:\CCF_BASE_BRANCH, Env:\CCF_PROJECT_SHORT_NAME -ErrorAction SilentlyContinue
+}
+if ($niResult.ExitCode -eq 0) { Pass "non-interactive node setup exits 0" } else { Fail "non-interactive node setup exits 0"; Write-Host ($niResult.Output -split "`n" | Select-Object -First 120) }
+Assert-NoTraceback $niResult "non-interactive node has no PowerShell exception"
+Assert-Exists (Join-Path $niTarget ".claude/skills/develop/SKILL.md") "non-interactive node installs skills"
+Assert-Exists (Join-Path $niTarget "CLAUDE.md") "non-interactive node creates CLAUDE.md"
+Assert-NoOperationalPlaceholders $niTarget "non-interactive node has no operational placeholders"
+
+Write-Host ""
+Write-Host "Non-interactive missing CCF_PROJECT_TYPE fails..."
+$missTarget = Join-Path $TmpRoot "ni-missing"
+$missHome = Join-Path $TmpRoot "home-ni-missing"
+$missResult = Invoke-SetupProcess -Target $missTarget -Home $missHome -InputText "" -NonInteractive
+if ($missResult.ExitCode -ne 0) { Pass "non-interactive without CCF_PROJECT_TYPE exits non-zero" } else { Fail "non-interactive without CCF_PROJECT_TYPE exits non-zero" }
+if ($missResult.Output -match "CCF_PROJECT_TYPE is required") { Pass "non-interactive missing type reports clear error" } else { Fail "non-interactive missing type reports clear error" }
 
 Write-Host ""
 Write-Host "--------------------------------------"
