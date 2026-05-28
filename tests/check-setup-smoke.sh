@@ -226,6 +226,39 @@ else
 fi
 
 echo ""
+echo "Non-interactive Node.js target..."
+NI_TARGET="$TMP_ROOT/ni-node"
+NI_HOME="$TMP_ROOT/home-ni-node"
+NI_OUTPUT="$TMP_ROOT/ni-node.out"
+mkdir -p "$NI_TARGET" "$NI_HOME"
+if (cd "$NI_TARGET" && \
+    CCF_PROJECT_TYPE=nodejs CCF_TRACKER=none CCF_CICD=none CCF_NOTIFICATION=none \
+    CCF_DESIGN_SYSTEM=none CCF_BASE_BRANCH=main CCF_PROJECT_SHORT_NAME=sample \
+    HOME="$NI_HOME" bash "$FRAMEWORK_DIR/setup.sh" --non-interactive >"$NI_OUTPUT" 2>&1); then
+    pass "non-interactive node setup exits 0"
+else
+    fail "non-interactive node setup exits 0"
+    sed -n '1,120p' "$NI_OUTPUT"
+fi
+assert_no_traceback "$NI_OUTPUT" "non-interactive node has no Python traceback"
+assert_file_exists "$NI_TARGET/.claude/skills/develop/SKILL.md" "non-interactive node installs skills"
+assert_file_exists "$NI_TARGET/CLAUDE.md" "non-interactive node creates CLAUDE.md"
+assert_no_unreplaced_placeholders "$NI_TARGET" "non-interactive node has no operational placeholders"
+
+echo ""
+echo "Non-interactive missing CCF_PROJECT_TYPE fails..."
+MISS_TARGET="$TMP_ROOT/ni-missing"
+MISS_HOME="$TMP_ROOT/home-ni-missing"
+MISS_OUTPUT="$TMP_ROOT/ni-missing.out"
+mkdir -p "$MISS_TARGET" "$MISS_HOME"
+if (cd "$MISS_TARGET" && HOME="$MISS_HOME" bash "$FRAMEWORK_DIR/setup.sh" --non-interactive >"$MISS_OUTPUT" 2>&1); then
+    fail "non-interactive without CCF_PROJECT_TYPE exits non-zero"
+else
+    pass "non-interactive without CCF_PROJECT_TYPE exits non-zero"
+fi
+assert_contains "$MISS_OUTPUT" "CCF_PROJECT_TYPE is required" "non-interactive missing type reports clear error"
+
+echo ""
 echo "--------------------------------------"
 echo "  Results: $PASS passed, $FAIL failed"
 echo "--------------------------------------"
