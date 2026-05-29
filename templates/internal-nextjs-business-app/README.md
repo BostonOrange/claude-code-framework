@@ -100,7 +100,7 @@ Prisma is the database tool, but it should stay inside repository modules and `s
 - `src/lib/files/repository.ts`
 - `src/lib/audit-log/repository.ts`
 
-This keeps the app close to the mature Hemfrid backend pattern: routes handle HTTP/auth/validation, repositories own persistence, and services can hold workflow logic as the app grows.
+This keeps the app close to a mature service-layer backend pattern: routes handle HTTP/auth/validation, repositories own persistence, and services can hold workflow logic as the app grows.
 
 ## Security Defaults
 
