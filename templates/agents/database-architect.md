@@ -56,6 +56,36 @@ Check for:
 - Full table scans on large tables
 - Subqueries that could be joins
 
+### Step 5.5: Work-Queue Table Design
+
+If the schema includes a table that looks like a work queue, outbox, jobs table, or task table (status column with values like `pending`, `processing`, `in_flight`, `queued`, `succeeded`, `failed`, etc.), check for the queue-pattern requirements. See `database` rule "Schema Patterns for Work Queue Tables" and `concurrency` rule "Producer → Queue → Worker Dispatch".
+
+**Required columns:**
+- `idempotency_key` with a `UNIQUE` constraint — prevents duplicate enqueues
+- `status` enum/text with at minimum `pending`, `in_flight` (or `processing`), `succeeded`, `failed`, optionally `dead_letter`
+- `attempt_count` + `max_attempts` for retry/dead-letter accounting
+- `next_attempt_at` (nullable timestamp) for backoff scheduling
+- `last_error` text for forensics
+- `created_at` / `updated_at` for audit and FIFO ordering
+
+**Optional but useful:**
+- `claimed_by` (nullable text) — worker identifier holding the active claim, for forensics
+- `claimed_at` (nullable timestamp) — for detecting stuck rows and recovery
+
+**Required indexes:**
+- `(status, next_attempt_at)` for the dispatcher scan
+- `idempotency_key` already unique → indexed implicitly
+- Consider partial index `WHERE status IN ('pending', 'failed')` for very large tables
+
+**Flag missing:**
+- No `idempotency_key` column or no `UNIQUE` constraint on it → duplicate enqueues possible
+- `status` field with no `in_flight` / `processing` value → no place for the producer to stake a claim atomically
+- Composite unique constraint that includes mutable fields → fragile dedup
+- Missing dispatcher-scan index → full table scan on every poll
+
+**Cross-reference for the worker:**
+- If schema looks like a queue, downstream Apex / TypeScript / Python worker code MUST use the producer-side atomic claim pattern. Add a note in the report to verify the worker uses `SELECT ... FOR UPDATE`, `findOneAndUpdate`, distributed lock, or broker-native single-owner semantics. Defer the worker check to `concurrency-reviewer`.
+
 ### Step 6: Report
 
 ```
