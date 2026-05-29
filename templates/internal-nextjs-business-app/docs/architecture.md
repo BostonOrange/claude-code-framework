@@ -24,7 +24,7 @@ The starter uses `Task` as a placeholder business object. For a real app, replac
 
 The important pattern is the same: relational state in Postgres, private objects in blob storage, auth and audit at every boundary, and AI used as a workflow accelerator rather than a hidden source of truth.
 
-Prisma is intentionally treated as an internal persistence tool. Route handlers and pages should not build queries directly; they call repository modules. That gives the same shape as the Hemfrid backend's storage/service boundary while keeping the developer speed and schema safety of Prisma.
+Prisma is intentionally treated as an internal persistence tool. Route handlers and pages should not build queries directly; they call repository modules. That gives the same shape as a mature backend's storage/service boundary while keeping the developer speed and schema safety of Prisma.
 
 ## Local Runtime
 
