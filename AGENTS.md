@@ -1,0 +1,233 @@
+# AGENTS.md — Claude Code Framework
+
+> This file mirrors `CLAUDE.md` so that tools following the `AGENTS.md` convention (e.g. Codex) get the same framework instructions Claude Code does. Codex-format agent and hook configs live in `.codex/`; portable skills live in `.agents/skills/`. Keep this file and `.codex/` in sync with `CLAUDE.md` and `.claude/`.
+
+## Project Overview
+
+This is the **claude-code-framework** — a reusable AI development workflow framework. It provides skills, agents, commands, rules, hooks, and templates that get installed into target projects via `setup.sh` or `setup.ps1`.
+
+**This repo is the framework itself, NOT a target project.** Do not run setup.sh here.
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Skills | Markdown (YAML frontmatter + instructions) |
+| Agents | Markdown (YAML frontmatter + multi-step processes) |
+| Commands | Markdown (YAML frontmatter + steps) |
+| Rules | Markdown (YAML frontmatter with `patterns` + guardrails) |
+| Hooks | Bash scripts |
+| Setup | Bash (`setup.sh`) + PowerShell (`setup.ps1`) |
+| CI/CD templates | GitHub Actions YAML |
+| Config | JSON (settings.json, settings.local.json) |
+
+## System Structure
+
+```
+claude-code-framework/
+├── CLAUDE.md                    # Claude Code instructions
+├── AGENTS.md                    # This file (mirror of CLAUDE.md for AGENTS.md-convention tools)
+├── README.md                    # User-facing documentation
+├── setup.sh                     # Bash setup wizard
+├── setup.ps1                    # PowerShell setup wizard
+├── install-global-skill.sh      # Installs global skills into ~/.claude/skills/
+├── install-global-skill.ps1     # PowerShell equivalent
+├── global-skills/               # Account-level skills (→ ~/.claude/skills/), NOT per-repo
+│   └── install-framework/       # /install-framework — bootstrap framework into any repo
+├── .codex/                      # Codex-format configs for this repo (agents/*.toml, hooks/, hooks.json, config.toml)
+├── .agents/skills/              # Portable skills for the AGENTS.md convention
+├── templates/                   # Files copied to target projects
+│   ├── CLAUDE.md.template       # Target project's CLAUDE.md
+│   ├── settings.json            # User-level permissions (~/.claude/)
+│   ├── settings.local.json      # Project-level permissions
+│   ├── mcp.json                 # MCP server config (→ .mcp.json)
+│   ├── agents/                  # 39 AI agent definitions
+│   ├── commands/                # 10 quick command definitions
+│   ├── internal-nextjs-business-app/ # Vendored app-creator template
+│   ├── rules/                   # 23 file-pattern guardrails
+│   ├── hooks/                   # 7 lifecycle scripts + 1 utility (codebase-index.sh)
+│   └── statusline/              # Status bar config
+├── skills/                      # 26 workflow skills + 1 template
+├── workflows/                   # 4 GitHub Actions CI/CD templates
+├── memory/                      # Memory system templates
+└── docs/                        # Framework documentation
+```
+
+## Key Conventions
+
+### Placeholder System
+
+Templates use `{{PLACEHOLDER}}` syntax. `setup.sh` replaces these with project-specific values at install time.
+
+Common placeholders:
+- `{{BASE_BRANCH}}` — primary integration branch (main/develop)
+- `{{PROJECT_SHORT_NAME}}` — short name for worktree directories
+- `{{TEST_COMMAND}}` — project test runner (npm test, pytest, etc.)
+- `{{FORMAT_COMMAND}}` — project formatter (prettier, black, etc.)
+- `{{TRACKER_FETCH_TICKET}}` — API call to fetch work items
+- `{{API_ROUTE_PATTERNS}}` — glob patterns for rule file scoping
+- `{{SOURCE_PATTERNS}}` — glob patterns for source files (used by auth-security, data-protection, error-handling rules)
+- `{{COMPONENT_PATTERNS}}` — glob patterns for UI components (used by components, design-system rules)
+- `{{DATABASE_PATTERNS}}` — glob patterns for DB files
+- `{{DEFAULT_MODEL}}` — default Claude model (sonnet)
+- `{{DESIGN_COLOR_RULES}}`, `{{DESIGN_COMPONENT_IMPORTS}}`, `{{DESIGN_ICON_USAGE}}`, `{{DESIGN_CARD_PATTERNS}}`, `{{DESIGN_DARK_MODE}}` — design system conventions
+
+### Non-Interactive Setup (`CCF_*` env vars)
+
+`setup.sh --non-interactive` and `setup.ps1 -NonInteractive` read answers from `CCF_*`
+environment variables instead of prompting. This is what the global `/install-framework` skill
+drives. Interactive mode remains the default. Variables: `CCF_PROJECT_TYPE` (required),
+`CCF_TRACKER`, `CCF_CICD`, `CCF_BASE_BRANCH`, `CCF_NOTIFICATION`, `CCF_PROJECT_SHORT_NAME`,
+`CCF_DESIGN_SYSTEM`, plus `CCF_HOSTING_TARGET` / `CCF_STORAGE_PROVIDER` / `CCF_POSTGRES_PROVIDER`
+for `internal-nextjs-app`. Non-interactive mode never renames git branches. When adding a new
+prompt to the installers, also add its `CCF_*` variable to both the `--non-interactive` resolver
+in `setup.sh` and the resolver in `setup.ps1`.
+
+### Global Skills (`global-skills/`)
+
+`global-skills/` holds account-level skills installed into `~/.claude/skills/` (via
+`install-global-skill.sh` / `.ps1`), NOT copied into target repos by `setup.sh`. Currently:
+`install-framework`. Because these are not per-repo template skills, they do not count toward the
+"26 workflow skills" total.
+
+### Adding New Skills
+
+Copy `skills/_template/` and edit `SKILL.md`. Use YAML frontmatter with `name` and `description`. See `docs/skill-authoring.md`.
+
+### Adding New Agents
+
+Create a `.md` file in `templates/agents/` with YAML frontmatter: `name`, `description`, `tools`, `model`. See `docs/agents-commands-rules.md`.
+
+### Adding New Commands
+
+Create a `.md` file in `templates/commands/` with YAML frontmatter: `name`, `description`, `allowed-tools`. Keep commands simple (single-purpose).
+
+### Adding New Rules
+
+Create a `.md` file in `templates/rules/` with YAML frontmatter: `patterns` array. Rules are guardrails, not suggestions.
+
+### Adding New Hooks
+
+Create a `.sh` file in `templates/hooks/`. Wire it up in `templates/settings.local.json` under the `hooks` section.
+
+## Setup Script Architecture
+
+Both `setup.sh` and `setup.ps1` follow the same flow:
+
+1. **Prompt** — project type, internal app hosting/storage/Postgres choices when applicable, tracker, CI/CD, base branch, notification system, project short name, design system
+2. **Build placeholders** — map project type to commands (test, format, deploy, type-check, etc.)
+3. **Copy files** — skills, agents, commands, rules, hooks, settings
+4. **Replace placeholders** — sed (bash) or .Replace() (PowerShell) in all copied files
+5. **Conditional logic** — skip `components.md` and `design-system.md` rules for backend-only projects or when no design system is configured
+6. **Generate extras** — .env template, GitHub Actions workflows, CLAUDE.md, internal app `.env.example` and setup docs when selected
+
+When modifying `setup.sh`, always mirror changes to `setup.ps1`.
+
+## Agent Teams
+
+Spawn pre-configured teams for parallel analysis of the framework:
+
+| Team | Command | Agents |
+|------|---------|--------|
+| **Review** | `/team review` | code-reviewer, security-auditor, ui-ux-reviewer |
+| **Architecture** | `/team architecture` | architect, api-designer, database-architect |
+| **Release** | `/team release` | security-auditor, devops-engineer, performance-optimizer |
+| **Quality** | `/team quality` | code-reviewer, test-writer, performance-optimizer |
+| **Documentation** | `/team documentation` | documentation-writer, api-designer |
+| **Design** | `/team design` | ui-ux-reviewer, performance-optimizer, frontend-architecture-reviewer |
+| **Full** | `/team full` | All 12 agents |
+| **Custom** | `/team custom a b c` | Any combination |
+
+## Agents Available
+
+| Agent | Purpose | Model |
+|-------|---------|-------|
+| `architect` | System design, patterns, scalability | opus |
+| `code-reviewer` | Bugs, security, performance in diffs (broad sweep) | opus |
+| `code-smell-reviewer` | Code smells: long methods, magic numbers, primitive obsession, dead code (cites `code-smells` rule) | opus |
+| `dry-reviewer` | Duplication: 3+ repeated logic (cites `dry` rule) | opus |
+| `purity-reviewer` | Pure functions, side effects, query/command separation, SRP (cites `purity` rule) | opus |
+| `complexity-reviewer` | Function length, cyclomatic complexity, nesting, parameter count (cites `complexity` rule) | opus |
+| `security-auditor` | OWASP audit, credentials, dependencies | opus |
+| `devops-engineer` | CI/CD, containers, infrastructure | opus |
+| `ui-ux-reviewer` | Accessibility, design, responsiveness | opus |
+| `performance-optimizer` | Bundle, queries, caching, memory | opus |
+| `api-designer` | Endpoint design, schemas, versioning | opus |
+| `database-architect` | Schema, indexes, migrations | opus |
+| `test-writer` | Test generation following conventions | opus |
+| `documentation-writer` | API docs, READMEs, guides | opus |
+| `frontend-architecture-reviewer` | FE structure: composition, state, hooks, data flow, render-perf (cites `frontend-architecture` rule) | opus |
+| `architecture-reviewer` | Layering: dependency direction, cross-module reach, circular deps, god modules (cites `architecture-layering` rule) | opus |
+| `api-layering-reviewer` | API structure: controller/service/repo separation, validation placement, error contract (cites `api-layering` rule) | opus |
+| `crypto-reviewer` | OWASP A02: weak hashes, password storage, RNG, encryption modes/IV, JWT, TLS (cites `crypto` rule) | opus |
+| `solid-reviewer` | OCP/LSP/ISP/DIP (cites `solid` rule); SRP is purity-reviewer's domain | opus |
+| `concurrency-reviewer` | Race conditions, TOCTOU, async/lock discipline, mutable shared state, background workers (cites `concurrency` rule) | opus |
+| `observability-reviewer` | OWASP A09: structured logging, log levels, metrics, tracing, audit logs, alerting (cites `observability` rule) | opus |
+| `supply-chain-reviewer` | OWASP A06+A08: lockfiles, pinning, CVE reachability, signing, dev/prod separation, CI integrity (cites `supply-chain` rule) | opus |
+| `requirements-clarifier` | Planning specialist: ambiguity hunt, open questions, missing AC | opus |
+| `scope-decomposer` | Planning specialist: atomic steps, sequencing, parallelism groups | opus |
+| `risk-assessor` | Planning specialist: rollback paths, blast radius, migration risk + mitigations | opus |
+| `test-strategy-planner` | Planning specialist: test levels per planned step | opus |
+| `scaffold-implementer` | Build phase 1: skeleton (file structure, types, signatures, stubs) | opus |
+| `happy-path-implementer` | Build phase 2: core successful flow (defers errors and edges) | opus |
+| `edge-case-implementer` | Build phase 3: validation, errors, edge data (binds error-handling, auth-security, data-protection) | opus |
+| `refactor-pass-implementer` | Build phase 6 (final): actively applies code-smells/dry/purity/complexity rules | opus |
+| `framework-improver-detector` | Self-improvement read-only (invoked by `/improve` Phase 1); scans + builds /setup-aware skip-list + writes proposal | opus |
+| `framework-improver-applier` | Self-improvement write (invoked by `/improve` Phase 3); skip-list re-validation + apply + audit log | opus |
+| `review-coordinator` | Synthesizes parallel reviewer output (dedupe, filter, risk-tier classify, cross-iteration state) | opus |
+| `planner-coordinator` | Orchestrates planning specialists, classifies scope, synthesizes one plan | opus |
+| `build-coordinator` | Orchestrates build phases sequentially (scaffold → happy-path → edge-case → tests → docs → refactor) | opus |
+| `project-setup-detector` | First-time onboarding read-only (invoked by `/setup` Phase 1); 17-layer detection + writes proposal | opus |
+| `project-setup-applier` | First-time onboarding write (invoked by `/setup` Phase 4); allowlist + backup + substitutions + audit log | opus |
+| `impact-analyzer` | On-demand cascade analysis for a symbol/file (invoked by `/impact`); greps callers, classifies, scores confidence | opus |
+| `docs-staleness-reviewer` | Reviews diffs for material changes without CLAUDE.md / AGENTS.md updates; cites `docs-staleness` rule | opus |
+
+> `framework-qa` is available in this repo's own `.claude/agents/` (and mirrored in `.codex/agents/`) but is not a distributable template agent.
+
+## Codex / AGENTS.md Support
+
+This repo ships first-class support for the `AGENTS.md` convention and OpenAI Codex, mirroring the Claude Code setup:
+
+- **`AGENTS.md`** (this file) — mirrors `CLAUDE.md` so non-Claude tools get the same instructions.
+- **`.codex/agents/*.toml`** — 12 Codex-format agent definitions, the same set as the repo's own `.claude/agents/`: api-designer, architect, code-reviewer, database-architect, devops-engineer, documentation-writer, framework-improver, framework-qa, performance-optimizer, security-auditor, test-writer, ui-ux-reviewer. (The 39 agents in the table above are the *distributable* `templates/agents/` set; these 12 are the repo's own working agents.)
+- **`.codex/hooks/`** + **`.codex/hooks.json`** — Codex lifecycle hooks mirroring `.claude/hooks`: `guardrails.sh` on PreToolUse (Bash), `post-edit-sync.sh` on PostToolUse (Edit/Write), and `session-stop.sh` + `post-coding-review.sh` on SessionEnd. Hook commands use repo-relative paths so they work on any clone.
+- **`.codex/config.toml`** — Codex configuration.
+- **`.agents/skills/`** — portable skills (`improve`, `team`).
+
+When updating the framework's agents, hooks, or instructions, keep the `.codex/` and `AGENTS.md` mirrors in sync with their `.claude/` / `CLAUDE.md` counterparts.
+
+## Testing Changes
+
+After modifying the framework, test by running setup in a temp directory:
+
+```bash
+mkdir /tmp/test-project && cd /tmp/test-project && git init
+bash ~/Developer/claude-code-framework/setup.sh
+# Verify: all files copied, placeholders replaced, no {{...}} remaining
+grep -r "{{" .claude/ CLAUDE.md | grep -v ".git"
+```
+
+## Version Control
+
+- **Branch**: `main`
+- Commit messages follow conventional format: `Add`, `Fix`, `Update`, `Remove`
+- Co-author attribution for AI-assisted commits
+
+## Self-Improvement
+
+**Before ending any session where framework files were modified**, spawn `/improve` (which orchestrates `framework-improver-detector` → `framework-improver-applier`) in the background. This keeps CLAUDE.md, AGENTS.md, README.md, docs, and setup scripts in sync with the actual framework state.
+
+Additionally, run the `framework-qa` agent to validate that all counts and tables are consistent across README, CLAUDE.md template, setup scripts, and docs.
+
+These agents are not launched by a hidden mutating hook. They are an explicit contributor workflow enforced by this repo's instructions, with deterministic tests as the hard gate.
+
+### How the self-improvement system works
+
+| Layer | Mechanism | When | What |
+|-------|-----------|------|------|
+| **Hook** | `guardrails.sh` (PreToolUse) | Before every Bash command | Blocks dangerous ops (deploys, migrations, force push) |
+| **Hook** | `post-edit-sync.sh` (PostToolUse) | After every Edit/Write | Flags which docs need updating based on what changed |
+| **Agent** | `framework-improver-detector` + `framework-improver-applier` (via `/improve`) | End of every session with changes | Detector scans + builds skip-list (read-only); applier validates skip-list + applies + audit log |
+| **Agent** | `framework-qa` | End of every session with changes | Validates all doc counts and tables match actual files |
+| **Tests** | `tests/run-all.sh` | Before PR / CI | Deterministic hard gate for counts, placeholders, templates, guardrails, setup smoke, and dogfood drift |
+| **CLAUDE.md / AGENTS.md** | This instruction | Always | Enforces the above as non-optional behavior |
