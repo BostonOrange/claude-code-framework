@@ -6,6 +6,7 @@ import { uploadPrivateBlob } from "@/lib/blob/client";
 import { createFileObject } from "@/lib/files/repository";
 import { jsonError } from "@/lib/http/json";
 import { clientIp, isRateLimited } from "@/lib/http/rate-limit";
+import { usesBlobStorage } from "@/lib/project-config";
 
 export const runtime = "nodejs";
 
@@ -14,6 +15,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 export async function POST(request: NextRequest) {
   const user = await requireApiUser(request);
   if (!user) return jsonError("Unauthorized", 401);
+  if (!usesBlobStorage()) return jsonError("Blob upload is not enabled for this local setup mode.", 409);
 
   if (isRateLimited(`${user.id}:${clientIp(request)}`, "files", 20, 60_000)) {
     return jsonError("Too many upload requests.", 429);

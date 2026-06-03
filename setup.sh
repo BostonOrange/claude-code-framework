@@ -1297,9 +1297,9 @@ if [ "$PROJECT_TYPE_NAME" = "internal-nextjs-app" ]; then
 fi
 echo ""
 echo "Files created:"
-echo "  .claude/skills/         — 26 workflow skills (incl. /team, /improve, /setup, /plan, /build, /iterative-review, /impact, /index, /search, /app-blueprint, /generate-internal-app)"
+echo "  .claude/skills/         — 27 workflow skills (incl. /team, /improve, /setup, /plan, /build, /iterative-review, /impact, /index, /search, /app-blueprint, /generate-internal-app, /promote)"
 echo "  .claude/agents/         — 39 AI agents (21 analysis + 6 implementation + 4 planning + 8 meta)"
-echo "  .claude/commands/       — 10 quick commands (incl. app-blueprint, generate-internal-app, generate-feature, port-vercel)"
+echo "  .claude/commands/       — 11 quick commands (incl. app-blueprint, generate-internal-app, generate-feature, port-vercel, promote)"
 echo "  .claude/rules/          — 23 coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components, code-smells, dry, purity, complexity, frontend-architecture, architecture-layering, api-layering, crypto, solid, concurrency, observability, supply-chain, secrets-management, docs-staleness)"
 echo "  .claude/hooks/          — 7 lifecycle hooks + 1 utility (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit, codebase-index)"
 echo "  .claude/settings.local.json — project permissions, hooks"

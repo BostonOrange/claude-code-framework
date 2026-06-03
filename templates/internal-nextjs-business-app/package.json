@@ -6,8 +6,11 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "dev:next": "next dev -p 3000",
+    "start-here": "node scripts/start-here.mjs",
+    "first-run": "node scripts/start-here.mjs",
     "setup": "node scripts/setup-dev.mjs",
     "doctor": "node scripts/doctor.mjs",
+    "check-prereqs": "node scripts/doctor.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

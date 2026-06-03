@@ -51,7 +51,7 @@ Check memory for known environment aliases:
 |-------------|------------|
 | "Shared dev org is nexus_dev" | Pre-select for deployment |
 | "CI sandboxes: CI, CI2, DRYRUN1, DRYRUN2" | Skip these when listing user options |
-| "Production alias is keyto_prod" | Add confirmation gate before any prod operation |
+| "Production alias is acme_prod" | Add confirmation gate before any prod operation |
 
 **When to save:** After user confirms which org to deploy to.
 

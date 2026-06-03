@@ -16,7 +16,10 @@ AI-enabled Next.js boilerplate for internal tools. It starts with the plumbing m
 
 ## Quick Start
 
+If this is your first time using the pilot starter, start with `START_HERE.md`.
+
 ```bash
+npm run doctor
 npm install
 npm run dev
 ```
@@ -36,6 +39,7 @@ Then open `http://localhost:3000` and sign in as the demo admin.
 
 ```bash
 npm run doctor       # Check local prerequisites
+npm run check-prereqs # Same as doctor
 npm run setup        # Start services, sync schema, seed data
 npm run dev          # Setup + Next.js dev server
 npm run db:generate  # Generate Prisma client

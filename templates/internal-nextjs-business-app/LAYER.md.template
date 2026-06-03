@@ -1,0 +1,59 @@
+# Project Layer
+
+This file is **stamped at provisioning time** by the provisioning system that created this repo (typically an internal portal with SSO). It is the single source of truth for who owns this project and what deployment layer it sits at. IT reads this file when reviewing promotion requests.
+
+**Filename rule:** the provisioning system replaces every `<<intake:...>>` token below and renames the file from `LAYER.md.template` → `LAYER.md`. The `.template` suffix is the visible marker that stamping has not yet happened. If you are reading this file at `LAYER.md.template`, the provisioning step did not run — fix that before doing anything else.
+
+If you cloned this template directly without going through the provisioning system, fill the tokens by hand and rename the file. Do not delete it.
+
+---
+
+## Project
+
+| Field | Value |
+|---|---|
+| Name | <<intake:project_name>> |
+| Slug | <<intake:project_slug>> |
+| Description | <<intake:project_description>> |
+| Who it's for | <<intake:project_who>> |
+| Why it exists | <<intake:project_why>> |
+
+## Ownership
+
+| Field | Value |
+|---|---|
+| Owner | <<intake:owner_display>> <<<intake:owner_email>>> |
+| Division | <<intake:division>> |
+| Expected users | <<intake:expected_users>> |
+
+## Layer
+
+| Field | Value |
+|---|---|
+| Current layer | <<intake:layer>> |
+| Provisioned at | <<intake:provisioned_at>> |
+| From template version | <<intake:template_version>> |
+
+A new project always starts at **Layer 1**. To request promotion to Layer 2, the owner runs `/promote` from a clean working tree, addresses the findings, and submits the resulting report to IT. See `docs/deployment-layers.md` for what each layer requires.
+
+## Promotion history
+
+When this project is promoted between layers, append an entry below.
+
+<!--
+- 2026-MM-DD — Promoted from Layer 1 to Layer 2 by <reviewer>. Findings: <link>. Risk-accepted: <list or "none">.
+-->
+
+---
+
+## What changes when you promote
+
+The Layer 2 promotion is **configuration, not a rewrite**. The Layer 1 → Layer 2 swaps you'll make:
+
+- `AUTH_MODE=oidc` and Entra app registration values in your hosting provider's secret store
+- `DATABASE_URL` pointing at a hosted Postgres (with backups enabled)
+- Blob storage connection string pointing at hosted Azure Storage
+- A real `AI_PROVIDER` if AI features are used
+- This file's `Current layer` updated to `2` after IT sign-off
+
+Do **not** edit application code to "prepare" for Layer 2 — the code is already prepared. If you find yourself needing to, that's a bug in the framework; report it.

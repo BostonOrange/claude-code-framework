@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
 
 import { isDatabaseHealthy } from "@/lib/db/health";
+import { usesBlobStorage, usesLocalDatabase } from "@/lib/project-config";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  const db: "ok" | "error" = (await isDatabaseHealthy()) ? "ok" : "error";
+  const db: "ok" | "error" | "not_required" = usesLocalDatabase()
+    ? (await isDatabaseHealthy()) ? "ok" : "error"
+    : "not_required";
 
-  const blob = process.env.AZURE_STORAGE_CONNECTION_STRING ? "configured" : "not_configured";
-  const status = db === "ok" ? "ok" : "degraded";
+  const blob = usesBlobStorage()
+    ? process.env.AZURE_STORAGE_CONNECTION_STRING ? "configured" : "not_configured"
+    : "not_required";
+  const status = db === "error" ? "degraded" : "ok";
 
   return NextResponse.json(
     {

@@ -15,7 +15,7 @@
 │                                                                      │
 │  ┌─────────────────┐  ┌──────────────┐  ┌──────────────────────┐     │
 │  │ Workflow        │  │ Integration  │  │ Domain Knowledge     │     │
-│  │ Skills (26)     │  │ Adapters     │  │ Skills               │     │
+│  │ Skills (27)     │  │ Adapters     │  │ Skills               │     │
 │  │                 │  │              │  │                      │     │
 │  │ /develop        │  │ Tracker:     │  │ /your-domain         │     │
 │  │ /validate       │  │  ADO/Jira/   │  │   references/        │     │
@@ -360,7 +360,8 @@ your-project/
 │   │   ├── app-blueprint.md
 │   │   ├── generate-internal-app.md
 │   │   ├── generate-feature.md
-│   │   └── port-vercel.md
+│   │   ├── port-vercel.md
+│   │   └── promote.md
 │   ├── rules/                         # File-pattern-scoped guardrails
 │   │   ├── api-routes.md
 │   │   ├── components.md
@@ -396,10 +397,11 @@ your-project/
 │   │   ├── validate/SKILL.md
 │   │   ├── factory/SKILL.md
 │   │   ├── team/SKILL.md              # Agent team spawning
-│   │   ├── setup/SKILL.md             # First-time onboarding (15-layer detection)
+│   │   ├── setup/SKILL.md             # First-time onboarding (17-layer detection)
 │   │   ├── improve/SKILL.md           # Framework self-improvement
 │   │   ├── app-blueprint/SKILL.md     # Internal app blueprint JSON
 │   │   ├── generate-internal-app/SKILL.md
+│   │   ├── promote/SKILL.md           # Layer 2 promotion evidence package
 │   │   ├── your-domain/
 │   │   │   ├── SKILL.md
 │   │   │   └── references/

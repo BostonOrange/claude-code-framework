@@ -1,16 +1,19 @@
 :root {
-  --bg: #f5f7fa;
+  --bg: #f8fafc;
   --panel: #ffffff;
   --panel-soft: #f9fafb;
-  --text: #172033;
-  --muted: #637083;
-  --line: #dce3ea;
-  --primary: #176b87;
-  --primary-strong: #0f4f63;
-  --green: #1d7f55;
-  --amber: #a16207;
+  --text: #101828;
+  --muted: #475467;
+  --subtle: #667085;
+  --line: #e4e7ec;
+  --primary: #044dde;
+  --primary-strong: #033fb5;
+  --primary-soft: #eef3ff;
+  --green: #067647;
+  --amber: #b54708;
   --red: #b42318;
-  --shadow: 0 18px 48px rgba(23, 32, 51, 0.08);
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 12px 32px rgba(16, 24, 40, 0.08);
+  --focus-ring: 0 0 0 4px rgba(4, 77, 222, 0.14);
 }
 
 * {
@@ -26,7 +29,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 a {
@@ -55,7 +58,8 @@ select {
   padding: 0 28px;
   background: rgba(255, 255, 255, 0.94);
   border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(16px);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  backdrop-filter: blur(14px);
 }
 
 .brand {
@@ -66,6 +70,7 @@ select {
 
 .brand strong {
   font-size: 16px;
+  letter-spacing: 0;
 }
 
 .brand span,
@@ -96,13 +101,135 @@ select {
 
 .page-header h1 {
   margin: 0 0 6px;
-  font-size: 28px;
+  font-size: 30px;
   line-height: 1.15;
+  letter-spacing: 0;
 }
 
 .page-header p {
   margin: 0;
   color: var(--muted);
+}
+
+.hero-canvas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.58fr);
+  gap: 20px;
+  align-items: end;
+  margin-bottom: 18px;
+  padding: 24px;
+  color: var(--text);
+  background: linear-gradient(135deg, #fff 0%, #f8faff 58%, #eef3ff 100%);
+  border: 1px solid #d6e0ff;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.hero-canvas h2 {
+  max-width: 780px;
+  margin: 0 0 8px;
+  font-size: 28px;
+  line-height: 1.16;
+  letter-spacing: 0;
+}
+
+.hero-canvas p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.metric-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.metric-strip div {
+  min-width: 0;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.metric-strip span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--subtle);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.metric-strip strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--primary-strong);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.brief-section {
+  margin-bottom: 18px;
+}
+
+.canvas-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.canvas-panel {
+  min-width: 0;
+  padding: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.canvas-panel h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+.check-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.check-list li {
+  position: relative;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.42;
+}
+
+.check-list li::before {
+  position: absolute;
+  top: 0.55em;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  content: "";
+  background: var(--primary);
+  border-radius: 999px;
 }
 
 .grid {
@@ -116,7 +243,7 @@ select {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
 }
 
 .section + .section {
@@ -134,6 +261,7 @@ select {
 .section-header h2 {
   margin: 0;
   font-size: 18px;
+  letter-spacing: 0;
 }
 
 .section-header p {
@@ -174,14 +302,44 @@ select {
   gap: 8px;
 }
 
+.brief-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.brief-grid div {
+  padding: 14px;
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.brief-grid dt {
+  margin-bottom: 6px;
+  color: var(--primary-strong);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.brief-grid dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .pill {
   display: inline-flex;
   align-items: center;
   min-height: 26px;
   padding: 0 9px;
   color: var(--primary-strong);
-  background: #e8f4f7;
-  border: 1px solid #c8e2e9;
+  background: var(--primary-soft);
+  border: 1px solid #b9c9ff;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
@@ -190,8 +348,8 @@ select {
 
 .pill.todo {
   color: var(--muted);
-  background: #eef1f4;
-  border-color: #dde4eb;
+  background: #f2f4f7;
+  border-color: var(--line);
 }
 
 .pill.doing {
@@ -234,6 +392,14 @@ select {
   border-radius: 8px;
 }
 
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  outline: 0;
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+}
+
 .field textarea {
   min-height: 120px;
   resize: vertical;
@@ -264,6 +430,11 @@ select {
   background: var(--primary-strong);
 }
 
+.button:focus-visible {
+  outline: 0;
+  box-shadow: var(--focus-ring);
+}
+
 .button.secondary {
   color: var(--text);
   background: #fff;
@@ -282,10 +453,24 @@ select {
 .advice {
   white-space: pre-wrap;
   padding: 14px;
-  color: #12202b;
-  background: #eef7f5;
-  border: 1px solid #b8ddd5;
+  color: var(--text);
+  background: var(--primary-soft);
+  border: 1px solid #b9c9ff;
   border-radius: 8px;
+  line-height: 1.45;
+}
+
+.prompt-box {
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  margin: 0 0 12px;
+  padding: 14px;
+  color: var(--text);
+  background: var(--primary-soft);
+  border: 1px solid #b9c9ff;
+  border-radius: 8px;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -354,7 +539,20 @@ select {
     flex-direction: column;
   }
 
+  .hero-canvas,
   .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .canvas-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .brief-grid {
     grid-template-columns: 1fr;
   }
 

@@ -1121,9 +1121,9 @@ if ($PROJECT_TYPE_NAME -eq "internal-nextjs-app") {
 }
 Write-Host ""
 Write-Host "Files created:"
-Write-Host "  .claude/skills/         - 26 workflow skills (incl. /team, /improve, /setup, /plan, /build, /iterative-review, /impact, /index, /search, /app-blueprint, /generate-internal-app)"
+Write-Host "  .claude/skills/         - 27 workflow skills (incl. /team, /improve, /setup, /plan, /build, /iterative-review, /impact, /index, /search, /app-blueprint, /generate-internal-app, /promote)"
 Write-Host "  .claude/agents/         - 39 AI agents (21 analysis + 6 implementation + 4 planning + 8 meta)"
-Write-Host "  .claude/commands/       - 10 quick commands (incl. app-blueprint, generate-internal-app, generate-feature, port-vercel)"
+Write-Host "  .claude/commands/       - 11 quick commands (incl. app-blueprint, generate-internal-app, generate-feature, port-vercel, promote)"
 Write-Host "  .claude/rules/          - 23 coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components, code-smells, dry, purity, complexity, frontend-architecture, architecture-layering, api-layering, crypto, solid, concurrency, observability, supply-chain, secrets-management, docs-staleness)"
 Write-Host "  .claude/hooks/          - 7 lifecycle hooks + 1 utility (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit, codebase-index)"
 Write-Host "  .claude/settings.local.json - project permissions, hooks"
