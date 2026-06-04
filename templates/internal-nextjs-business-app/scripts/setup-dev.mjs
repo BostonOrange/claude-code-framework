@@ -8,6 +8,14 @@ import { spawn } from "node:child_process";
 const root = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const noDocker = process.argv.includes("--no-docker");
 const noSeed = process.argv.includes("--no-seed");
+const localPersistenceKinds = new Set([
+  "memory",
+  "folder",
+  "sqlite",
+  "local-postgres",
+  "full-stack",
+  "review-required",
+]);
 
 function log(message) {
   process.stdout.write(`${message}\n`);
@@ -84,6 +92,31 @@ function loadEnvFile() {
   }
 }
 
+function localPersistenceKind() {
+  if (localPersistenceKinds.has(process.env.APP_LOCAL_PERSISTENCE)) {
+    return process.env.APP_LOCAL_PERSISTENCE;
+  }
+
+  const blueprintPath = join(root, "PROJECT_BLUEPRINT.json");
+  if (!existsSync(blueprintPath)) return "full-stack";
+
+  try {
+    const parsed = JSON.parse(readFileSync(blueprintPath, "utf8"));
+    const kind = parsed?.localPersistenceKind;
+    return localPersistenceKinds.has(kind) ? kind : "full-stack";
+  } catch {
+    return "full-stack";
+  }
+}
+
+function needsLocalDatabase(kind) {
+  return kind === "local-postgres" || kind === "full-stack";
+}
+
+function needsBlobStorage(kind) {
+  return kind === "full-stack";
+}
+
 function waitForPort(port, host = "127.0.0.1", timeoutMs = 30_000) {
   const start = Date.now();
   return new Promise((resolve, reject) => {
@@ -142,24 +175,40 @@ async function main() {
   ensureEnvFile();
   loadEnvFile();
   log(`Using local env ${envFingerprint()}.`);
+  const persistenceKind = localPersistenceKind();
+  const databaseRequired = needsLocalDatabase(persistenceKind);
+  const blobRequired = needsBlobStorage(persistenceKind);
+  log(`Local persistence mode: ${persistenceKind}.`);
 
-  if (!noDocker) {
+  if (!noDocker && (databaseRequired || blobRequired)) {
     await ensureCommand("docker", "Install Docker Desktop or rerun with --no-docker.");
-    log("Starting Postgres and Azurite.");
-    await run("docker", ["compose", "up", "-d", "postgres", "azurite"]);
-    await waitForPort(databasePort());
-    await waitForPort(10000);
+    const services = [
+      ...(databaseRequired ? ["postgres"] : []),
+      ...(blobRequired ? ["azurite"] : []),
+    ];
+    log(`Starting ${services.join(" and ")}.`);
+    await run("docker", ["compose", "up", "-d", ...services]);
+    if (databaseRequired) await waitForPort(databasePort());
+    if (blobRequired) await waitForPort(10000);
+  } else if (databaseRequired || blobRequired) {
+    log("Skipping Docker startup because --no-docker was passed.");
+  } else {
+    log("Skipping Docker services; this setup mode does not need local Postgres or Azurite.");
   }
 
   log("Generating Prisma client.");
   await execPackageBin("prisma", ["generate"]);
 
-  log("Syncing database schema.");
-  await execPackageBin("prisma", ["db", "push"]);
+  if (databaseRequired) {
+    log("Syncing database schema.");
+    await execPackageBin("prisma", ["db", "push"]);
 
-  if (!noSeed) {
-    log("Seeding demo data.");
-    await execPackageBin("tsx", ["prisma/seed.ts"]);
+    if (!noSeed) {
+      log("Seeding demo data.");
+      await execPackageBin("tsx", ["prisma/seed.ts"]);
+    }
+  } else {
+    log("Skipping database schema sync and seed data for this setup mode.");
   }
 
   log("Local stack is ready.");

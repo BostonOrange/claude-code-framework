@@ -21,6 +21,9 @@ This repo is a reusable Next.js internal-tools starter. Keep changes local-first
 - Add audit logs for business state changes, file uploads, permission changes, and destructive actions.
 - Store relational workflow state in Postgres and private binary/object data in blob storage.
 - Prefer narrow, boring models first. Expand once the workflow is proven by users.
+- Read `LOCAL_BASELINE.md` and `docs/design-system.md` before changing UI or local infrastructure.
+- Follow the design system in `docs/design-system.md`: business-first wording, the project brand color, semantic tokens, and no generic starter copy on user-facing screens.
+- Use mock data first for external integrations. Do not ask for real credentials until the owner explicitly approves that step.
 
 ## Commands
 

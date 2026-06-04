@@ -59,9 +59,9 @@ The setup wizard asks:
 - **Design system** for frontend projects (Untitled UI, shadcn/ui, custom, or None)
 
 Then generates:
-- `.claude/skills/` — 26 workflow skills adapted to your stack (incl. `/team`, `/improve`, `/setup`, `/plan`, `/build`, `/iterative-review`, `/impact`, `/index`, `/search`, `/app-blueprint`, `/generate-internal-app`)
+- `.claude/skills/` — 27 workflow skills adapted to your stack (incl. `/team`, `/improve`, `/setup`, `/plan`, `/build`, `/iterative-review`, `/impact`, `/index`, `/search`, `/app-blueprint`, `/generate-internal-app`, `/promote`)
 - `.claude/agents/` — 39 AI agents (21 analysis + 6 implementation + 4 planning + 8 meta, all opus)
-- `.claude/commands/` — 10 quick commands (incl. app-blueprint, generate-internal-app, generate-feature, port-vercel)
+- `.claude/commands/` — 11 quick commands (incl. app-blueprint, generate-internal-app, generate-feature, port-vercel, promote)
 - `.claude/rules/` — 23 file-pattern-scoped coding guardrails (api-routes, tests, database, config, error-handling, auth-security, data-protection, design-system, components, code-smells, dry, purity, complexity, frontend-architecture, architecture-layering, api-layering, crypto, solid, concurrency, observability, supply-chain, secrets-management, docs-staleness)
 - `.claude/hooks/` — 7 lifecycle hooks + 1 utility (guardrails, post-edit-sync, session-start, session-stop, post-coding-review, pre-commit, codebase-index)
 - `.claude/settings.local.json` — project permissions, hooks
@@ -156,6 +156,7 @@ mkdir -p .claude/skills/my-domain/references/
 | Reviewer | `/team review` | Parallel code + security + UX review |
 | DevOps | `/team release` | Release readiness check |
 | DevOps | `/port-vercel` | Prepare Vercel env/deploy guidance without forking the app |
+| DevOps / IT | `/promote` | Produce Layer 2 promotion evidence for the internal app |
 | Any | `/factory TICKET-123` | End-to-end: readiness → develop → validate → PR → deploy |
 | Any | `/improve` | Auto-evolve CLAUDE.md and .claude/ config from project state |
 
@@ -191,6 +192,7 @@ mkdir -p .claude/skills/my-domain/references/
 | `/scaffold-design-system` | Scaffold design system tokens, components, and theme config |
 | `/app-blueprint` | Convert internal business app intent into structured JSON |
 | `/generate-internal-app` | Adapt the internal Next.js app template from a blueprint |
+| `/promote` | Produce a Layer 2 promotion evidence package for the internal app |
 
 ### AI Agents (39 specialized teammates)
 
@@ -265,6 +267,7 @@ mkdir -p .claude/skills/my-domain/references/
 | `/generate-internal-app` | Generate the internal app from a blueprint |
 | `/generate-feature` | Add one blueprint-backed feature slice |
 | `/port-vercel` | Prepare Vercel docs/env guidance without forking the app |
+| `/promote` | Produce Layer 2 promotion evidence for IT review |
 
 ### Rules (automatic guardrails)
 
@@ -486,6 +489,10 @@ Edit `.claude/skills/factory/SKILL.md` to add/remove pipeline stages.
 | `docs/troubleshooting.md` | Common issues: hooks, placeholders, Windows paths, MCP, agents |
 | `docs/contributing.md` | How to extend the framework — parity rule, adding skills/agents/rules/hooks, testing workflow |
 | `docs/examples/` | Example configs for Salesforce, Next.js, Python API projects |
+| `templates/internal-nextjs-business-app/START_HERE.md` | Pilot-user first-run guide for the Next.js business-app starter |
+| `templates/internal-nextjs-business-app/docs/deployment-layers.md` | Layer 1/2/3 model for the Next.js business-app starter — definitions, control matrix, Layer 2 promotion checklist. Lives with the template because the layer concept is coupled to that template's auth/hosting/data model. |
+| `templates/internal-nextjs-business-app/docs/intake-placeholders.md` | The `<<intake:*>>` tokens the business-app starter expects a provisioning system to stamp at repo-creation time |
+| `templates/internal-nextjs-business-app/docs/manual-provisioning.md` | v0 pilot runbook for manually creating and stamping a private repo before a portal exists |
 
 ## Files Reference
 
@@ -550,7 +557,8 @@ claude-code-framework/
 │   │   ├── app-blueprint.md
 │   │   ├── generate-internal-app.md
 │   │   ├── generate-feature.md
-│   │   └── port-vercel.md
+│   │   ├── port-vercel.md
+│   │   └── promote.md
 │   ├── internal-nextjs-business-app/ # Vendored app-creator template
 │   ├── rules/                   # File-pattern guardrails
 │   │   ├── api-routes.md
@@ -611,7 +619,8 @@ claude-code-framework/
 │   ├── mock-endpoint/           # Mock API endpoints
 │   ├── scaffold-design-system/  # Design system scaffolding
 │   ├── app-blueprint/           # Internal app blueprint JSON
-│   └── generate-internal-app/   # Internal app generation workflow
+│   ├── generate-internal-app/   # Internal app generation workflow
+│   └── promote/                 # Layer 2 promotion evidence package
 ├── workflows/                   # CI/CD templates
 │   ├── factory-validate.yml     # Deploy PR to test env
 │   ├── factory-auto-merge.yml   # Auto-merge after approval

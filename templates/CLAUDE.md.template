@@ -43,6 +43,7 @@
 | `/generate-internal-app` | Generate the internal app from a blueprint |
 | `/generate-feature` | Add one blueprint-backed feature slice |
 | `/port-vercel` | Prepare Vercel docs/env guidance without forking the app |
+| `/promote` | Produce Layer 2 promotion evidence for IT review |
 
 ## Skills Available
 
@@ -74,6 +75,7 @@
 | `/scaffold-design-system` | Bootstrap design tokens, base components, and CLAUDE.md design conventions |
 | `/app-blueprint` | Convert internal business app intent into structured JSON |
 | `/generate-internal-app` | Adapt the internal Next.js app template from a blueprint |
+| `/promote` | Produce a Layer 2 promotion evidence package for the internal app |
 
 ## Agent Teams
 

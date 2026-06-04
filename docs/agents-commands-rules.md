@@ -202,7 +202,7 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `impact-analyzer` | Read, Glob, Grep, Bash | opus | On-demand cascade analysis — greps callers, classifies, scores confidence (invoked by `/impact`) |
 | `docs-staleness-reviewer` | Read, Glob, Grep, Bash | opus | Reviews diffs for material changes without CLAUDE.md / AGENTS.md updates (cites `docs-staleness` rule) |
 
-### Commands (10)
+### Commands (11)
 
 | Command | Purpose |
 |---------|---------|
@@ -216,6 +216,7 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `/generate-internal-app` | Generate the internal app from a blueprint |
 | `/generate-feature` | Add one blueprint-backed feature slice |
 | `/port-vercel` | Prepare Vercel docs/env guidance without forking the app |
+| `/promote` | Produce Layer 2 promotion evidence for IT review |
 
 ### Rules (23)
 
@@ -243,6 +244,7 @@ The framework maintains a canonical registry of all distributable agents at `con
 | `observability` | Source files | Structured logging, log levels, metrics, tracing, audit logs, alerting, correlation (cited by `observability-reviewer`; OWASP A09) |
 | `supply-chain` | Manifests / Dockerfiles / CI workflows | Lockfile hygiene, pinning, CVE reachability, signing, dev/prod separation, deserialization, pipeline integrity (cited by `supply-chain-reviewer`; OWASP A06+A08) |
 | `secrets-management` | Source files | Storage, loading, rotation, scanning, in-code discipline, service identity (cited by `security-auditor`) |
+| `docs-staleness` | All files (`**/*`) | Material project-shape changes (package manager, test/build tool, directory layout, env vars, CI workflows) must update CLAUDE.md / AGENTS.md / docs in the same change (cited by `docs-staleness-reviewer`) |
 
 ### Hooks (7 lifecycle hooks + 1 utility)
 

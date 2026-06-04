@@ -37,12 +37,12 @@ claude-code-framework/
 │   ├── settings.local.json      # Project-level permissions
 │   ├── mcp.json                 # MCP server config (→ .mcp.json)
 │   ├── agents/                  # 39 AI agent definitions
-│   ├── commands/                # 10 quick command definitions
+│   ├── commands/                # 11 quick command definitions
 │   ├── internal-nextjs-business-app/ # Vendored app-creator template
 │   ├── rules/                   # 23 file-pattern guardrails
 │   ├── hooks/                   # 7 lifecycle scripts + 1 utility (codebase-index.sh)
 │   └── statusline/              # Status bar config
-├── skills/                      # 26 workflow skills + 1 template
+├── skills/                      # 27 workflow skills + 1 template
 ├── workflows/                   # 4 GitHub Actions CI/CD templates
 ├── memory/                      # Memory system templates
 └── docs/                        # Framework documentation
@@ -83,7 +83,7 @@ in `setup.sh` and the resolver in `setup.ps1`.
 `global-skills/` holds account-level skills installed into `~/.claude/skills/` (via
 `install-global-skill.sh` / `.ps1`), NOT copied into target repos by `setup.sh`. Currently:
 `install-framework`. Because these are not per-repo template skills, they do not count toward the
-"26 workflow skills" total.
+"27 workflow skills" total.
 
 ### Adding New Skills
 

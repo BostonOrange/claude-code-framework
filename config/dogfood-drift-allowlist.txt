@@ -44,6 +44,7 @@ Only in skills: iterative-review
 Only in skills: merge-resolve
 Only in skills: mock-endpoint
 Only in skills: plan
+Only in skills: promote
 Only in skills: refine-story
 Only in skills: scaffold-design-system
 Only in skills: search
