@@ -85,7 +85,8 @@ fi
 
 # ── Step 4: Large File Guard (always) ───────────────────────────
 MAX_FILE_SIZE=1048576  # 1MB
-for file in $STAGED_FILES; do
+while IFS= read -r file; do
+    [ -z "$file" ] && continue
     if [ -f "$file" ]; then
         FILE_SIZE=$(wc -c < "$file" 2>/dev/null || echo 0)
         if [ "$FILE_SIZE" -gt "$MAX_FILE_SIZE" ]; then
@@ -94,6 +95,6 @@ for file in $STAGED_FILES; do
             exit 1
         fi
     fi
-done
+done <<< "$STAGED_FILES"
 
 echo "All pre-commit checks passed."

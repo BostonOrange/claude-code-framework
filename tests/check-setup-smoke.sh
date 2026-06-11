@@ -191,11 +191,16 @@ DRY_TARGET="$TMP_ROOT/dry-run-target"
 DRY_HOME="$TMP_ROOT/home-dry-run"
 DRY_OUTPUT="$TMP_ROOT/dry-run.out"
 mkdir -p "$DRY_TARGET" "$DRY_HOME"
-git init -b old "$DRY_TARGET" >/dev/null 2>&1
+# Isolate from the host's global git config (signing, hooks, init.defaultBranch)
+# and avoid `git init -b` (requires git >= 2.28).
+HOME="$DRY_HOME" git init "$DRY_TARGET" >/dev/null 2>&1
 (
     cd "$DRY_TARGET"
+    export HOME="$DRY_HOME"
+    git symbolic-ref HEAD refs/heads/old
     git config user.email "setup-smoke@example.com"
     git config user.name "Setup Smoke"
+    git config commit.gpgsign false
     printf 'setup smoke\n' > README.md
     git add README.md
     git commit -m "Initial commit" >/dev/null 2>&1
