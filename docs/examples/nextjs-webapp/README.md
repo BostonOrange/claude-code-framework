@@ -62,7 +62,7 @@ The factory validate workflow deploys a Vercel preview:
     echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_ENV
 
 - name: Post preview link
-  uses: actions/github-script@v7
+  uses: actions/github-script@v8
   with:
     script: |
       await github.rest.issues.createComment({

@@ -16,7 +16,7 @@ Spawn a team of specialized agents to work in parallel on the current codebase.
 /team release          — Security auditor + DevOps engineer + Performance optimizer
 /team quality          — Code reviewer + Test writer + Performance optimizer
 /team quality-deep     — code-smell-reviewer + dry-reviewer + purity-reviewer + complexity-reviewer (the 4 code-quality specialists in parallel)
-/team design           — UI/UX reviewer + Performance optimizer + Refactor advisor
+/team design           — UI/UX reviewer + Performance optimizer + Frontend architecture reviewer
 /team documentation    — Documentation writer + API designer
 /team full             — All 15 review/implementation agents (excludes meta-agents)
 /team custom agent1 agent2 agent3   — Pick specific agents

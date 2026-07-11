@@ -15,8 +15,10 @@ concurrency:
   group: factory-cleanup-${{ github.event.pull_request.number }}
   cancel-in-progress: false
 
+# Cleanup only tears down environments and comments on the PR — it never
+# pushes commits, so the token does not need contents write access.
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
 
 jobs:

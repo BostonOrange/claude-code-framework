@@ -67,6 +67,8 @@ run_test "Salesforce deploy start"       "sf project deploy start"             1
 run_test "Salesforce deploy quick"       "sf deploy quick"                     1
 run_test "Git force push"                "git push --force origin main"        1
 run_test "Git push -f"                   "git push -f origin main"             1
+run_test "Git push -fu (clustered)"      "git push -fu origin main"            1
+run_test "Git push -uf (clustered)"      "git push -uf origin main"            1
 run_test "Git push --force-with-lease"   "git push --force-with-lease"         1
 run_test "Git push with -c prefix"       "git -c user.name=x push --force"     1
 run_test "Git push +refspec (force)"     "git push origin +main"               1
@@ -121,6 +123,8 @@ run_test "git commit"                    "git commit -m 'test'"                0
 run_test "cat file"                      "cat README.md"                       0
 run_test "python test"                   "pytest tests/"                       0
 run_test "git push (no force)"           "git push origin main"                0
+run_test "git push -u (no force)"        "git push -u origin main"             0
+run_test "git push --follow-tags"        "git push --follow-tags origin main"  0
 run_test "rm single file"                "rm temp.txt"                         0
 run_test "rm -rf node_modules"           "rm -rf node_modules"                 0
 run_test "rm -rf ./dist"                 "rm -rf ./dist"                       0

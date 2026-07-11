@@ -28,12 +28,17 @@ jobs:
 
     steps:
       - name: Wait for checks
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const pr = context.payload.pull_request;
 
-            // Wait up to 5 minutes for checks to complete
+            // Wait up to 5 minutes for checks to complete. An empty check list
+            // must NOT count as "all green": at review time CI may not have
+            // registered its check runs yet, and breaking early would merge a
+            // PR whose checks never ran.
+            let sawChecks = false;
+            let allPassed = false;
             for (let i = 0; i < 30; i++) {
               const { data: checks } = await github.rest.checks.listForRef({
                 owner: context.repo.owner,
@@ -41,19 +46,33 @@ jobs:
                 ref: pr.head.sha
               });
 
-              const pending = checks.check_runs.filter(c => c.status !== 'completed');
-              if (pending.length === 0) {
-                // Treat 'neutral' as acceptable — common for paths-filtered jobs
-                const passingConclusions = ['success', 'skipped', 'neutral'];
-                const failed = checks.check_runs.filter(c => !passingConclusions.includes(c.conclusion));
-                if (failed.length > 0) {
-                  core.setFailed(`Checks failed: ${failed.map(c => c.name).join(', ')}`);
-                  return;
+              if (checks.check_runs.length > 0) {
+                sawChecks = true;
+                const pending = checks.check_runs.filter(c => c.status !== 'completed');
+                if (pending.length === 0) {
+                  // Treat 'neutral' as acceptable — common for paths-filtered jobs
+                  const passingConclusions = ['success', 'skipped', 'neutral'];
+                  const failed = checks.check_runs.filter(c => !passingConclusions.includes(c.conclusion));
+                  if (failed.length > 0) {
+                    core.setFailed(`Checks failed: ${failed.map(c => c.name).join(', ')}`);
+                    return;
+                  }
+                  allPassed = true;
+                  break;
                 }
-                break;
               }
 
               await new Promise(r => setTimeout(r, 10000)); // wait 10s
+            }
+
+            if (sawChecks && !allPassed) {
+              core.setFailed('Timed out waiting for checks to complete.');
+              return;
+            }
+            if (!sawChecks) {
+              // Repo may genuinely have no CI; rely on branch protection via
+              // `gh pr merge --auto` in the next step.
+              core.warning('No check runs registered after 5 minutes — deferring to branch protection.');
             }
 
       - name: Auto-merge PR

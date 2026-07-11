@@ -67,8 +67,9 @@ fi
 
 # ── Git force operations (soft block — ask user) ────────────────
 
-# Force push — match even when git has -c/-C config flags prepended
-[[ "$COMMAND" =~ git([[:space:]]+-[cC][[:space:]]+[^[:space:]]+)*[[:space:]]+push.*(--force|-f[[:space:]]|-f$|--force-with-lease) ]] && \
+# Force push — match even when git has -c/-C config flags prepended.
+# The short-flag form must also catch clustered flags like -fu / -uf.
+[[ "$COMMAND" =~ git([[:space:]]+-[cC][[:space:]]+[^[:space:]]+)*[[:space:]]+push.*(--force(-with-lease)?|[[:space:]]-[a-zA-Z]*f[a-zA-Z]*([[:space:]]|$)) ]] && \
     block "CAUTION: Force push detected. This can overwrite remote history."
 
 # Force push via +refspec (e.g. "git push origin +main" is equivalent to --force for that ref)

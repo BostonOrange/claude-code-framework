@@ -66,6 +66,12 @@ if echo "$STAGED_DIFF" | grep -qE "-----BEGIN (RSA |EC |DSA )?PRIVATE KEY"; then
     SECRETS_FOUND=1
 fi
 
+# Provider tokens (GitHub, Slack, Google API, OpenAI/Stripe-style)
+if echo "$STAGED_DIFF" | grep -qE "(ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{22,}|xox[baprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}|sk-[A-Za-z0-9_-]{32,})"; then
+    echo "ERROR: Possible provider API token detected in staged changes"
+    SECRETS_FOUND=1
+fi
+
 # Generic secrets (password/secret/token assignment with literal values)
 if echo "$STAGED_DIFF" | grep -qiE "(password|secret|token|api_key|apikey)\s*[=:]\s*['\"][^'\"]{8,}['\"]"; then
     MATCHES=$(echo "$STAGED_DIFF" | grep -iE "(password|secret|token|api_key|apikey)\s*[=:]\s*['\"][^'\"]{8,}['\"]" | grep -ivE "(your-|example|placeholder|changeme|xxx|process\.env|os\.environ|\\\$\{)" || true)
