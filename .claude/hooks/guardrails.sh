@@ -58,8 +58,9 @@ echo "$COMMAND" | grep -qiE "(prisma (db push|migrate deploy)|alembic upgrade|kn
 
 # ── Git force operations (must ask) ──────────────────────────────
 
-# Force push — match even when git has -c/-C config flags prepended
-echo "$COMMAND" | grep -qE "git([[:space:]]+-[cC][[:space:]]+[^[:space:]]+)*[[:space:]]+push.*(--force|-f[[:space:]]|-f$|--force-with-lease)" && \
+# Force push — match even when git has -c/-C config flags prepended.
+# The short-flag form must also catch clustered flags like -fu / -uf.
+echo "$COMMAND" | grep -qE "git([[:space:]]+-[cC][[:space:]]+[^[:space:]]+)*[[:space:]]+push.*(--force(-with-lease)?|[[:space:]]-[a-zA-Z]*f[a-zA-Z]*([[:space:]]|$))" && \
     block "BLOCKED: Force push detected. This can overwrite remote history."
 
 # Force push via +refspec (e.g. "git push origin +main")

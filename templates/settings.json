@@ -188,7 +188,9 @@
       "Bash(rm -rf ~)",
       "Bash(> /dev/sda*)",
       "Bash(mkfs:*)",
-      "Bash(dd if=*)"
+      "Bash(dd if=*)",
+      "Bash(dd of=*)",
+      "Bash(rm --no-preserve-root*)"
     ]
   },
   "hooks": {
