@@ -293,6 +293,42 @@ Write-Host ""
 $BASE_BRANCH = Read-Host "Primary integration branch [main]"
 if (-not $BASE_BRANCH) { $BASE_BRANCH = "main" }
 
+# Check if current branch differs and offer to rename (mirrors setup.sh:
+# the confirmation is asked right after the base branch prompt)
+$isGitRepo = git rev-parse --git-dir 2>$null
+if ($isGitRepo -and -not $NonInteractive) {
+    $currentBranch = git rev-parse --abbrev-ref HEAD 2>$null
+    if ($currentBranch -and $currentBranch -ne $BASE_BRANCH) {
+        $confirm = Read-Host "Current branch is '$currentBranch'. Rename to '$BASE_BRANCH' and update remote? [y/N]"
+        if ($confirm -ne 'y' -and $confirm -ne 'Y') {
+            Write-Host "Skipping branch rename. Using '$currentBranch' as-is."
+            $BASE_BRANCH = $currentBranch
+        } else {
+            if (-not $DryRun) {
+                Write-Host "Renaming branch '$currentBranch' -> '$BASE_BRANCH'..."
+                git branch -m $currentBranch $BASE_BRANCH
+
+                $hasRemote = git remote get-url origin 2>$null
+                if ($hasRemote) {
+                    Write-Host "Pushing '$BASE_BRANCH' to remote..."
+                    git push -u origin $BASE_BRANCH 2>$null
+
+                    # Try to set default branch (requires gh CLI)
+                    if (Get-Command gh -ErrorAction SilentlyContinue) {
+                        gh repo edit --default-branch $BASE_BRANCH 2>$null
+                    }
+
+                    # Delete old remote branch
+                    git push origin --delete $currentBranch 2>$null
+                }
+            } else {
+                Write-Host "[DRY-RUN] Would rename branch '$currentBranch' -> '$BASE_BRANCH'"
+                Write-Host "[DRY-RUN] Would push '$BASE_BRANCH' to remote and delete '$currentBranch'"
+            }
+        }
+    }
+}
+
 # -- 5. Notification System --
 
 Write-Host ""
@@ -403,14 +439,24 @@ function Copy-InternalAppTemplate {
 
     $lockPath = Join-Path $PROJECT_DIR "package-lock.json"
     if (Test-Path $lockPath) {
-        $lock = Get-Content $lockPath -Raw -Encoding UTF8 | ConvertFrom-Json
-        $lock.name = $safeName
-        $rootPackageProperty = $null
-        if ($lock.packages) {
-            $rootPackageProperty = $lock.packages.PSObject.Properties[""]
-        }
-        if ($rootPackageProperty -and $rootPackageProperty.Value) {
-            $rootPackageProperty.Value.name = $safeName
+        if ($PSVersionTable.PSVersion.Major -ge 6) {
+            # npm lockfiles keep the root package under the "" key, which
+            # PowerShell 6+ ConvertFrom-Json only accepts with -AsHashtable
+            $lock = Get-Content $lockPath -Raw -Encoding UTF8 | ConvertFrom-Json -AsHashtable
+            $lock.name = $safeName
+            if ($lock.packages -and $lock.packages.Contains("") -and $lock.packages[""]) {
+                $lock.packages[""].name = $safeName
+            }
+        } else {
+            $lock = Get-Content $lockPath -Raw -Encoding UTF8 | ConvertFrom-Json
+            $lock.name = $safeName
+            $rootPackageProperty = $null
+            if ($lock.packages) {
+                $rootPackageProperty = $lock.packages.PSObject.Properties[""]
+            }
+            if ($rootPackageProperty -and $rootPackageProperty.Value) {
+                $rootPackageProperty.Value.name = $safeName
+            }
         }
         $lock | ConvertTo-Json -Depth 100 | Set-Content $lockPath -Encoding UTF8
     }
@@ -576,42 +622,6 @@ AI_PROVIDER=mock
 Write-Host ""
 Write-Host "Setting up Claude Code framework..."
 Write-Host ""
-
-# -- Ensure base branch exists --
-
-$isGitRepo = git rev-parse --git-dir 2>$null
-if ($isGitRepo -and -not $NonInteractive) {
-    $currentBranch = git rev-parse --abbrev-ref HEAD 2>$null
-    if ($currentBranch -and $currentBranch -ne $BASE_BRANCH) {
-        $confirm = Read-Host "Current branch is '$currentBranch'. Rename to '$BASE_BRANCH' and update remote? [y/N]"
-        if ($confirm -ne 'y' -and $confirm -ne 'Y') {
-            Write-Host "Skipping branch rename. Using '$currentBranch' as-is."
-            $BASE_BRANCH = $currentBranch
-        } else {
-            if (-not $DryRun) {
-                Write-Host "Renaming branch '$currentBranch' -> '$BASE_BRANCH'..."
-                git branch -m $currentBranch $BASE_BRANCH
-
-                $hasRemote = git remote get-url origin 2>$null
-                if ($hasRemote) {
-                    Write-Host "Pushing '$BASE_BRANCH' to remote..."
-                    git push -u origin $BASE_BRANCH 2>$null
-
-                    # Try to set default branch (requires gh CLI)
-                    if (Get-Command gh -ErrorAction SilentlyContinue) {
-                        gh repo edit --default-branch $BASE_BRANCH 2>$null
-                    }
-
-                    # Delete old remote branch
-                    git push origin --delete $currentBranch 2>$null
-                }
-            } else {
-                Write-Host "[DRY-RUN] Would rename branch '$currentBranch' -> '$BASE_BRANCH'"
-                Write-Host "[DRY-RUN] Would push '$BASE_BRANCH' to remote and delete '$currentBranch'"
-            }
-        }
-    }
-}
 
 Copy-InternalAppTemplate
 

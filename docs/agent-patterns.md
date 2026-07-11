@@ -1,6 +1,6 @@
 # Agent Patterns — When to Use Which
 
-The framework has 38 agents across three orchestration patterns. New agents should fit one of these patterns; if a new pattern emerges, add it here.
+The framework has 39 agents across three orchestration patterns. New agents should fit one of these patterns; if a new pattern emerges, add it here.
 
 ## 1. Single-pass agent
 

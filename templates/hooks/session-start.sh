@@ -31,7 +31,7 @@ fi
 # ── Dependency Health ───────────────────────────────────────────
 if [ -f "package.json" ] && [ ! -d "node_modules" ]; then
     echo "NOTE: node_modules not found. Run 'npm install' to install dependencies."
-elif [ -f "requirements.txt" ] && ! python3 -c "import pkg_resources; pkg_resources.require(open('requirements.txt').readlines())" 2>/dev/null; then
+elif [ -f "requirements.txt" ] && python3 -c "import pkg_resources" 2>/dev/null && ! python3 -c "import pkg_resources; pkg_resources.require(open('requirements.txt').readlines())" 2>/dev/null; then
     echo "NOTE: Python dependencies may be outdated. Run 'pip install -r requirements.txt'."
 elif [ -f "go.mod" ] && [ ! -d "vendor" ] && ! go mod verify 2>/dev/null; then
     echo "NOTE: Go modules may need syncing. Run 'go mod download'."

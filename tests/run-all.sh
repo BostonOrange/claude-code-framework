@@ -66,12 +66,12 @@ for script in $SCRIPTS; do
     # Pad name to 26 chars
     padded_name=$(printf "%-26s" "$test_name")
 
-    # Check if this test was in the failed list
-    if echo "$FAILED_TESTS" | grep -q "$test_name"; then
-        echo "  | $padded_name | FAIL   |"
-    else
-        echo "  | $padded_name | PASS   |"
-    fi
+    # Check if this test was in the failed list (exact token match —
+    # substring matching would misreport tests whose names nest)
+    case " $FAILED_TESTS " in
+        *" $test_name "*) echo "  | $padded_name | FAIL   |" ;;
+        *)                echo "  | $padded_name | PASS   |" ;;
+    esac
 done
 
 echo "  +----------------------------+--------+"
