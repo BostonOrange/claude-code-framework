@@ -4,9 +4,9 @@ How to use agent teams for high-performing AI-assisted development.
 
 ## Philosophy
 
-A single AI assistant is powerful. A coordinated team of specialized AI agents — each with restricted tools, appropriate models, and focused expertise — is transformational. The framework provides 12 pre-configured agents that cover every role in a modern development team.
+A single AI assistant is powerful. A coordinated team of specialized AI agents — each with restricted tools, appropriate models, and focused expertise — is transformational. The framework provides 39 pre-configured agents that cover every role in a modern development team.
 
-## Agent Roster (12 agents)
+## Agent Roster (39 agents)
 
 ### Analysis Agents (read-only)
 
@@ -110,7 +110,7 @@ A single AI assistant is powerful. A coordinated team of specialized AI agents �
 **Output:** Updated docs + API design review
 
 ### `/team full` — Full Team Review
-**Agents:** All 16 reviewer/implementation agents (excludes meta-agents like `review-coordinator`, the `framework-improver-*` pair, and the `project-setup-*` pair)
+**Agents:** All 15 reviewer/implementation agents (excludes meta-agents like `review-coordinator`, the `framework-improver-*` pair, and the `project-setup-*` pair)
 **When:** Major milestones, quarterly reviews, new project onboarding
 **Output:** Comprehensive analysis across all dimensions
 

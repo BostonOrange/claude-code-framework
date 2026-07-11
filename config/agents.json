@@ -215,7 +215,7 @@
       "category": "implementation",
       "model": "opus",
       "blurb": "Build phase 6 (final) — actively applies code-smells/dry/purity/complexity rules; preempts review findings",
-      "description": "Build phase 5 specialist (final pass before review) — actively applies code-quality rules to the just-implemented code: simplifies, extracts, dedupes, reduces complexity. Tightly bound to `code-smells`, `dry`, `purity`, `complexity` rules. Goal is that the review-coordinator finds little to flag"
+      "description": "Build phase 6 specialist (final pass before review) — actively applies code-quality rules to the just-implemented code: simplifies, extracts, dedupes, reduces complexity. Tightly bound to `code-smells`, `dry`, `purity`, `complexity` rules. Goal is that the review-coordinator finds little to flag"
     },
     {
       "name": "framework-improver-detector",

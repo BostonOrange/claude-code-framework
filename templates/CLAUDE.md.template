@@ -91,7 +91,7 @@ Spawn pre-configured teams of specialized agents for parallel analysis:
 | **Quality-deep** | `/team quality-deep` | code-smell-reviewer, dry-reviewer, purity-reviewer, complexity-reviewer | Targeted code-quality sweep |
 | **Design** | `/team design` | ui-ux-reviewer, performance-optimizer, frontend-architecture-reviewer | UI/UX consistency, design system compliance |
 | **Documentation** | `/team documentation` | documentation-writer, api-designer | After API changes |
-| **Full** | `/team full` | All 16 reviewer/implementation agents | Major milestones |
+| **Full** | `/team full` | All 15 reviewer/implementation agents | Major milestones |
 | **Custom** | `/team custom a b c` | Any combination | Targeted analysis |
 
 ## Agents Available

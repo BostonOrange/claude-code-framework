@@ -141,7 +141,7 @@ Spawn pre-configured teams for parallel analysis of the framework:
 | **Quality** | `/team quality` | code-reviewer, test-writer, performance-optimizer |
 | **Documentation** | `/team documentation` | documentation-writer, api-designer |
 | **Design** | `/team design` | ui-ux-reviewer, performance-optimizer, frontend-architecture-reviewer |
-| **Full** | `/team full` | All 12 agents |
+| **Full** | `/team full` | All 12 agents (intentionally reduced dogfood roster; target projects get 15) |
 | **Custom** | `/team custom a b c` | Any combination |
 
 ## Agents Available

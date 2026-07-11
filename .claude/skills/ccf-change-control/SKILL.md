@@ -49,7 +49,7 @@ CI (`.github/workflows/framework-tests.yml`) runs two jobs on every push and PR:
 pwsh ./tests/check-setup-smoke.ps1
 ```
 
-Caveat (as of 2026-07-11): on main this harness crashes at startup (read-only `$Home`/`$args` automatic variables), so both this command and the windows CI job gate nothing until the stranded fix (`e052200`, on `origin/claude/codebase-assessment-7p9rq7`) merges — see ccf-failure-archaeology Entry 1.
+(The harness's own startup crash — read-only `$Home`/`$args` automatic variables — was fixed by `e052200`, merged 2026-07-11, so this command and the windows CI job gate for real; history: ccf-failure-archaeology Entry 1.)
 
 ### 4. Advisory layer (session end)
 
@@ -71,7 +71,7 @@ Known wrinkle (as of 2026-07-11): the copy installed at `.claude/skills/improve/
 | Rule | Rationale | Incident |
 |---|---|---|
 | Never hand-edit counts in isolation. Counts change only together with the files they count, and tests verify the pairing. | A hand-edited count is a guess that rots instantly; doc/count drift across README, CLAUDE.md, AGENTS.md, docs/, `config/agents.json`, and both setup summaries is this repo's hardest live problem. | `b2da8ea` (2026-03-30) and `9b7cd14` (2026-04-01) both hand-fixed count drift — tests didn't exist yet (suite added in `4c688cf`, 2026-04-09). `7f82b84` (2026-06-11) fixed a stale agent count in docs/agent-patterns.md that the deterministic tests did NOT cover; framework-qa caught it. Lesson: tests shrink the drift surface, agents patrol the remainder, humans hand-edit nothing. |
-| Every `setup.sh` change mirrors `setup.ps1` in the same change. | Only the bash path gets exercised in day-to-day macOS/Linux work; the PowerShell path breaks silently. | The PS smoke harness crashed before running any scenario, so the CI job gated nothing while real setup.ps1 bugs shipped (`e052200` + `0fe93ea`, 2026-06-11). Both fixes are stranded on `origin/claude/codebase-assessment-7p9rq7` as of 2026-07-11 — the harness on main still crashes and the windows CI job gates nothing until merged. A broken checker hides broken code. Status and full story: ccf-failure-archaeology Entry 1. |
+| Every `setup.sh` change mirrors `setup.ps1` in the same change. | Only the bash path gets exercised in day-to-day macOS/Linux work; the PowerShell path breaks silently. | The PS smoke harness crashed before running any scenario, so the CI job gated nothing while real setup.ps1 bugs shipped (`e052200` + `0fe93ea`, 2026-06-11). Both fixes sat stranded on a side branch for a month before merging on 2026-07-11. A broken checker hides broken code. Full story: ccf-failure-archaeology Entry 1. |
 | Rule `id`s are stable forever — never rename, never reuse. | The `id` is the citation key reviewer agents embed in findings in target repos; renaming orphans every past finding (`.claude/rules/templates.md`). | Codified preemptively; no known violation. Keep it that way. |
 | Dogfood drift is allowlisted in `config/dogfood-drift-allowlist.txt`, never silent. | The repo intentionally runs a reduced roster of itself; the allowlist makes every intentional difference explicit so accidental drift fails `check-dogfood-drift.sh`. | The allowlist header states this policy directly. |
 | Installed-surface names are backward-compatible: no renames of placeholders, `CCF_*` vars, or rule ids. | Rule ids: above. `CCF_*` vars: the global `/install-framework` skill is *copied* into `~/.claude/skills/` (`install-global-skill.sh` uses `cp -r`) — installed copies reference the old names forever and do not auto-update. Placeholder renames must land atomically in templates AND both setup scripts or `check-placeholders.sh` fails. | Maintainer policy; only the rule-id half is codified in `.claude/rules/templates.md`. Codifying the rest as a test is an open candidate, not done. |
@@ -97,7 +97,7 @@ Judgment test: can you write one sentence explaining WHY this repo needs a diffe
 | framework-qa reports drift your change didn't cause | Fix it in a separate commit citing framework-qa (pattern: `7f82b84`), and note whether a deterministic test could cover it |
 | Adding a prompt to the installers | Add its `CCF_*` var to BOTH non-interactive resolvers (CLAUDE.md, Non-Interactive Setup) |
 | Change touches only `.claude/` in this repo | Check whether the twin in `templates/` or `skills/` should change too; if intentionally not, allowlist with rationale |
-| No `pwsh` locally and you changed setup.ps1 | Say so in the PR and watch the windows CI job before merging — noting that as of 2026-07-11 that job gates nothing on main (harness crash; stranded fix — ccf-failure-archaeology Entry 1) |
+| No `pwsh` locally and you changed setup.ps1 | Say so in the PR and watch the windows CI job before merging (its harness has been sound since the 2026-07-11 merge — ccf-failure-archaeology Entry 1) |
 
 ## Related Skills
 
