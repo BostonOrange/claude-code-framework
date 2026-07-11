@@ -105,6 +105,23 @@ if [ "$NON_INTERACTIVE" = true ]; then
     JIRA_DOMAIN="${CCF_JIRA_DOMAIN:-}"
     JIRA_PROJECT="${CCF_JIRA_PROJECT:-}"
     LINEAR_TEAM="${CCF_LINEAR_TEAM:-}"
+    case "$TRACKER_NAME" in
+        ado)
+            if [ -z "$ADO_ORG" ] || [ -z "$ADO_PROJECT" ]; then
+                echo "ERROR: CCF_TRACKER=ado requires CCF_ADO_ORG and CCF_ADO_PROJECT."
+                exit 1
+            fi ;;
+        jira)
+            if [ -z "$JIRA_DOMAIN" ] || [ -z "$JIRA_PROJECT" ]; then
+                echo "ERROR: CCF_TRACKER=jira requires CCF_JIRA_DOMAIN and CCF_JIRA_PROJECT."
+                exit 1
+            fi ;;
+        linear)
+            if [ -z "$LINEAR_TEAM" ]; then
+                echo "ERROR: CCF_TRACKER=linear requires CCF_LINEAR_TEAM."
+                exit 1
+            fi ;;
+    esac
 
     CI_NAME="${CCF_CICD:-none}"
     case "$CI_NAME" in
@@ -409,7 +426,7 @@ esac
 fi  # end non-interactive resolver vs interactive prompts
 
 # Load design system values from config/design-systems.json
-eval "$(python3 << DESIGN_EOF
+CONFIG_VARS=$(python3 << DESIGN_EOF
 import json, os
 
 framework_dir = os.environ.get('FRAMEWORK_DIR', '.')
@@ -433,7 +450,8 @@ for var, key in [
     val = shell_escape(cfg.get(key, ''))
     print(f"{var}='{val}'")
 DESIGN_EOF
-)"
+) || { echo "ERROR: failed to load config/design-systems.json — aborting setup."; exit 1; }
+eval "$CONFIG_VARS"
 
 copy_internal_app_template() {
     [ "$PROJECT_TYPE_NAME" = "internal-nextjs-app" ] || return 0
@@ -746,7 +764,7 @@ echo "Configuring skills for your project..."
 # Build tracker-specific command blocks (from config/trackers.json)
 export ADO_ORG ADO_PROJECT JIRA_DOMAIN JIRA_PROJECT LINEAR_TEAM FRAMEWORK_DIR
 
-eval "$(python3 << TRACKER_EOF
+CONFIG_VARS=$(python3 << TRACKER_EOF
 import json, os
 
 framework_dir = os.environ.get('FRAMEWORK_DIR', '.')
@@ -785,12 +803,13 @@ for key, val in fields.items():
     val = replace_tracker_placeholders(val)
     print(f"{key}='{shell_escape(val)}'")
 TRACKER_EOF
-)"
+) || { echo "ERROR: failed to load config/trackers.json — aborting setup."; exit 1; }
+eval "$CONFIG_VARS"
 
 # Build project-type-specific commands and file patterns (from config/project-types.json)
 DEFAULT_MODEL="sonnet"
 
-eval "$(python3 << PROJTYPE_EOF
+CONFIG_VARS=$(python3 << PROJTYPE_EOF
 import json, os
 
 framework_dir = os.environ.get('FRAMEWORK_DIR', '.')
@@ -831,10 +850,11 @@ for var, key in [
     joined = ', '.join(f'"{p}"' for p in patterns)
     print(f"{var}='{shell_escape(joined)}'")
 PROJTYPE_EOF
-)"
+) || { echo "ERROR: failed to load config/project-types.json — aborting setup."; exit 1; }
+eval "$CONFIG_VARS"
 
 # Build notification commands (from config/notifications.json)
-eval "$(python3 << NOTIFY_EOF
+CONFIG_VARS=$(python3 << NOTIFY_EOF
 import json, os
 
 framework_dir = os.environ.get('FRAMEWORK_DIR', '.')
@@ -856,7 +876,8 @@ for var, key in [
     val = shell_escape(cfg.get(key, ''))
     print(f"{var}='{val}'")
 NOTIFY_EOF
-)"
+) || { echo "ERROR: failed to load config/notifications.json — aborting setup."; exit 1; }
+eval "$CONFIG_VARS"
 
 # ── Copy agents ──────────────────────────────────────────────────
 
@@ -1018,14 +1039,10 @@ if [ ! -f "$PROJECT_DIR/CLAUDE.md" ]; then
     echo "Creating CLAUDE.md..."
     cp "$FRAMEWORK_DIR/templates/CLAUDE.md.template" "$PROJECT_DIR/CLAUDE.md"
 
-    # Replace known placeholders
-    sed_inplace \
-        -e "s|{{BASE_BRANCH}}|$BASE_BRANCH|g" \
-        -e "s|{{PROJECT_SHORT_NAME}}|$PROJECT_SHORT|g" \
-        "$PROJECT_DIR/CLAUDE.md"
-
-    # Replace tracker config, design system, and other placeholders
-    export FORMAT_CMD FORMAT_VERIFY TEST_CMD TYPE_CHECK_CMD DEPLOY_VALIDATE TRACKER_CONFIG
+    # Replace tracker config, base branch, design system, and other
+    # placeholders. User-supplied values (base branch, short name) go through
+    # literal str.replace — never sed, which treats &, |, and \ specially.
+    export FORMAT_CMD FORMAT_VERIFY TEST_CMD TYPE_CHECK_CMD DEPLOY_VALIDATE TRACKER_CONFIG BASE_BRANCH PROJECT_SHORT
     export DESIGN_COLOR_RULES DESIGN_COMPONENT_IMPORTS DESIGN_ICON_USAGE DESIGN_CARD_PATTERNS DESIGN_DARK_MODE
     python3 << 'CLAUDE_MD_EOF'
 import os
@@ -1035,6 +1052,8 @@ with open(os.path.join(project_dir, 'CLAUDE.md'), 'r') as f:
     content = f.read()
 
 replacements = {
+    '{{BASE_BRANCH}}': os.environ.get('BASE_BRANCH', 'main'),
+    '{{PROJECT_SHORT_NAME}}': os.environ.get('PROJECT_SHORT', ''),
     '{{TRACKER_CONFIG}}': os.environ.get('TRACKER_CONFIG', ''),
     '{{FORMAT_COMMAND}}': os.environ.get('FORMAT_CMD', ''),
     '{{FORMAT_VERIFY_COMMAND}}': os.environ.get('FORMAT_VERIFY', ''),
@@ -1254,10 +1273,15 @@ if env_var and env_placeholder:
         f.write(f'{env_var}={env_placeholder}\n')
 ENV_NOTIFY_EOF
 
-    # Ensure .env is gitignored
-    if [ -f "$PROJECT_DIR/.gitignore" ]; then
+    # Ensure the .env family is gitignored — create .gitignore if the repo
+    # doesn't have one, so a freshly generated .env is never committable
+    if [ -f "$PROJECT_DIR/.gitignore" ] || [ -d "$PROJECT_DIR/.git" ]; then
+        touch "$PROJECT_DIR/.gitignore"
         if ! grep -q "^\.env$" "$PROJECT_DIR/.gitignore"; then
             echo ".env" >> "$PROJECT_DIR/.gitignore"
+        fi
+        if ! grep -q "^\.env\.\*$" "$PROJECT_DIR/.gitignore"; then
+            printf '.env.*\n!.env.example\n' >> "$PROJECT_DIR/.gitignore"
         fi
     fi
 fi

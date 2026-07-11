@@ -56,7 +56,7 @@ Line numbers are as of 2026-07-11; treat them as anchors, re-grep before relying
 
   Note: `.claude/rules/setup-scripts.md` still calls this "`$SED_INPLACE` variable"; the current implementation is the `sed_inplace()` function (as of 2026-07-11). Same intent.
 - **Export before python3 heredocs.** The replacement engine is python3 reading `os.environ` (e.g. the bulk pass at `setup.sh:945-982`). Any shell variable a heredoc consumes MUST be `export`ed first — see the export blocks at lines 747 and 931-942. A forgotten export fails *silently*: `os.environ.get(...)` returns the default and the placeholder gets wrong-but-plausible content.
-- **The `eval "$(python3 <<EOF)"` blind spot.** `setup.sh` has `set -e` (line 5), but a python failure inside the four config-loading command substitutions yields empty stdout, `eval ""` succeeds, and the variables stay silently empty — setup continues half-configured. Full mechanics, affected line numbers, and the doctor command: **ccf-debugging-playbook** "Silent half-configuration".
+- **The `eval "$(python3 <<EOF)"` blind spot — guarded since 2026-07-11.** The four config loaders are now `CONFIG_VARS=$(python3 …) || { echo "ERROR: failed to load config/<file>…"; exit 1; }; eval "$CONFIG_VARS"`, so a python failure aborts loudly (matching ps1's `$ErrorActionPreference = "Stop"` behavior). History and doctor command: **ccf-debugging-playbook** "Silent half-configuration". Keep the guard when touching these blocks — a bare `eval "$(python3 …)"` reintroduces silent half-configuration under `set -e`.
 
 ## PowerShell-side traps (all actually happened)
 
@@ -71,10 +71,9 @@ Line numbers are as of 2026-07-11; treat them as anchors, re-grep before relying
 
 Candidates to fix, not documentation of intent. (A former gap — branch-rename prompt ordering — was closed when `0fe93ea` merged on 2026-07-11: ps1 now asks right after the base-branch prompt, `setup.ps1:296-325`, mirroring `setup.sh:307`.)
 
-1. **`-DryRun` has no early-exit summary in `setup.ps1`.** `setup.sh --dry-run` prints a `[DRY-RUN]` plan and `exit 0` (lines 673-716). `setup.ps1` threads `if (-not $DryRun)` and `[DRY-RUN] Would copy` messages through the whole script and ends by printing "Setup Complete!" (line 1117) even in dry-run — its only `exit 0`s are `-Help` and `-Reset`.
-2. **`setup.ps1 -Help` omits `-NonInteractive`** (usage lines 12-14 list only `-DryRun`/`-Reset`; the switch exists in `param(...)` line 7). `setup.sh --help` documents all three flags (line 16).
-3. **Reset output differs**: sh prints an extra line "To fully clean up, manually remove CLAUDE.md and .env" (line 36); ps1 prints only the "preserved" line (line 36).
-4. **ps1 summary lacks the CLAUDE.md line**: sh conditionally prints `CLAUDE.md — project instructions (customize!)` (line 1320); ps1's Files-created block has no equivalent.
+1. **`-DryRun` has no early-exit summary in `setup.ps1`.** `setup.sh --dry-run` prints a `[DRY-RUN]` plan and `exit 0` (lines 673-716). `setup.ps1` threads `if (-not $DryRun)` and `[DRY-RUN] Would copy` messages through the whole script and ends by printing "Setup Complete!" even in dry-run — its only `exit 0`s are `-Help` and `-Reset`.
+
+(Three former gaps closed 2026-07-11 in one parity commit: `-Help` now documents `-NonInteractive`; reset prints the "To fully clean up…" hint; the summary prints the conditional `CLAUDE.md — project instructions (customize!)` line. The same commit also mirrored setup.sh's new non-interactive tracker-detail validation and `.env` family gitignore handling into ps1.)
 
 If you close one, mirror the fix, re-verify this list, and update this skill.
 
@@ -93,7 +92,7 @@ If you close one, mirror the fix, re-verify this list, and update this skill.
 | No pwsh available locally, change touches setup.ps1 | State it untested on PowerShell in the PR and watch the CI windows job (its harness has been sound since the 2026-07-11 merge; if it crashes at startup rather than failing an assert, suspect the harness per Entry 1's lesson). |
 | Change only makes sense on one platform (e.g. `chmod +x`) | Mirror the *intent*: ps1 skips chmod but must still copy hooks; leave a comment in both scripts pointing at the counterpart. |
 | Placeholder check passes but installed files differ per platform | Suspect the null-vs-empty divergence or a missing export before a python3 heredoc — both are invisible to the static check. |
-| Corrupt or hand-edited `config/*.json` | bash: silent empty vars via the `eval` blind spot; ps1: `$ErrorActionPreference = "Stop"` (line 18) makes `ConvertFrom-Json` throw loudly. Divergent failure modes are themselves a parity signal. |
+| Corrupt or hand-edited `config/*.json` | Both scripts now fail loudly (guarded loaders in bash since 2026-07-11; `$ErrorActionPreference = "Stop"` in ps1). If bash instead continues silently, the loader guard was removed — restore it. |
 | Editing `tests/check-setup-smoke.ps1` | Grep your diff for `$Home`, `$home`, `$args`, `$input` as parameter/local names before committing. |
 | Tempted to fix a gap in only one script | Don't. Fixing sh-only widens the gap; a parity fix touches both scripts in one commit. |
 
@@ -113,7 +112,7 @@ Re-verify before trusting; all facts dated 2026-07-11:
 - Parity contract text: `cat .claude/rules/setup-scripts.md`
 - Line counts / anchors: `wc -l setup.sh setup.ps1`; prompt sections: `grep -n '── [0-9]\|-- [0-9]' setup.sh setup.ps1`
 - `sed_inplace` definition: `grep -n -A6 'sed_inplace()' setup.sh`
-- eval blind spot still unguarded: `grep -n 'eval "\$(python3' setup.sh`
+- loader guards present: `grep -c 'failed to load config' setup.sh` (expect 4)
 - BOM present: `head -c 3 setup.ps1 | xxd` (expect `efbb bf`)
 - Commit history: `git show --stat 42e6a98 e052200 0fe93ea`; merge status: `git branch --contains e052200` (merged 2026-07-11; expect the current integration branch listed)
 - Harness fix present: `grep -n '\$Home\b\|\$args\b' tests/check-setup-smoke.ps1` (expect only the line-51 warning comment)

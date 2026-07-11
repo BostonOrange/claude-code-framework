@@ -9,9 +9,10 @@ param(
 )
 
 if ($Help) {
-    Write-Host "Usage: setup.ps1 [-DryRun] [-Reset]"
-    Write-Host "  -DryRun   Show what would be done without making changes"
-    Write-Host "  -Reset    Remove framework files from target project"
+    Write-Host "Usage: setup.ps1 [-DryRun] [-Reset] [-NonInteractive]"
+    Write-Host "  -DryRun          Show what would be done without making changes"
+    Write-Host "  -Reset           Remove framework files from target project"
+    Write-Host "  -NonInteractive  Read answers from CCF_* environment variables (no prompts)"
     exit 0
 }
 
@@ -34,6 +35,7 @@ if ($Reset) {
         if (Test-Path $path) { Remove-Item -Force $path }
     }
     Write-Host "Framework files removed. CLAUDE.md and .env preserved."
+    Write-Host "To fully clean up, manually remove CLAUDE.md and .env"
     exit 0
 }
 
@@ -100,6 +102,18 @@ if ($NonInteractive) {
     $JIRA_DOMAIN = $env:CCF_JIRA_DOMAIN
     $JIRA_PROJECT = $env:CCF_JIRA_PROJECT
     $LINEAR_TEAM = $env:CCF_LINEAR_TEAM
+    if ($TRACKER_NAME -eq "ado" -and (-not $ADO_ORG -or -not $ADO_PROJECT)) {
+        Write-Host "ERROR: CCF_TRACKER=ado requires CCF_ADO_ORG and CCF_ADO_PROJECT."
+        exit 1
+    }
+    if ($TRACKER_NAME -eq "jira" -and (-not $JIRA_DOMAIN -or -not $JIRA_PROJECT)) {
+        Write-Host "ERROR: CCF_TRACKER=jira requires CCF_JIRA_DOMAIN and CCF_JIRA_PROJECT."
+        exit 1
+    }
+    if ($TRACKER_NAME -eq "linear" -and -not $LINEAR_TEAM) {
+        Write-Host "ERROR: CCF_TRACKER=linear requires CCF_LINEAR_TEAM."
+        exit 1
+    }
 
     $CI_NAME = if ($env:CCF_CICD) { $env:CCF_CICD } else { "none" }
     if ($CI_NAME -notin "github-actions", "gitlab-ci", "circleci", "none") {
@@ -1083,12 +1097,20 @@ if (-not (Test-Path $envFile)) {
 
         Set-Content $envFile $envContent -Encoding UTF8
 
-        # Ensure .env is gitignored
+        # Ensure the .env family is gitignored — create .gitignore if the repo
+        # doesn't have one, so a freshly generated .env is never committable
         $gitignoreFile = Join-Path $PROJECT_DIR ".gitignore"
-        if (Test-Path $gitignoreFile) {
+        if ((Test-Path $gitignoreFile) -or (Test-Path (Join-Path $PROJECT_DIR ".git"))) {
+            if (-not (Test-Path $gitignoreFile)) {
+                Set-Content $gitignoreFile "" -Encoding UTF8 -NoNewline
+            }
             $gitignoreContent = Get-Content $gitignoreFile -Raw -ErrorAction SilentlyContinue
-            if ($gitignoreContent -and -not ($gitignoreContent -match '(?m)^\.env$')) {
+            if ($null -eq $gitignoreContent) { $gitignoreContent = "" }
+            if (-not ($gitignoreContent -match '(?m)^\.env$')) {
                 Add-Content $gitignoreFile "`n.env"
+            }
+            if (-not ($gitignoreContent -match '(?m)^\.env\.\*$')) {
+                Add-Content $gitignoreFile "`n.env.*`n!.env.example"
             }
         }
 
@@ -1150,6 +1172,9 @@ if ($CI_NAME -eq "github-actions") {
     Write-Host "  .github/workflows/      - 4 GitHub Actions workflow templates (customize before relying on them)"
 }
 Write-Host "  docs/stories/           - story documentation folder"
+if (-not (Test-Path (Join-Path $PROJECT_DIR "CLAUDE.md.bak"))) {
+    Write-Host "  CLAUDE.md               - project instructions (customize!)"
+}
 Write-Host ""
 Write-Host "Next steps:"
 Write-Host "  1. Run /setup in Claude Code to refine configuration based on detected project state"

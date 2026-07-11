@@ -264,6 +264,19 @@ fi
 assert_contains "$MISS_OUTPUT" "CCF_PROJECT_TYPE is required" "non-interactive missing type reports clear error"
 
 echo ""
+echo "Non-interactive jira without detail vars fails..."
+MISSJ_TARGET="$TMP_ROOT/ni-missing-jira"
+MISSJ_HOME="$TMP_ROOT/home-ni-missing-jira"
+MISSJ_OUTPUT="$TMP_ROOT/ni-missing-jira.out"
+mkdir -p "$MISSJ_TARGET" "$MISSJ_HOME"
+if (cd "$MISSJ_TARGET" && CCF_PROJECT_TYPE=nodejs CCF_TRACKER=jira HOME="$MISSJ_HOME" bash "$FRAMEWORK_DIR/setup.sh" --non-interactive >"$MISSJ_OUTPUT" 2>&1); then
+    fail "non-interactive jira without detail vars exits non-zero"
+else
+    pass "non-interactive jira without detail vars exits non-zero"
+fi
+assert_contains "$MISSJ_OUTPUT" "CCF_TRACKER=jira requires" "non-interactive jira missing details reports clear error"
+
+echo ""
 echo "--------------------------------------"
 echo "  Results: $PASS passed, $FAIL failed"
 echo "--------------------------------------"

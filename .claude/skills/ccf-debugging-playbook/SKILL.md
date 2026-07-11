@@ -92,7 +92,7 @@ Exit-code contract: 0 = allow, 1 = soft block (ask user), 2 = hard block. Hooks 
 
 ## Silent half-configuration
 
-`setup.sh` runs under `set -e`, but loads `config/*.json` through `eval "$(python3 <<EOF …)"` at lines 412 (design systems), 749 (trackers), 793 (project types), and 837 (notifications) (as of 2026-07-11). If python3 dies inside the command substitution — e.g. malformed JSON — the substitution yields an empty string, `eval ""` returns 0, and **set -e does not fire**: setup continues with empty variables and reports success. Doctor command:
+`setup.sh` runs under `set -e` and loads `config/*.json` through `CONFIG_VARS=$(python3 <<EOF …) || exit`-guarded blocks (design systems, trackers, project types, notifications). **Since 2026-07-11 a python3 failure inside these loaders aborts setup with `ERROR: failed to load config/<file>`** instead of the historical silent-empty-variable behavior (the substitution used to be `eval "$(python3 …)"`, whose failure yielded `eval ""` and set -e never fired). If an installed project is half-configured on a current checkout, first confirm the guard is present (`grep -n 'failed to load config' setup.sh` → 4 hits); if it is, the cause is elsewhere (e.g. a missing export before a python3 heredoc). Doctor command:
 
 ```bash
 for f in config/*.json; do python3 -c "import json,sys;json.load(open(sys.argv[1]))" "$f" && echo "OK $f"; done
