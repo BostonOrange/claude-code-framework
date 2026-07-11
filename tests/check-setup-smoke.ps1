@@ -286,6 +286,20 @@ if ($missResult.ExitCode -ne 0) { Pass "non-interactive without CCF_PROJECT_TYPE
 if ($missResult.Output -match "CCF_PROJECT_TYPE is required") { Pass "non-interactive missing type reports clear error" } else { Fail "non-interactive missing type reports clear error" }
 
 Write-Host ""
+Write-Host "Non-interactive jira without detail vars fails..."
+$missJiraTarget = Join-Path $TmpRoot "ni-missing-jira"
+$missJiraHome = Join-Path $TmpRoot "home-ni-missing-jira"
+$env:CCF_PROJECT_TYPE = "nodejs"
+$env:CCF_TRACKER = "jira"
+try {
+    $missJiraResult = Invoke-SetupProcess -Target $missJiraTarget -HomeDir $missJiraHome -InputText "" -NonInteractive
+} finally {
+    Remove-Item Env:\CCF_PROJECT_TYPE, Env:\CCF_TRACKER -ErrorAction SilentlyContinue
+}
+if ($missJiraResult.ExitCode -ne 0) { Pass "non-interactive jira without detail vars exits non-zero" } else { Fail "non-interactive jira without detail vars exits non-zero" }
+if ($missJiraResult.Output -match "CCF_TRACKER=jira requires") { Pass "non-interactive jira missing details reports clear error" } else { Fail "non-interactive jira missing details reports clear error" }
+
+Write-Host ""
 Write-Host "--------------------------------------"
 Write-Host "  Results: $script:Pass passed, $script:Fail failed"
 Write-Host "--------------------------------------"
