@@ -25,6 +25,18 @@ Only in templates/hooks: session-start.sh
 
 Files .claude/skills/improve/SKILL.md and skills/improve/SKILL.md differ
 Files .claude/skills/team/SKILL.md and skills/team/SKILL.md differ
+Only in .claude/skills: ccf-architecture-contract
+Only in .claude/skills: ccf-build-and-env
+Only in .claude/skills: ccf-change-control
+Only in .claude/skills: ccf-debugging-playbook
+Only in .claude/skills: ccf-doc-sync-campaign
+Only in .claude/skills: ccf-dogfood-and-drift
+Only in .claude/skills: ccf-domain-reference
+Only in .claude/skills: ccf-failure-archaeology
+Only in .claude/skills: ccf-onboarding-tour
+Only in .claude/skills: ccf-parity-playbook
+Only in .claude/skills: ccf-release-and-install
+Only in .claude/skills: ccf-testing-and-qa
 Only in skills: _template
 Only in skills: add-reference
 Only in skills: app-blueprint
