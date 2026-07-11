@@ -40,7 +40,7 @@ Load this when something is broken and you don't yet know why: a red test in `te
 
 ## Smoke test failed: harness bug or setup bug?
 
-History: the repo has had BOTH. Flagship harness-bug example: `tests/check-setup-smoke.ps1` crashed on read-only automatic variables (`$Home`/`$args`) before any scenario ran, masking real setup.ps1 results; the fix (`e052200`, 2026-06-11) is stranded off-main as of 2026-07-11, so `tests/check-setup-smoke.ps1:51` on main still has the bug — status and full story: ccf-failure-archaeology Entry 1.
+History: the repo has had BOTH. Flagship harness-bug example: `tests/check-setup-smoke.ps1` crashed on read-only automatic variables (`$Home`/`$args`) before any scenario ran, masking real setup.ps1 results; fixed by `e052200` (2026-06-11, merged 2026-07-11) — only a warning comment at `tests/check-setup-smoke.ps1:51` remains. Full story: ccf-failure-archaeology Entry 1.
 
 The discriminating experiment is always: run setup manually in a throwaway dir (CLAUDE.md "Testing Changes" recipe) and inspect the tree yourself:
 
@@ -109,7 +109,7 @@ Also rerun setup capturing all output and grep it for `Traceback` — exactly wh
 | You edited `setup.ps1` and the bash suite is green | Proves almost nothing about ps1 — only `check-placeholders.sh` even greps it; walk ccf-parity-playbook and run the ps1 smoke under pwsh |
 | `grep -rn "{{"` in an installed project hits framework-improver.md or improve/SKILL.md | Expected meta-references — the smoke test excludes exactly these two files |
 | Tempted to fix a red check by editing the check/allowlist | Routing around the gate — legitimate only with justification per ccf-change-control; default fix is syncing the counted/compared files |
-| 199417f / e052200 cited as "the fix" but main still broken | Both live only on `origin/claude/codebase-assessment-7p9rq7`, unmerged as of 2026-07-11 — merge deliberately, don't assume they landed (inventory: ccf-failure-archaeology Entry 8) |
+| 199417f / e052200 cited as "the fix" but the symptom is back | Both merged 2026-07-11 (ccf-failure-archaeology Entry 8) — if the same symptom reappears, it is a regression or a new cause; diagnose fresh, don't re-apply old fixes |
 
 ## Related Skills
 
@@ -129,10 +129,10 @@ Also rerun setup capturing all output and grep it for `Traceback` — exactly wh
 | DEFAULT_MODEL silent sed site (line 989) | `grep -n 'DEFAULT_MODEL.*\|\| true' setup.sh` |
 | eval/python3 blind-spot sites (412/749/793/837) | `grep -n 'eval "\$(python3' setup.sh` |
 | Bulk replacement block (line 945); sed_inplace (line 41) | `grep -n 'REPLACE_ALL_EOF\|sed_inplace()' setup.sh` |
-| 199417f / e052200 still unmerged | `git merge-base --is-ancestor 199417f main && echo merged \|\| echo unmerged` |
-| Smoke dry-run `git init -b` non-hermetic on main | `grep -n 'git init -b' tests/check-setup-smoke.sh` |
-| ps1 harness `$Home` bug present on main | `grep -n '\$Home' tests/check-setup-smoke.ps1` |
+| 199417f / e052200 merged (2026-07-11) | `git merge-base --is-ancestor 199417f main && echo merged \|\| echo unmerged` |
+| Smoke `git init -b` removed (hermeticity fix) | `grep -n 'git init -b' tests/check-setup-smoke.sh` (expect only the explanatory comment) |
+| ps1 harness `$Home` fix present | `grep -n '\$Home' tests/check-setup-smoke.ps1` (expect only the line-51 warning comment) |
 | SessionStop-rejected comment location | `grep -rn 'SessionStop' .claude/hooks docs` |
 | python3 SKIP in agent-registry check | `grep -n 'SKIP: python3' tests/check-agent-registry.sh` |
 
-Re-verify this skill whenever a commit touches `tests/` or `setup.sh` (line numbers and harness behavior shift), and especially when `origin/claude/codebase-assessment-7p9rq7` merges — the 199417f/e052200 caveats then become history and should move to ccf-failure-archaeology.
+Re-verify this skill whenever a commit touches `tests/` or `setup.sh` (line numbers and harness behavior shift). The 199417f/e052200 merge of 2026-07-11 is already reflected; their full history lives in ccf-failure-archaeology.

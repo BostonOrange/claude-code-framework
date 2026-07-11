@@ -1,6 +1,7 @@
 #!/bin/bash
 # Claude Code Framework — File Count Consistency Validation
 # Ensures documented counts match actual file counts
+# Scans: setup.sh, README.md, AGENTS.md, CLAUDE.md, docs/teams.md, docs/agent-patterns.md
 # Exit 0 if all pass, exit 1 if any mismatches
 
 set -euo pipefail
@@ -105,6 +106,38 @@ if [ "$README_WORKFLOWS" = "?" ]; then
 else
     check_count "Workflows (README)" "$ACTUAL_WORKFLOWS" "$README_WORKFLOWS" "README.md"
 fi
+
+echo ""
+
+# ── Extract counts from AGENTS.md and CLAUDE.md (root meta-docs) ──
+
+for METADOC in AGENTS.md CLAUDE.md; do
+    echo "Checking $METADOC..."
+    DOC="$FRAMEWORK_DIR/$METADOC"
+
+    DOC_SKILLS=$(grep -o '[0-9]\+ workflow skills' "$DOC" | head -1 | grep -o '^[0-9]\+' || echo "?")
+    DOC_AGENTS=$(grep -o '[0-9]\+ AI agent definitions' "$DOC" | head -1 | grep -o '^[0-9]\+' || echo "?")
+    DOC_COMMANDS=$(grep -o '[0-9]\+ quick command definitions' "$DOC" | head -1 | grep -o '^[0-9]\+' || echo "?")
+    DOC_RULES=$(grep -o '[0-9]\+ file-pattern guardrails' "$DOC" | head -1 | grep -o '^[0-9]\+' || echo "?")
+
+    check_count "Skills ($METADOC)"   "$ACTUAL_SKILLS"   "$DOC_SKILLS"   "$METADOC"
+    check_count "Agents ($METADOC)"   "$ACTUAL_AGENTS"   "$DOC_AGENTS"   "$METADOC"
+    check_count "Commands ($METADOC)" "$ACTUAL_COMMANDS" "$DOC_COMMANDS" "$METADOC"
+    check_count "Rules ($METADOC)"    "$ACTUAL_RULES"    "$DOC_RULES"    "$METADOC"
+    echo ""
+done
+
+# ── Extract prose counts from docs/ ────────────────────────────
+
+echo "Checking docs/ prose counts..."
+
+TEAMS_ROSTER=$(grep -o 'Agent Roster ([0-9]\+ agents)' "$FRAMEWORK_DIR/docs/teams.md" | head -1 | grep -o '[0-9]\+' || echo "?")
+TEAMS_PROSE=$(grep -o '[0-9]\+ pre-configured agents' "$FRAMEWORK_DIR/docs/teams.md" | head -1 | grep -o '^[0-9]\+' || echo "?")
+PATTERNS_AGENTS=$(grep -o 'framework has [0-9]\+ agents' "$FRAMEWORK_DIR/docs/agent-patterns.md" | head -1 | grep -o '[0-9]\+' || echo "?")
+
+check_count "Roster header (docs/teams.md)" "$ACTUAL_AGENTS" "$TEAMS_ROSTER"   "docs/teams.md"
+check_count "Prose count (docs/teams.md)"   "$ACTUAL_AGENTS" "$TEAMS_PROSE"    "docs/teams.md"
+check_count "Agent count (docs/agent-patterns.md)" "$ACTUAL_AGENTS" "$PATTERNS_AGENTS" "docs/agent-patterns.md"
 
 echo ""
 

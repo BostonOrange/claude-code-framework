@@ -1,6 +1,6 @@
 ---
 name: ccf-failure-archaeology
-description: Load before re-investigating anything in claude-code-framework that smells like a past battle — "why did the PowerShell CI job fail?", "didn't we already fix this count?", "should we add a husky pre-commit hook?", "do we need a broad refactor agent?", "what is on the unmerged assessment branch?". Contains the chronicle of settled investigations (symptom, root cause, evidence hash, status, lesson) so sessions do not re-fight them. Not the current drift fix list (ccf-doc-sync-campaign) and not live-failure triage (ccf-testing-and-qa / ccf-parity-playbook).
+description: Load before re-investigating anything in claude-code-framework that smells like a past battle — "why did the PowerShell CI job fail?", "didn't we already fix this count?", "should we add a husky pre-commit hook?", "do we need a broad refactor agent?", "what was on the assessment branch that merged in July 2026?". Contains the chronicle of settled investigations (symptom, root cause, evidence hash, status, lesson) so sessions do not re-fight them. Not the current drift fix list (ccf-doc-sync-campaign) and not live-failure triage (ccf-testing-and-qa / ccf-parity-playbook).
 last_updated: 2026-07-11
 tested_with: claude-fable-5
 stability: experimental
@@ -11,34 +11,34 @@ scope: preset
 
 The repo's incident history: significant investigations, dead ends, and re-fixes, written up so nobody rediscovers a root cause already in `git log`. Every hash was re-verified against this repo on 2026-07-11 with `git show <hash>` and `git branch -a --contains <hash>`.
 
-**Status vocabulary:** `fixed-on-main` (merged, done), `stranded` (fix exists only on `origin/claude/codebase-assessment-7p9rq7`, NOT on main), `open` (known, unfixed), `settled-decision` (deliberately rejected — do not reintroduce).
+**Status vocabulary:** `fixed-on-main` (merged, done), `merged-2026-07-11` (was stranded on `origin/claude/codebase-assessment-7p9rq7` from 2026-06-11 until that branch was merged on 2026-07-11), `open` (known, unfixed), `settled-decision` (deliberately rejected — do not reintroduce).
 
 ## Usage
 
-Load this when a symptom matches an entry (the Edge Cases table maps symptoms to entries), when about to propose something the repo already tried and removed (pre-commit git hooks, a broad refactor agent), or when assessing the stalled remote branch.
+Load this when a symptom matches an entry (the Edge Cases table maps symptoms to entries), when about to propose something the repo already tried and removed (pre-commit git hooks, a broad refactor agent), or when asking what the assessment branch contained before it merged.
 
 Do NOT load this for: the current doc-drift fix campaign (**ccf-doc-sync-campaign**), what each test gates today (**ccf-testing-and-qa**), bash/PowerShell mirroring procedure (**ccf-parity-playbook**), or merge gating (**ccf-change-control**). This skill is history and judgment; siblings own current state and procedure.
 
 ## Entry 1 — The PowerShell smoke chain (flagship)
 
-The single most instructive incident in this repo's history. Three commits, three layers of failure, and the fixes are split across main and a stranded branch.
+The single most instructive incident in this repo's history. Three commits, three layers of failure; the first fix landed immediately, the other two sat stranded on a side branch for a month before merging on 2026-07-11.
 
 **Chapter 1: `42e6a98` (2026-05-28, fixed-on-main).**
 - *Symptom:* `setup.ps1` threw parser errors under Windows PowerShell 5.1 (no `pwsh` installed).
 - *Root cause:* without a UTF-8 BOM, WPS 5.1 read the file as ANSI and mis-decoded an em-dash in the pre-commit sentinel string as a smart quote, closing the string early. Fix: add the BOM (a 1-line change to `setup.ps1`).
 - *Lesson:* `setup.ps1` must keep its UTF-8 BOM forever; the em-dash sentinel must byte-match `setup.sh` and the installed hook.
 
-**Chapter 2: `e052200` (2026-06-11, stranded).**
+**Chapter 2: `e052200` (2026-06-11, merged-2026-07-11).**
 - *Symptom:* the "PowerShell setup smoke" job in `.github/workflows/framework-tests.yml` had been failing on main — and never got far enough to test `setup.ps1` at all.
 - *Root cause:* the harness itself, `tests/check-setup-smoke.ps1`, declared a `$Home` function parameter and assigned `$home` and `$args` locals. Those are read-only automatic variables in PowerShell, so the first `Invoke-SetupProcess` call threw `ScriptHalted` before any scenario ran. The commit message says it plainly: "This is why the 'PowerShell setup smoke' CI job has been failing on main." The gate was silently broken; real product failures were invisible.
 - *Lesson (the big one):* **when a test never passes — or never fails — first suspect the test.** A permanently-red CI job is not flaky noise; it is a disabled gate.
 
-**Chapter 3: `0fe93ea` (2026-06-11, stranded).**
+**Chapter 3: `0fe93ea` (2026-06-11, merged-2026-07-11).**
 - *Symptom:* once the harness ran, two real `setup.ps1` bugs surfaced immediately.
 - *Root causes:* (a) npm `package-lock.json` keeps the root package under an empty-string `""` key; PowerShell's default `ConvertFrom-Json` rejects "property whose name is an empty string", aborting the internal-app flow — fixed with `-AsHashtable` on PowerShell 6+; (b) the branch-rename confirmation prompt was asked in a different order than `setup.sh`, so scripted/dry-run input reached the wrong prompt.
 - *Lesson:* a repaired gate pays for itself within minutes. Both bugs shipped on main the whole time the harness was broken.
 
-**Current status (as of 2026-07-11):** chapters 2 and 3 (`e052200`, `0fe93ea`) exist ONLY on `origin/claude/codebase-assessment-7p9rq7`. Main's `tests/check-setup-smoke.ps1` still contains the `$Home`/`$args` crash (verify: `grep -n '\$Home' tests/check-setup-smoke.ps1`), and main's `setup.ps1` still lacks `-AsHashtable` (verify: `grep -c AsHashtable setup.ps1` → 0). The PowerShell CI job should therefore still be failing on main. Merging that branch is the fix; do not re-diagnose from scratch.
+**Current status (as of 2026-07-11):** all three chapters are merged. The assessment branch carrying chapters 2 and 3 was merged on 2026-07-11; the harness no longer names `$Home`/`$args` (the only remaining `$Home` hit in `tests/check-setup-smoke.ps1` is the warning comment at line 51), and `setup.ps1` uses `-AsHashtable` (verify: `grep -c AsHashtable setup.ps1` → 2). The PowerShell CI job gates for real again. If it goes red now, that is a NEW bug — do not re-diagnose this one.
 
 ## Entry 2 — Count drift, the recurring disease
 
@@ -46,10 +46,10 @@ The single most instructive incident in this repo's history. Three commits, thre
 - *Recurrences with evidence:*
   - `b2da8ea` (2026-03-30): skill count 18 → 16 corrected in README.md, `setup.sh`, and `setup.ps1` simultaneously.
   - `9b7cd14` (2026-04-01): the `framework-qa` agent found 5 pre-existing QA issues in one pass — agent count 13 → 12 in two places in CLAUDE.md, an incomplete `docs/architecture.md` diagram (9 of 16 skills shown), and a missing Salesforce project type in `setup.ps1`.
-  - `7f82b84` (2026-06-11, stranded): agent count 38 → 39 in `docs/agent-patterns.md`; the commit message explicitly notes the line "is not covered by the deterministic consistency tests, and predates this session's changes."
+  - `7f82b84` (2026-06-11, merged-2026-07-11): agent count 38 → 39 in `docs/agent-patterns.md`; the commit message explicitly notes the line "is not covered by the deterministic consistency tests, and predates this session's changes." (That surface is guarded since the 2026-07-11 `check-consistency.sh` extension.)
 - *Root cause:* the same fact lives in many files with no single source of truth; humans and agents edit the files they touched and miss the rest.
 - *What it led to:* deterministic guards — `tests/check-consistency.sh` (added in `4c688cf`, 2026-04-09) and `tests/check-agent-registry.sh` (added in `af62024`, 2026-04-24).
-- *Status:* partially fixed; drift persists on surfaces the tests do not read (that is exactly what `7f82b84` proves). The current drift inventory and doc-surface matrix are owned by **ccf-doc-sync-campaign** — do not duplicate them here.
+- *Status:* the known drift instances were fixed on 2026-07-11 and `check-consistency.sh` was extended the same day to also guard AGENTS.md, CLAUDE.md, and docs/ prose counts. The disease recurs wherever a count lives on a surface no test reads — the doc-surface matrix and any future drift inventory are owned by **ccf-doc-sync-campaign**; do not duplicate them here.
 - *Lesson:* NEVER hand-edit a count in isolation; counts change only together with the files they count, verified by tests. An "unguarded doc surface" is a drift incident waiting for its hash.
 
 ## Entry 3 — Pre-commit git hooks: rejected twice (settled-decision)
@@ -71,20 +71,20 @@ The single most instructive incident in this repo's history. Three commits, thre
 - *Status:* fixed-on-main.
 - *Lesson:* security-sensitive bash (anything that writes files from a computed plan) does not converge in one review pass here — budget for lockfile/TOCTOU/allowlist iteration; even round 3 had to repair runtime breakage introduced by rounds 1–2. Read `docs/applier-pattern.md` before touching detector/applier agents.
 
-## Entry 6 — Smoke-test hermeticity: host config leaks (stranded)
+## Entry 6 — Smoke-test hermeticity: host config leaks (merged-2026-07-11)
 
 - *Symptom:* `tests/check-setup-smoke.sh` behaved differently across machines.
 - *Root cause:* the throwaway git repo inherited host global config — commit signing (`commit.gpgsign`), `init.defaultBranch`, and hooks path — and used `git init -b`, which requires git >= 2.28. Fixed in `199417f` (2026-06-11), which also fixed an unanchored-grep bug in `run-all.sh`'s failure summary and three template-hook robustness bugs (space-safe iteration in `pre-commit.sh`, Python 3.12 `pkg_resources` removal in `session-start.sh`, SQL single-quote escaping in `codebase-index.sh`).
-- *Status:* stranded on `origin/claude/codebase-assessment-7p9rq7`.
+- *Status:* merged-2026-07-11.
 - *Lesson:* any new test that shells out to git must isolate itself from host global config. **ccf-testing-and-qa** owns the current hermeticity rules.
 
 ## Entry 7 — `af62024` "chore: update files" (anti-pattern)
 
 `af62024` (2026-04-24) is a 36-file, ~1,700-insertion commit — it added `tests/check-agent-registry.sh`, rewrote guardrails and hooks, and removed the husky block a second time — under the message "chore: update files". It is the hardest commit in this history to do archaeology on; every claim about it above required diffing. *Status:* history is immutable, the lesson is not. Commit messages follow `Add`/`Fix`/`Update`/`Remove` with substance (CLAUDE.md, Version Control). If a commit does five things, it is five commits.
 
-## Entry 8 — Stalled branch inventory (as of 2026-07-11)
+## Entry 8 — The assessment branch: stranded for a month, merged 2026-07-11
 
-`origin/claude/codebase-assessment-7p9rq7` is 4 ahead / 0 behind main (verify: `git log --oneline main..origin/claude/codebase-assessment-7p9rq7` and the reverse). Its four commits, all from one 2026-06-11 session, are all pure fixes with high salvage value and zero conflict risk (0 behind):
+`origin/claude/codebase-assessment-7p9rq7` sat 4 ahead / 0 behind main from 2026-06-11 until it was merged (as a true merge, hashes preserved) on 2026-07-11. Its four commits, all from one 2026-06-11 session, were pure fixes:
 
 | Hash | What it fixes | Why it matters |
 |------|---------------|----------------|
@@ -93,13 +93,13 @@ The single most instructive incident in this repo's history. Three commits, thre
 | `e052200` | PowerShell smoke harness crash (Entry 1) | The PS CI gate is disabled until this merges |
 | `0fe93ea` | Real `setup.ps1` bugs behind the broken gate (Entry 1) | Windows installs of internal-app flow break on main |
 
-*Status:* open — merging this branch is the highest-leverage single action available. Route the merge through **ccf-change-control**.
+*Status:* merged-2026-07-11. *Lesson:* an agent-generated side branch carried the repo's most valuable fixes for a month while nobody looked — inventory remote branches (`git branch -a`) before starting any new investigation; the fix you need may already exist.
 
 ## Edge Cases
 
 | Situation | What to do |
 |-----------|------------|
-| PowerShell CI job red on main | Entry 1: harness crash, fix is stranded on the assessment branch — merge it, do not re-debug |
+| PowerShell CI job red on main | Entry 1 is fixed (merged 2026-07-11) — a red PS job now is a NEW bug; check the harness first per Entry 1's lesson, then setup.ps1 |
 | A CI job has "always been red" (or always green while bugs ship) | Entry 1 lesson: suspect the test harness before the product |
 | A doc count disagrees with `ls \| wc -l` | Entry 2 for history and the never-hand-edit rule; ccf-doc-sync-campaign for the fix procedure |
 | Tempted to add husky / lint-staged / pre-commit framework | Entry 3: rejected twice (`0ee06f5`, `af62024`); read both before proposing again |
@@ -115,19 +115,19 @@ The single most instructive incident in this repo's history. Three commits, thre
 - **ccf-debugging-playbook** — switch here to triage a failure happening NOW; come back here if it matches a settled battle.
 - **ccf-testing-and-qa** — switch here for what each `tests/check-*.sh` gates today and hermeticity rules for new checks.
 - **ccf-parity-playbook** — switch here for the bash↔PowerShell mirroring procedure the Entry 1 bugs violated.
-- **ccf-change-control** — switch here to actually merge the stranded branch or classify any change.
+- **ccf-change-control** — switch here to classify and gate any change before merging.
 - **ccf-architecture-contract** — switch here for the design rationale behind the invariants these incidents produced.
 
 ## Provenance and maintenance
 
 Every entry was verified on 2026-07-11 against this clone. Re-verification commands:
 
-- Branch inventory / stranded status: `git branch -a` ; `git log --oneline main..origin/claude/codebase-assessment-7p9rq7` (expect `0fe93ea e052200 7f82b84 199417f`; empty means merged — update Entries 1, 2, 6, 8).
+- Assessment-branch merge status: `git log --oneline main..origin/claude/codebase-assessment-7p9rq7` (expect EMPTY — merged 2026-07-11; the remote branch may also have been deleted since; non-empty output means history was rewritten — investigate).
 - Any hash claim: `git show --stat <hash>` and `git branch -a --contains <hash>`.
-- Harness crash still on main: `grep -n '\$Home' tests/check-setup-smoke.ps1` (hits = still broken).
-- Lockfile fix still absent on main: `grep -c AsHashtable setup.ps1` (0 = still absent).
+- Harness fix present: `grep -n '\$Home' tests/check-setup-smoke.ps1` (expect exactly one hit — the warning comment).
+- Lockfile fix present: `grep -c AsHashtable setup.ps1` (expect 2 — comment + usage).
 - Husky removals: `git log --all --oneline -S husky -- setup.sh` (expect `af62024 d7c53e2 0ee06f5 7e5a192`).
 - Test-guard origins: `git log --all --oneline --diff-filter=A -- tests/check-consistency.sh tests/check-agent-registry.sh`.
 - CI job name: `grep -n 'PowerShell setup smoke' .github/workflows/framework-tests.yml`.
 
-**Re-verify this skill when:** `origin/claude/codebase-assessment-7p9rq7` is merged or deleted (Entries 1, 2, 6, 8 change status), any new "the gate was silently broken" incident occurs (add it as a new entry with hashes), or a settled decision (Entries 3, 4) is deliberately revisited.
+**Re-verify this skill when:** any new "the gate was silently broken" incident occurs (add it as a new entry with hashes), a settled decision (Entries 3, 4) is deliberately revisited, or the remote assessment branch is deleted (update Entry 8's verify command). The branch-merge status change of 2026-07-11 is already reflected throughout.

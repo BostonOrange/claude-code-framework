@@ -136,21 +136,28 @@ chunk_file() {
     done
 }
 
+# Escape single quotes for safe interpolation into SQL string literals
+sql_escape() {
+    printf '%s' "$1" | sed "s/'/''/g"
+}
+
 index_file() {
     local file="$1"
     local force="${2:-0}"
+    local file_sql
+    file_sql=$(sql_escape "$file")
 
     # Skip if file unchanged since last index (unless --full)
     local current_sha
     current_sha=$(git hash-object "$file" 2>/dev/null || sha256sum "$file" | cut -d' ' -f1)
     local cached_sha
-    cached_sha=$(sqlite3 "$DB" "SELECT sha FROM files WHERE path = '$file';" 2>/dev/null || echo "")
+    cached_sha=$(sqlite3 "$DB" "SELECT sha FROM files WHERE path = '$file_sql';" 2>/dev/null || echo "")
     if [ "$force" = "0" ] && [ "$cached_sha" = "$current_sha" ]; then
         return 0
     fi
 
     # Delete existing chunks for this file (cascade via FK ON DELETE)
-    sqlite3 "$DB" "DELETE FROM files WHERE path = '$file';"
+    sqlite3 "$DB" "DELETE FROM files WHERE path = '$file_sql';"
 
     # Re-chunk and embed
     chunk_file "$file" | while IFS=$'\t' read -r -d '' start end content; do
@@ -163,7 +170,7 @@ index_file() {
         embedding_json="[${embedding_csv}]"
         sqlite3 "$DB" <<SQL
 INSERT INTO chunks (file_path, line_start, line_end, content, content_sha, embedding)
-VALUES ('$file', $start, $end,
+VALUES ('$file_sql', $start, $end,
         $(printf '%s' "$content" | jq -Rs .),
         '$content_sha',
         $(printf '%s' "$embedding_json" | jq -Rs .));
@@ -171,7 +178,7 @@ SQL
     done
 
     # Record file SHA for incremental skip
-    sqlite3 "$DB" "INSERT INTO files (path, sha, indexed_at) VALUES ('$file', '$current_sha', '$(date -u +%Y-%m-%dT%H:%M:%SZ)');"
+    sqlite3 "$DB" "INSERT INTO files (path, sha, indexed_at) VALUES ('$file_sql', '$current_sha', '$(date -u +%Y-%m-%dT%H:%M:%SZ)');"
 }
 
 cmd_index() {

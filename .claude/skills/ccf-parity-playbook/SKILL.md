@@ -63,19 +63,18 @@ Line numbers are as of 2026-07-11; treat them as anchors, re-grep before relying
 | Commit | What bit | Lesson |
 |---|---|---|
 | `42e6a98` (on main) | Windows PowerShell 5.1 read BOM-less `setup.ps1` as ANSI and mis-decoded an em-dash in the pre-commit sentinel string as a smart-quote, closing the string early — parser errors before a single line ran. Fixed by adding a UTF-8 BOM (1-line diff). | `setup.ps1` MUST keep its UTF-8 BOM (verify: `head -c 3 setup.ps1 \| xxd` → `efbb bf`). Any tool that rewrites the file BOM-less re-breaks WPS 5.1. Beware em-dashes in PS string literals generally. |
-| `e052200` (2026-06-11, stranded — status and full story: ccf-failure-archaeology Entry 1) | The PS smoke harness itself used `$Home`/`$home`/`$args` as a parameter and locals — read-only automatic variables — and crashed before any scenario ran, so the CI job "ran" while gating nothing. | Never name PS parameters/locals after automatic variables (`$Home`, `$args`, `$input`, ...). A test harness that crashes at startup is indistinguishable from a red build people learn to ignore — check the harness first. |
-| `0fe93ea` (2026-06-11, stranded — same branch, same Entry 1) | Real `setup.ps1` bugs surfaced only after the harness was repaired: (a) `ConvertFrom-Json` rejects npm `package-lock.json`'s empty-string root key — needs `-AsHashtable` on PS 6+; (b) the branch-rename confirmation was asked far later than in `setup.sh`, so scripted/dry-run input reached the wrong prompt. | A broken harness hides an entire class of bugs; expect a bug wave right after fixing one. |
+| `e052200` (2026-06-11, merged 2026-07-11 — full story: ccf-failure-archaeology Entry 1) | The PS smoke harness itself used `$Home`/`$home`/`$args` as a parameter and locals — read-only automatic variables — and crashed before any scenario ran, so the CI job "ran" while gating nothing. | Never name PS parameters/locals after automatic variables (`$Home`, `$args`, `$input`, ...). A test harness that crashes at startup is indistinguishable from a red build people learn to ignore — check the harness first. |
+| `0fe93ea` (2026-06-11, merged 2026-07-11 — same Entry 1) | Real `setup.ps1` bugs surfaced only after the harness was repaired: (a) `ConvertFrom-Json` rejects npm `package-lock.json`'s empty-string root key — needs `-AsHashtable` on PS 6+; (b) the branch-rename confirmation was asked far later than in `setup.sh`, so scripted/dry-run input reached the wrong prompt. | A broken harness hides an entire class of bugs; expect a bug wave right after fixing one. |
 | Latent (no incident yet) | Null-vs-empty divergence in the placeholder map builders: `setup.sh` python uses `os.environ.get(env, default)` — an exported-but-empty var wins with `''` (`setup.sh:959-961`); `setup.ps1` falls back to the `config/placeholders.json` default whenever the looked-up variable is `$null` (`setup.ps1:787-798`). A resolver path leaving a variable empty (`''` in bash, unassigned in PS) yields different installed content per platform. Currently unreachable — both resolvers assign every variable — but any new resolver branch can arm it. | When adding resolver variables, always assign a concrete string on every path in both scripts. |
 
 ## Known open parity gaps (as of 2026-07-11, each verified in the scripts)
 
-Candidates to fix, not documentation of intent:
+Candidates to fix, not documentation of intent. (A former gap — branch-rename prompt ordering — was closed when `0fe93ea` merged on 2026-07-11: ps1 now asks right after the base-branch prompt, `setup.ps1:296-325`, mirroring `setup.sh:307`.)
 
-1. **`-DryRun` has no early-exit summary in `setup.ps1`.** `setup.sh --dry-run` prints a `[DRY-RUN]` plan and `exit 0` (lines 673-716). `setup.ps1` threads `if (-not $DryRun)` through the whole script and ends by printing "Setup Complete!" (line 1107) even in dry-run — its only `exit 0`s are `-Help` and `-Reset`.
-2. **`setup.ps1 -Help` omits `-NonInteractive`** (usage lines 12-15 list only `-DryRun`/`-Reset`; the switch exists in `param(...)` line 7). `setup.sh --help` documents all three flags (line 16).
-3. **Branch-rename prompt ordering differs**: sh asks immediately after the base-branch prompt (line 307); ps1 asks after ALL prompts, once install begins (line 580). Fix exists in unmerged `0fe93ea`.
-4. **Reset output differs**: sh prints an extra line "To fully clean up, manually remove CLAUDE.md and .env" (line 36); ps1 prints only the "preserved" line (line 36).
-5. **ps1 summary lacks the CLAUDE.md line**: sh conditionally prints `CLAUDE.md — project instructions (customize!)` (lines 1319-1321); ps1's Files-created block (lines 1123-1142) has no equivalent.
+1. **`-DryRun` has no early-exit summary in `setup.ps1`.** `setup.sh --dry-run` prints a `[DRY-RUN]` plan and `exit 0` (lines 673-716). `setup.ps1` threads `if (-not $DryRun)` and `[DRY-RUN] Would copy` messages through the whole script and ends by printing "Setup Complete!" (line 1117) even in dry-run — its only `exit 0`s are `-Help` and `-Reset`.
+2. **`setup.ps1 -Help` omits `-NonInteractive`** (usage lines 12-14 list only `-DryRun`/`-Reset`; the switch exists in `param(...)` line 7). `setup.sh --help` documents all three flags (line 16).
+3. **Reset output differs**: sh prints an extra line "To fully clean up, manually remove CLAUDE.md and .env" (line 36); ps1 prints only the "preserved" line (line 36).
+4. **ps1 summary lacks the CLAUDE.md line**: sh conditionally prints `CLAUDE.md — project instructions (customize!)` (line 1320); ps1's Files-created block has no equivalent.
 
 If you close one, mirror the fix, re-verify this list, and update this skill.
 
@@ -85,13 +84,13 @@ If you close one, mirror the fix, re-verify this list, and update this skill.
 |---|---|---|
 | `bash tests/check-placeholders.sh` | Static: every `{{PLACEHOLDER}}` in `templates/` and `skills/` has a replacement in BOTH scripts (entries in `config/placeholders.json` count as present for both). | Only placeholders — nothing about prompts, ordering, output, or behavior. |
 | `bash tests/check-setup-smoke.sh` | Behavioral, **bash only**: runs `setup.sh` in throwaway repos with isolated HOME (interactive-scripted, dry-run, non-interactive, missing-CCF_PROJECT_TYPE cases). | Never executes `setup.ps1`. |
-| `tests/check-setup-smoke.ps1` | Behavioral for `setup.ps1`, mirror scenarios. | **TRAP:** `tests/run-all.sh` collects `check-*.sh` only (line 19) — the `.ps1` harness is CI-only (`.github/workflows/framework-tests.yml`, `powershell` job on windows-latest). A green local `run-all.sh` proves nothing about `setup.ps1`. Worse: as of 2026-07-11 the harness fix (`e052200`) is unmerged, so on main the harness crashes at startup and the CI job gates nothing — status and full story: ccf-failure-archaeology Entry 1. |
+| `tests/check-setup-smoke.ps1` | Behavioral for `setup.ps1`, mirror scenarios. | **TRAP:** `tests/run-all.sh` collects `check-*.sh` only (line 19) — the `.ps1` harness is CI-only (`.github/workflows/framework-tests.yml`, `powershell` job on windows-latest). A green local `run-all.sh` proves nothing about `setup.ps1`. (The harness startup crash that once disabled this gate was fixed by `e052200`, merged 2026-07-11 — history: ccf-failure-archaeology Entry 1.) |
 
 ## Edge Cases
 
 | Situation | What to do |
 |---|---|
-| No pwsh available locally, change touches setup.ps1 | State it untested on PowerShell in the PR; rely on the CI windows job only after confirming the harness itself runs (see trap above). |
+| No pwsh available locally, change touches setup.ps1 | State it untested on PowerShell in the PR and watch the CI windows job (its harness has been sound since the 2026-07-11 merge; if it crashes at startup rather than failing an assert, suspect the harness per Entry 1's lesson). |
 | Change only makes sense on one platform (e.g. `chmod +x`) | Mirror the *intent*: ps1 skips chmod but must still copy hooks; leave a comment in both scripts pointing at the counterpart. |
 | Placeholder check passes but installed files differ per platform | Suspect the null-vs-empty divergence or a missing export before a python3 heredoc — both are invisible to the static check. |
 | Corrupt or hand-edited `config/*.json` | bash: silent empty vars via the `eval` blind spot; ps1: `$ErrorActionPreference = "Stop"` (line 18) makes `ConvertFrom-Json` throw loudly. Divergent failure modes are themselves a parity signal. |
@@ -116,9 +115,9 @@ Re-verify before trusting; all facts dated 2026-07-11:
 - `sed_inplace` definition: `grep -n -A6 'sed_inplace()' setup.sh`
 - eval blind spot still unguarded: `grep -n 'eval "\$(python3' setup.sh`
 - BOM present: `head -c 3 setup.ps1 | xxd` (expect `efbb bf`)
-- Commit history: `git show --stat 42e6a98 e052200 0fe93ea`; merge status: `git branch -a --contains e052200` (fixes merged when this lists `main`)
-- Harness crash on main: `grep -n '\$Home\b\|\$args\b' tests/check-setup-smoke.ps1` (fixed when empty)
-- Gap 1: `grep -n 'exit 0' setup.ps1` (dry-run early exit added when a third appears); gap 2: `sed -n '11,16p' setup.ps1`; gap 3: `grep -n 'Rename to' setup.sh setup.ps1`; gap 4: `grep -n 'fully clean up' setup.sh setup.ps1`; gap 5: `grep -n 'customize!' setup.sh setup.ps1`
+- Commit history: `git show --stat 42e6a98 e052200 0fe93ea`; merge status: `git branch --contains e052200` (merged 2026-07-11; expect the current integration branch listed)
+- Harness fix present: `grep -n '\$Home\b\|\$args\b' tests/check-setup-smoke.ps1` (expect only the line-51 warning comment)
+- Gap 1: `grep -n 'exit 0' setup.ps1` (dry-run early exit added when a third appears); gap 2: `sed -n '11,16p' setup.ps1`; gap 3: `grep -n 'fully clean up' setup.sh setup.ps1`; gap 4: `grep -n 'customize!' setup.sh setup.ps1`; closed rename-order gap: `grep -n 'Rename to' setup.sh setup.ps1` (both ~line 300)
 - run-all glob trap: `grep -n 'check-\*.sh' tests/run-all.sh`; CI wiring: `cat .github/workflows/framework-tests.yml`
 
-**Re-verify this skill whenever**: `setup.sh`/`setup.ps1`/`tests/check-setup-smoke.*` change, the `claude/codebase-assessment-7p9rq7` branch merges (rewrites the traps table and gaps 3 + harness status), or a new prompt/CCF_* variable is added.
+**Re-verify this skill whenever**: `setup.sh`/`setup.ps1`/`tests/check-setup-smoke.*` change (line-number anchors and the gaps list shift), or a new prompt/CCF_* variable is added. The 2026-07-11 assessment-branch merge is already reflected here.

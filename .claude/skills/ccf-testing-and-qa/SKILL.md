@@ -20,7 +20,7 @@ Do NOT load for: which doc surface holds which count (that matrix is owned by **
 ## Process: verifying a change is "done"
 
 1. **Run the suite**: `bash tests/run-all.sh` from repo root. It auto-discovers `tests/check-*.sh` by glob (`find "$TESTS_DIR" -maxdepth 1 -name "check-*.sh"`, sorted). Consequence: `tests/check-setup-smoke.ps1` is **not** discovered — the PowerShell smoke runs only in CI (`.github/workflows/framework-tests.yml`, `powershell` job on `windows-latest`). CI's bash job also runs `bash -n setup.sh tests/*.sh templates/hooks/*.sh` before the suite; run that locally too if you touched any shell file.
-2. **Read the real output, don't pattern-match the exit code.** Expected shape as of 2026-07-11: 8 checks, a summary table, final line `RESULT: ALL TESTS PASSED (8 of 8)`. Per-check Results lines today: agent-registry 234 passed, consistency 12, global-skill 6, guardrails 55, placeholders 47 (of 47 unique tokens), setup-smoke 80, templates 109; dogfood-drift prints `Actual drift entries: N` instead. A drop in these numbers under a green suite means coverage shrank — investigate.
+2. **Read the real output, don't pattern-match the exit code.** Expected shape as of 2026-07-11: 8 checks, a summary table, final line `RESULT: ALL TESTS PASSED (8 of 8)`. Per-check Results lines today: agent-registry 234 passed, consistency 23, global-skill 6, guardrails 55, placeholders 47 (of 47 unique tokens), setup-smoke 80, templates 109; dogfood-drift prints `Actual drift entries: N` instead. A drop in these numbers under a green suite means coverage shrank — investigate.
 3. **Run the change-class checks** (see "Evidence bar" below) — the suite does not cover everything.
 4. **If nothing gates your change class, extend the suite** before merging (see "Adding a check").
 
@@ -31,7 +31,7 @@ All checks are standalone bash scripts; each exits 0/non-zero and prints `[PASS]
 | Check | Gates | Misses |
 |---|---|---|
 | `check-agent-registry.sh` | `config/agents.json` in lockstep with `templates/agents/*.md` (entry↔file existence both directions, frontmatter `description` exact-match vs registry) plus every agent **name** referenced in README.md, `templates/CLAUDE.md.template`, `docs/teams.md`, `docs/agents-commands-rules.md` | **Silently exits 0 with a SKIP message if python3 is absent** — zero registry coverage on that machine. Checks names only, not counts or table-row correctness, in the 4 docs. `AGENTS.md` is not among the 4 docs. |
-| `check-consistency.sh` | Skill/agent/command/rule/hook/workflow counts stated in `setup.sh` summary and README.md vs actual file counts; README agent-table row count vs agent files | Counts in `AGENTS.md`, `docs/*`, and `templates/CLAUDE.md.template` are entirely unguarded. Greps are phrase-anchored (e.g. `N workflow skills`); the README workflows count SKIPs silently when the phrase isn't found. |
+| `check-consistency.sh` | Skill/agent/command/rule/hook/workflow counts stated in `setup.sh` summary and README.md vs actual file counts; README agent-table row count vs agent files; since 2026-07-11 also the four core counts in `AGENTS.md` and `CLAUDE.md`, the roster header + prose agent count in `docs/teams.md`, and the agent count in `docs/agent-patterns.md` | `templates/CLAUDE.md.template` counts and team-size numbers, and `setup.ps1` summary numbers, remain unguarded. Greps are phrase-anchored (e.g. `N workflow skills`) with `head -1` — only the FIRST occurrence per file is compared; the README workflows count SKIPs silently when the phrase isn't found. |
 | `check-dogfood-drift.sh` | `diff -qr` of `.claude/{agents,hooks,skills}`, `.claude/settings.local.json`, `.claude/statusline` against `templates/`+`skills/`; every diff line must appear verbatim (normalized, repo-relative) in `config/dogfood-drift-allowlist.txt`; stale allowlist entries also fail | Only those five paths — `.claude/rules/`, `.claude/commands/`, `.mcp.json` are never compared. File-level only (`-q`): it flags *which* files differ, never whether the drift content is sane. |
 | `check-global-skill.sh` | 6 greps on `global-skills/install-framework/SKILL.md`: exists, `name:`, `description:`, GitHub remote URL, `--non-interactive`, `-NonInteractive` | Grep-presence only; nothing about whether the skill's instructions work. |
 | `check-guardrails.sh` | Pipes `{"tool_input":{"command":"..."}}` JSON into `templates/hooks/guardrails.sh` and asserts exit codes: 0 safe (15 cases), 1 soft block (20), 2 hard block (20) | Tests the **template** copy only. `.claude/hooks/guardrails.sh` differs (allowlisted drift) and is untested. The other 7 template hooks have no behavioral tests at all. |
@@ -45,7 +45,7 @@ The suite does not "silently skip two checks" without python3. Verified behavior
 
 ## Known coverage gaps (as of 2026-07-11 — candidates for new checks)
 
-Condensed from the Misses column — the union of what NO check covers: tracker/notification substitution paths; `setup.sh --reset`; non-interactive mode beyond the nodejs happy path; `.env`/`.env.example` contents beyond two substring greps; behavior of the 7 non-guardrails hooks and the dogfooded `.claude/hooks/guardrails.sh`; counts in `AGENTS.md` and `docs/` prose; YAML validity and rule `id` presence/stability.
+Condensed from the Misses column — the union of what NO check covers: tracker/notification substitution paths; `setup.sh --reset`; non-interactive mode beyond the nodejs happy path; `.env`/`.env.example` contents beyond two substring greps; behavior of the 7 non-guardrails hooks and the dogfooded `.claude/hooks/guardrails.sh`; counts in `templates/CLAUDE.md.template` and `setup.ps1`'s summary; YAML validity and rule `id` presence/stability.
 
 ## Adding a check
 
@@ -53,7 +53,7 @@ Condensed from the Misses column — the union of what NO check covers: tracker/
 2. Exit 0 on pass, non-zero on fail. Match house style: `[PASS]`/`[FAIL]` lines plus a `Results: N passed, M failed` footer.
 3. **Hermeticity rules** — copy the proven patterns: `TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/ccf-<name>.XXXXXX")` + `trap 'rm -rf "$TMP_DIR"' EXIT` (`tests/check-dogfood-drift.sh` lines 10–11), and per-case `HOME="$isolated_home"` for anything that could touch `~/.claude` (`tests/check-setup-smoke.sh` lines 8–15 and 122). Never write inside the repo.
 4. Prefer loud failure over silent skip when a dependency (python3) is missing — agent-registry's silent skip is the cautionary example.
-5. Naming trap: run-all's summary table marks failures by **substring** match on the name (`tests/run-all.sh` line 70). Don't name a check so its basename is a substring of another's, or table rows misreport.
+5. Naming note: run-all's summary table matches failed tests by exact token (`case " $FAILED_TESTS " in *" $test_name "*`, `tests/run-all.sh` ~line 71) — a former substring-match bug that misreported nested names was fixed by `199417f` (merged 2026-07-11).
 6. PowerShell tests (`.ps1`) are invisible to run-all — wire them into `.github/workflows/framework-tests.yml` manually.
 
 ## Evidence bar for "done"
@@ -62,14 +62,14 @@ A change is not done until every doc surface reflects it, and the suite proves o
 
 - **Always**: `bash tests/run-all.sh` green locally, final line read (not assumed), 8 of 8.
 - **Templates/skills/setup scripts touched**: read the smoke section of the output — per-assert `[PASS]` lines, not just the table. Then `grep -r "{{" .claude/ CLAUDE.md | grep -v ".git"` in a scratch install (CLAUDE.md "Testing Changes"). `bash -n setup.sh` if you edited it. If pwsh is available, `pwsh -File tests/check-setup-smoke.ps1`; otherwise expect the Windows CI job to be your first PowerShell signal.
-- **Counts or docs touched**: green suite is **insufficient** — `AGENTS.md`, `docs/`, and `templates/CLAUDE.md.template` counts are unguarded. Run the doc-surface pass from **ccf-doc-sync-campaign**.
+- **Counts or docs touched**: the suite now guards README, setup.sh, AGENTS.md, CLAUDE.md, docs/teams.md, and docs/agent-patterns.md (first occurrence per file), but `templates/CLAUDE.md.template`, `setup.ps1` summary numbers, and second occurrences are still unguarded — run the doc-surface pass from **ccf-doc-sync-campaign**.
 - **Guardrails/hook behavior touched**: add cases to `check-guardrails.sh` in the same commit; an untested block pattern does not exist.
 
 ## Edge Cases
 
 | Situation | What to do |
 |---|---|
-| Suite green locally, CI fails on Windows | PowerShell smoke only runs in CI. Reproduce with `pwsh -File tests/check-setup-smoke.ps1` or read the failing assert label in the Actions log. Caveat (as of 2026-07-11): on main the harness itself crashes at startup (`$Home`/`$args` bug); the fix (`e052200`) is stranded off-main — see ccf-failure-archaeology Entry 1. |
+| Suite green locally, CI fails on Windows | PowerShell smoke only runs in CI. Reproduce with `pwsh -File tests/check-setup-smoke.ps1` or read the failing assert label in the Actions log. (The harness's own startup crash was fixed by `e052200`, merged 2026-07-11; if the job dies before any assert, suspect a NEW harness bug — ccf-failure-archaeology Entry 1.) |
 | `check-dogfood-drift` fails after an intentional `.claude/` edit | Copy the exact normalized line from the failure output into `config/dogfood-drift-allowlist.txt` (or sync the files). Stale allowlist entries fail too — remove lines for drift that no longer exists. |
 | `check-agent-registry` prints `SKIP: python3 not available` | Registry coverage is zero. Install python3 before trusting a green run. |
 | New `{{TOKEN}}` fails `check-placeholders` | Add it to `config/placeholders.json` (counts for both scripts) or literally to **both** `setup.sh` and `setup.ps1` — see **ccf-parity-playbook**. Document it in CLAUDE.md per `.claude/rules/templates.md`. |
@@ -92,7 +92,7 @@ Re-verify each volatile fact before relying on it:
 
 - Check count and discovery glob: `ls tests/check-*.sh | wc -l` (expect 8) and `grep -n 'name "check-\*.sh"' tests/run-all.sh`
 - Pass line shape: `bash tests/run-all.sh | tail -1` → `RESULT: ALL TESTS PASSED (8 of 8)`
-- Per-check assertion counts: `for t in agent-registry consistency global-skill guardrails placeholders templates; do bash tests/check-$t.sh | grep 'Results:'; done` (234/12/6/55/47/109 as of 2026-07-11); smoke: `bash tests/check-setup-smoke.sh | grep 'Results:'` (80)
+- Per-check assertion counts: `for t in agent-registry consistency global-skill guardrails placeholders templates; do bash tests/check-$t.sh | grep 'Results:'; done` (234/23/6/55/47/109 as of 2026-07-11); smoke: `bash tests/check-setup-smoke.sh | grep 'Results:'` (80)
 - Unique placeholder total and JSON-only tokens: `bash tests/check-placeholders.sh | grep Found` (47); JSON-only list: `for p in $(grep -roh '{{[A-Z_]*}}' templates/ skills/ | sort -u | sed 's/[{}]//g'); do grep -q "{{${p}}}" setup.sh || echo "$p"; done | wc -l` (26)
 - python3 silent skip: `grep -n "SKIP: python3" tests/check-agent-registry.sh`; setup.sh hard requirement: `grep -n "python3 is required" setup.sh`
 - CI wiring (bash-n gate, run-all, PS smoke): `grep -n "run:" .github/workflows/framework-tests.yml`

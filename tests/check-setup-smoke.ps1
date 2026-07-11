@@ -48,8 +48,10 @@ function Assert-Contains($Path, $Pattern, $Label) {
     }
 }
 
-function Invoke-SetupProcess($Target, $Home, $InputText, [switch]$DryRun, [switch]$NonInteractive) {
-    New-Item -ItemType Directory -Force -Path $Target, $Home | Out-Null
+# NOTE: the home parameter must not be named $Home — $HOME is a read-only
+# automatic variable in PowerShell and binding it throws at call time.
+function Invoke-SetupProcess($Target, $HomeDir, $InputText, [switch]$DryRun, [switch]$NonInteractive) {
+    New-Item -ItemType Directory -Force -Path $Target, $HomeDir | Out-Null
 
     $inputFile = Join-Path $TmpRoot ([System.Guid]::NewGuid().ToString("N") + ".in")
     $outputFile = Join-Path $TmpRoot ([System.Guid]::NewGuid().ToString("N") + ".out")
@@ -57,16 +59,16 @@ function Invoke-SetupProcess($Target, $Home, $InputText, [switch]$DryRun, [switc
     Set-Content -Path $inputFile -Value $InputText -NoNewline -Encoding UTF8
 
     $pwsh = (Get-Command pwsh -ErrorAction Stop).Source
-    $args = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $SetupScript)
-    if ($DryRun) { $args += "-DryRun" }
-    if ($NonInteractive) { $args += "-NonInteractive" }
+    $setupArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $SetupScript)
+    if ($DryRun) { $setupArgs += "-DryRun" }
+    if ($NonInteractive) { $setupArgs += "-NonInteractive" }
 
     $oldUserProfile = $env:USERPROFILE
-    $env:USERPROFILE = $Home
+    $env:USERPROFILE = $HomeDir
     try {
         $process = Start-Process `
             -FilePath $pwsh `
-            -ArgumentList $args `
+            -ArgumentList $setupArgs `
             -WorkingDirectory $Target `
             -RedirectStandardInput $inputFile `
             -RedirectStandardOutput $outputFile `
@@ -115,8 +117,8 @@ function Assert-NoOperationalPlaceholders($Target, $Label) {
         if ($relative -eq ".claude/agents/framework-improver.md" -or $relative -eq ".claude/skills/improve/SKILL.md") {
             continue
         }
-        $matches = Select-String -Path $path.FullName -Pattern "\{\{[A-Z_][A-Z_]*\}\}" -ErrorAction SilentlyContinue
-        if ($matches) { $remaining += $matches }
+        $found = Select-String -Path $path.FullName -Pattern "\{\{[A-Z_][A-Z_]*\}\}" -ErrorAction SilentlyContinue
+        if ($found) { $remaining += $found }
     }
 
     if ($remaining.Count -eq 0) {
@@ -141,8 +143,8 @@ function Assert-NoPlaceholdersInTree($Target, $Label) {
         if ($relative -eq ".claude/agents/framework-improver.md" -or $relative -eq ".claude/skills/improve/SKILL.md") {
             continue
         }
-        $matches = Select-String -Path $file.FullName -Pattern "\{\{[A-Z_][A-Z_]*\}\}" -ErrorAction SilentlyContinue
-        if ($matches) { $remaining += $matches }
+        $found = Select-String -Path $file.FullName -Pattern "\{\{[A-Z_][A-Z_]*\}\}" -ErrorAction SilentlyContinue
+        if ($found) { $remaining += $found }
     }
 
     if ($remaining.Count -eq 0) {
@@ -155,8 +157,8 @@ function Assert-NoPlaceholdersInTree($Target, $Label) {
 
 function Run-SetupCase($Name, $InputText) {
     $target = Join-Path $TmpRoot $Name
-    $home = Join-Path $TmpRoot "home-$Name"
-    $result = Invoke-SetupProcess -Target $target -Home $home -InputText $InputText
+    $homeDir = Join-Path $TmpRoot "home-$Name"
+    $result = Invoke-SetupProcess -Target $target -HomeDir $homeDir -InputText $InputText
 
     if ($result.ExitCode -eq 0) {
         Pass "$Name setup exits 0"
@@ -173,7 +175,7 @@ function Run-SetupCase($Name, $InputText) {
     Assert-Exists (Join-Path $target ".claude/settings.local.json") "$Name installs project settings"
     Assert-Exists (Join-Path $target ".mcp.json") "$Name installs MCP config"
     Assert-Exists (Join-Path $target "CLAUDE.md") "$Name creates CLAUDE.md"
-    Assert-Exists (Join-Path $home ".claude/settings.json") "$Name isolates user settings under test USERPROFILE"
+    Assert-Exists (Join-Path $homeDir ".claude/settings.json") "$Name isolates user settings under test USERPROFILE"
     Assert-NoOperationalPlaceholders $target "$Name has no operational placeholders"
     return $target
 }
@@ -238,11 +240,12 @@ New-Item -ItemType Directory -Force -Path $dryTarget, $dryHome | Out-Null
 git -C $dryTarget init -b old *> $null
 git -C $dryTarget config user.email "setup-smoke@example.com"
 git -C $dryTarget config user.name "Setup Smoke"
+git -C $dryTarget config commit.gpgsign false
 Set-Content -Path (Join-Path $dryTarget "README.md") -Value "setup smoke" -Encoding UTF8
 git -C $dryTarget add README.md
 git -C $dryTarget commit -m "Initial commit" *> $null
 
-$dryResult = Invoke-SetupProcess -Target $dryTarget -Home $dryHome -InputText "9`n5`n4`nnew`ny`n4`nsample`n" -DryRun
+$dryResult = Invoke-SetupProcess -Target $dryTarget -HomeDir $dryHome -InputText "9`n5`n4`nnew`ny`n4`nsample`n" -DryRun
 if ($dryResult.ExitCode -eq 0) { Pass "dry-run setup exits 0" } else { Fail "dry-run setup exits 0" }
 $dryBranch = (git -C $dryTarget rev-parse --abbrev-ref HEAD 2>$null)
 if ($dryBranch -eq "old") { Pass "dry-run does not rename branch" } else { Fail "dry-run does not rename branch (found $dryBranch)" }
@@ -264,7 +267,7 @@ $env:CCF_DESIGN_SYSTEM = "none"
 $env:CCF_BASE_BRANCH = "main"
 $env:CCF_PROJECT_SHORT_NAME = "sample"
 try {
-    $niResult = Invoke-SetupProcess -Target $niTarget -Home $niHome -InputText "" -NonInteractive
+    $niResult = Invoke-SetupProcess -Target $niTarget -HomeDir $niHome -InputText "" -NonInteractive
 } finally {
     Remove-Item Env:\CCF_PROJECT_TYPE, Env:\CCF_TRACKER, Env:\CCF_CICD, Env:\CCF_NOTIFICATION, Env:\CCF_DESIGN_SYSTEM, Env:\CCF_BASE_BRANCH, Env:\CCF_PROJECT_SHORT_NAME -ErrorAction SilentlyContinue
 }
@@ -278,7 +281,7 @@ Write-Host ""
 Write-Host "Non-interactive missing CCF_PROJECT_TYPE fails..."
 $missTarget = Join-Path $TmpRoot "ni-missing"
 $missHome = Join-Path $TmpRoot "home-ni-missing"
-$missResult = Invoke-SetupProcess -Target $missTarget -Home $missHome -InputText "" -NonInteractive
+$missResult = Invoke-SetupProcess -Target $missTarget -HomeDir $missHome -InputText "" -NonInteractive
 if ($missResult.ExitCode -ne 0) { Pass "non-interactive without CCF_PROJECT_TYPE exits non-zero" } else { Fail "non-interactive without CCF_PROJECT_TYPE exits non-zero" }
 if ($missResult.Output -match "CCF_PROJECT_TYPE is required") { Pass "non-interactive missing type reports clear error" } else { Fail "non-interactive missing type reports clear error" }
 

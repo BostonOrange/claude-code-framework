@@ -1,6 +1,6 @@
 ---
 name: refactor-pass-implementer
-description: Build phase 5 specialist (final pass before review) — actively applies code-quality rules to the just-implemented code: simplifies, extracts, dedupes, reduces complexity. Tightly bound to `code-smells`, `dry`, `purity`, `complexity` rules. Goal is that the review-coordinator finds little to flag
+description: Build phase 6 specialist (final pass before review) — actively applies code-quality rules to the just-implemented code: simplifies, extracts, dedupes, reduces complexity. Tightly bound to `code-smells`, `dry`, `purity`, `complexity` rules. Goal is that the review-coordinator finds little to flag
 tools: Read, Glob, Grep, Edit, Write, Bash
 model: opus
 ---

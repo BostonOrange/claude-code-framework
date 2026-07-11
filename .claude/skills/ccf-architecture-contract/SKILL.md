@@ -77,7 +77,7 @@ All verified against the working tree on 2026-07-11. Status **open** = real, unf
 2. **[open] `config/placeholders.json` `claude_md_only` group is dead config.** Neither setup script reads that group — both hardcode those replacements inline (e.g. `{{TECH_STACK_TABLE}}` in setup.sh's CLAUDE_MD block and setup.ps1's `.Replace` call). Worse, `tests/check-placeholders.sh` treats any JSON-listed name as "present in both scripts," so for this group the parity check is vacuous: you could delete the inline replacement from one script and the test would still pass.
 3. **[open] `VERSION` file (contains `1.0.0`) is referenced by nothing** — no script, doc, or test reads it. Either wire it into release output or delete it.
 4. **[open] `eval "$(python3 << EOF ... )"` sites in setup.sh are not protected by `set -e`.** The four config-loader sites (design-systems, trackers, project-types, notifications) escape `set -e`: a python3 failure yields an empty substitution, `eval ""` returns 0, and setup continues half-configured. Mechanics, affected line numbers, and the doctor command: ccf-debugging-playbook "Silent half-configuration".
-5. **[open] Unmerged branch `origin/claude/codebase-assessment-7p9rq7` holds 4 real fix commits** (`199417f`, `7f82b84`, `e052200`, `0fe93ea`) that fix things `main` still has wrong (as of 2026-07-11); merge or cherry-pick deliberately. Inventory, status, and full story: ccf-failure-archaeology Entries 1 and 8.
+5. **[resolved 2026-07-11] The assessment branch `origin/claude/codebase-assessment-7p9rq7`** (4 fix commits: `199417f`, `7f82b84`, `e052200`, `0fe93ea`) was merged on 2026-07-11 — kept here as a closed item so no one re-inventories it. Full story: ccf-failure-archaeology Entries 1 and 8.
 
 Candidate fixes for 1–4 are open work items, not done — do not describe them as fixed until tests prove otherwise.
 
@@ -117,6 +117,6 @@ Re-verify each fact before relying on it:
 - Weak point 2 (dead config): `grep -rn claude_md_only setup.sh setup.ps1 tests/ config/` (hits only in tests + config)
 - Weak point 3 (VERSION): `grep -rnw --exclude-dir=.git VERSION .` (no consumers)
 - Weak point 4 (eval sites): `grep -n 'eval "\$(python3' setup.sh` (the `$` must be escaped — the unescaped form silently matches nothing under macOS BSD grep)
-- Weak point 5 (branch): `git log --oneline main..origin/claude/codebase-assessment-7p9rq7`
+- Weak point 5 (resolved): `git log --oneline main..origin/claude/codebase-assessment-7p9rq7` (expect empty — merged 2026-07-11)
 
 **Re-verify this skill whenever:** any weak point is fixed or the branch above is merged; a new tier, config file, or `tests/check-*.sh` is added; setup.sh's placeholder-loading blocks are restructured; or any documented count changes.
