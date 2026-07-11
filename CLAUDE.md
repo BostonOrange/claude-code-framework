@@ -85,6 +85,17 @@ in `setup.sh` and the resolver in `setup.ps1`.
 `install-framework`. Because these are not per-repo template skills, they do not count toward the
 "27 workflow skills" total.
 
+### Repo Knowledge Skills (`.claude/skills/ccf-*`)
+
+The `ccf-*` skills under `.claude/skills/` are a dogfood-only institutional-knowledge
+library for working ON this framework repo (architecture rationale, testing/QA, dogfood
+drift, setup parity, release/install, debugging, failure history, doc-sync, domain
+vocabulary). **Consult them before re-deriving repo knowledge from scratch** — start with
+`ccf-onboarding-tour` for a guided reading order; each skill's `description` says exactly
+when to load it. They are `stability: experimental`, `scope: preset`, NOT distributable
+(kept out of `templates/` and `skills/`, allowlisted in `config/dogfood-drift-allowlist.txt`),
+and do NOT count toward the workflow-skills total above.
+
 ### Adding New Skills
 
 Copy `skills/_template/` and edit `SKILL.md`. Use YAML frontmatter with `name` and `description`. See `docs/skill-authoring.md`.
